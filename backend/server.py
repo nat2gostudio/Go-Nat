@@ -72,6 +72,8 @@ class ClientCreate(BaseModel):
     blog_done: bool = False
     banners_done: bool = False
     url_promos: Optional[str] = ""
+    custom_links: list = []
+    extra_tasks: list = []
 
 class ContentIdeaCreate(BaseModel):
     title: str
