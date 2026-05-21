@@ -1258,6 +1258,16 @@ function initBusinessHoursOverlay() {
   holdBtn.addEventListener('touchend', endHold);
   holdBtn.addEventListener('touchcancel', endHold);
 
+  // Cerrar con Escape
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && overlay.style.display === 'flex') {
+      overlay.style.display = 'none';
+      userDismissed = true;
+      progressBar.classList.remove('animating');
+      progressBar.style.width = '0';
+    }
+  });
+
   // Reset dismissal at midnight
   const resetDismissal = () => {
     const now = new Date();
