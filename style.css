@@ -2050,7 +2050,7 @@ body.dark .quick-access-circle {
 /* ---------- Responsive: tablet ---------- */
 @media (max-width: 1000px) {
   .dashboard-top-grid {
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    grid-template-columns: repeat(2, 1fr);
   }
   .right-sidebar-col {
     grid-column: 1 / -1;
@@ -2066,8 +2066,12 @@ body.dark .quick-access-circle {
   .dashboard-top-grid {
     grid-template-columns: 1fr;
   }
+  #calendarCard {
+    grid-column: 1 / -1;
+  }
   .right-sidebar-col {
     flex-direction: column;
+    grid-column: 1 / -1;
   }
   .quick-access-card {
     display: none;
