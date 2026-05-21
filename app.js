@@ -77,6 +77,13 @@ const KEYS = {
    ============================================================ */
 let settings = lsGet(KEYS.settings, { gasUrl: '', theme: 'light' });
 
+/* ============================================================
+   POMODORO STATE
+   ============================================================ */
+let pomodoroInterval = null;
+let pomodoroSeconds = 25 * 60;
+let pomodoroPhase = 'work'; // 'work' | 'break'
+
 function saveSettings() {
   lsSet(KEYS.settings, settings);
   syncToGAS(KEYS.settings, settings);
@@ -258,15 +265,32 @@ function renderPrioridades() {
     if (!listEl) return;
     listEl.innerHTML = '';
     (prioridades[cat] || []).forEach((item, idx) => {
+      const subtasks = item.subtasks || [];
+      const subtasksHtml = subtasks.map((st, si) => `
+        <li class="subtask-item" data-si="${si}">
+          <input type="checkbox" ${st.done ? 'checked' : ''} />
+          <span class="subtask-text">${esc(st.text)}</span>
+          <button class="subtask-del" aria-label="Eliminar microtarea">×</button>
+        </li>
+      `).join('');
+
       const li = document.createElement('li');
       li.className = 'priority-item';
       li.dataset.cat = cat;
       li.dataset.idx = idx;
       li.innerHTML = `
         <input type="checkbox" ${item.done ? 'checked' : ''} />
-        <span class="priority-item-text${item.done ? ' done' : ''}">${esc(item.text)}</span>
+        <span class="priority-item-text">${esc(item.text)}</span>
+        <button class="priority-item-expand" aria-label="Añadir microtarea" title="Dividir en microtareas">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="11" height="11"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        </button>
         <button class="priority-item-del" aria-label="Eliminar">×</button>
+        <div class="priority-item-subtasks">
+          ${subtasks.length > 0 ? `<ul class="subtask-list">${subtasksHtml}</ul>` : ''}
+        </div>
       `;
+
+      // Main checkbox
       const cb = li.querySelector('input[type="checkbox"]');
       cb.addEventListener('change', () => {
         prioridades[cat][idx].done = cb.checked;
@@ -274,11 +298,71 @@ function renderPrioridades() {
         renderPrioridades();
         renderStats();
       });
+
+      // Delete main task
       li.querySelector('.priority-item-del').addEventListener('click', () => {
         prioridades[cat].splice(idx, 1);
         savePrioridades();
         renderPrioridades();
       });
+
+      // Expand: add microtarea
+      li.querySelector('.priority-item-expand').addEventListener('click', () => {
+        const subtasksDiv = li.querySelector('.priority-item-subtasks');
+        if (subtasksDiv.querySelector('.subtask-add-row')) return;
+
+        let subtaskList = subtasksDiv.querySelector('.subtask-list');
+        if (!subtaskList) {
+          subtaskList = document.createElement('ul');
+          subtaskList.className = 'subtask-list';
+          subtasksDiv.insertBefore(subtaskList, subtasksDiv.firstChild);
+        }
+
+        const addRow = document.createElement('div');
+        addRow.className = 'subtask-add-row';
+        addRow.innerHTML = `
+          <input class="subtask-add-input" type="text" placeholder="Paso pequeño..." maxlength="100" />
+          <button class="subtask-add-ok">OK</button>
+        `;
+        subtasksDiv.appendChild(addRow);
+        const stInput = addRow.querySelector('.subtask-add-input');
+        stInput.focus();
+
+        const confirmSt = () => {
+          const text = stInput.value.trim();
+          if (text) {
+            if (!prioridades[cat][idx].subtasks) prioridades[cat][idx].subtasks = [];
+            prioridades[cat][idx].subtasks.push({ id: uid(), text, done: false });
+            savePrioridades();
+            renderPrioridades();
+          } else {
+            addRow.remove();
+          }
+        };
+
+        addRow.querySelector('.subtask-add-ok').addEventListener('click', confirmSt);
+        stInput.addEventListener('keydown', e => {
+          if (e.key === 'Enter') confirmSt();
+          if (e.key === 'Escape') addRow.remove();
+        });
+      });
+
+      // Subtask checkboxes and delete buttons
+      li.querySelectorAll('.subtask-item').forEach(stEl => {
+        const si = parseInt(stEl.dataset.si, 10);
+        const stCb = stEl.querySelector('input[type="checkbox"]');
+        stCb.addEventListener('change', () => {
+          if (!prioridades[cat][idx].subtasks) return;
+          prioridades[cat][idx].subtasks[si].done = stCb.checked;
+          savePrioridades();
+        });
+        stEl.querySelector('.subtask-del').addEventListener('click', () => {
+          prioridades[cat][idx].subtasks.splice(si, 1);
+          savePrioridades();
+          renderPrioridades();
+        });
+      });
+
       listEl.appendChild(li);
     });
   });
@@ -341,13 +425,13 @@ function initDecision() {
     });
 
     if (allUnchecked.length === 0) {
-      highlight.textContent = '🎉 ¡Todo completado! No hay tareas pendientes.';
+      highlight.textContent = 'Todo completado. No hay tareas pendientes.';
       highlight.style.display = 'block';
       return;
     }
 
     const picked = allUnchecked[Math.floor(Math.random() * allUnchecked.length)];
-    highlight.textContent = `🎯 Ahora mismo: ${picked}`;
+    highlight.textContent = `Ahora mismo: ${picked}`;
     highlight.style.display = 'block';
   });
 }
@@ -853,6 +937,169 @@ function renderStats() {
 }
 
 /* ============================================================
+   POMODORO
+   ============================================================ */
+
+function playAlarm(type) {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const notes = type === 'soft'
+      ? [{ t: 0, f: 660, v: 0.3, d: 0.3 }, { t: 0.45, f: 660, v: 0.3, d: 0.3 }, { t: 0.9, f: 880, v: 0.4, d: 0.4 }]
+      : [{ t: 0, f: 880, v: 0.6, d: 0.25 }, { t: 0.35, f: 880, v: 0.6, d: 0.25 }, { t: 0.7, f: 1100, v: 0.7, d: 0.3 }, { t: 1.1, f: 1100, v: 0.7, d: 0.3 }, { t: 1.5, f: 1320, v: 0.8, d: 0.5 }];
+
+    notes.forEach(({ t, f, v, d }) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.frequency.value = f;
+      osc.type = 'sine';
+      gain.gain.setValueAtTime(v, ctx.currentTime + t);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + t + d);
+      osc.start(ctx.currentTime + t);
+      osc.stop(ctx.currentTime + t + d + 0.05);
+    });
+  } catch (e) { /* AudioContext unavailable — silent */ }
+}
+
+function formatPomodoroTime(secs) {
+  const m = Math.floor(secs / 60).toString().padStart(2, '0');
+  const s = (secs % 60).toString().padStart(2, '0');
+  return `${m}:${s}`;
+}
+
+function updatePomodoroDisplay() {
+  const timerEl = document.getElementById('pomodoroTimer');
+  const phaseEl = document.getElementById('pomodoroPhase');
+  if (timerEl) timerEl.textContent = formatPomodoroTime(pomodoroSeconds);
+  if (phaseEl) {
+    if (!pomodoroInterval) {
+      phaseEl.textContent = '';
+    } else {
+      phaseEl.textContent = pomodoroPhase === 'work' ? 'Trabajando' : 'Descanso';
+    }
+  }
+}
+
+function initPomodoro() {
+  const toggle = document.getElementById('pomodoroToggle');
+  if (!toggle) return;
+
+  toggle.addEventListener('change', () => {
+    if (toggle.checked) {
+      pomodoroSeconds = 25 * 60;
+      pomodoroPhase = 'work';
+      updatePomodoroDisplay();
+
+      pomodoroInterval = setInterval(() => {
+        pomodoroSeconds--;
+        updatePomodoroDisplay();
+
+        if (pomodoroSeconds <= 0) {
+          if (pomodoroPhase === 'work') {
+            playAlarm('soft');
+            pomodoroPhase = 'break';
+            pomodoroSeconds = 5 * 60;
+          } else {
+            playAlarm('loud');
+            clearInterval(pomodoroInterval);
+            pomodoroInterval = null;
+            pomodoroSeconds = 25 * 60;
+            pomodoroPhase = 'work';
+            toggle.checked = false;
+            updatePomodoroDisplay();
+          }
+        }
+      }, 1000);
+    } else {
+      if (pomodoroInterval) {
+        clearInterval(pomodoroInterval);
+        pomodoroInterval = null;
+      }
+      pomodoroSeconds = 25 * 60;
+      pomodoroPhase = 'work';
+      updatePomodoroDisplay();
+    }
+  });
+}
+
+/* ============================================================
+   BULK AUTO-PRIORITIZE
+   ============================================================ */
+
+const PRIORITY_WORDS = {
+  dinero: ['factura', 'cobrar', 'cobro', 'pago', 'pagos', 'presupuesto', 'propuesta',
+           'urgente', 'dinero', 'precio', 'contrato', 'hoy', 'deadline', 'vence',
+           'llamar', 'invoice', 'cargo', 'ingreso', 'honorarios'],
+  clientes: ['ae', 'casa bella', 'roscónlab', 'roscónlab', 'cliente', 'clientes',
+             'reunión', 'entrega', 'revisión', 'corrección', 'feedback',
+             'enviar a', 'llamada', 'responder', 'email a', 'proyecto'],
+  marca: ['instagram', 'newsletter', 'blog', 'marca', 'contenido', 'web',
+          'linkedin', 'canva', 'diseño', 'post', 'stories', 'reel',
+          'portfolio', 'branding', 'foto', 'vídeo', 'podcast', 'publicar', 'social'],
+};
+
+function assignCategory(taskText) {
+  const text = taskText.toLowerCase();
+  const scores = { dinero: 0, clientes: 0, marca: 0 };
+  for (const [cat, words] of Object.entries(PRIORITY_WORDS)) {
+    for (const word of words) {
+      if (text.includes(word)) scores[cat] += 1;
+    }
+  }
+  const max = Math.max(...Object.values(scores));
+  if (max === 0) return null;
+  return Object.entries(scores).find(([, v]) => v === max)[0];
+}
+
+function initBulkPrioritize() {
+  const btn = document.getElementById('bulkPrioritizeBtn');
+  if (!btn) return;
+
+  btn.addEventListener('click', () => {
+    const textarea = document.getElementById('bulkTasksInput');
+    const lines = textarea.value.split('\n').map(l => l.trim()).filter(Boolean);
+    if (lines.length === 0) return;
+
+    const added = { dinero: 0, clientes: 0, marca: 0 };
+    let unmatched = 0;
+
+    lines.forEach(text => {
+      let cat = assignCategory(text);
+      if (!cat) {
+        // Distribute to the least-full bucket
+        const counts = {
+          dinero: (prioridades.dinero || []).length + added.dinero,
+          clientes: (prioridades.clientes || []).length + added.clientes,
+          marca: (prioridades.marca || []).length + added.marca,
+        };
+        cat = Object.entries(counts).sort((a, b) => a[1] - b[1])[0][0];
+        unmatched++;
+      }
+      if (!prioridades[cat]) prioridades[cat] = [];
+      prioridades[cat].push({ id: uid(), text, done: false, subtasks: [] });
+      added[cat]++;
+    });
+
+    savePrioridades();
+    renderPrioridades();
+    textarea.value = '';
+
+    const total = lines.length;
+    const msg = unmatched > 0
+      ? `${total} tareas añadidas. ${unmatched} distribuidas por equilibrio (sin palabras clave claras).`
+      : `${total} tareas clasificadas automáticamente.`;
+
+    const highlight = document.getElementById('decisionHighlight');
+    if (highlight) {
+      highlight.textContent = msg;
+      highlight.style.display = 'block';
+      setTimeout(() => { highlight.style.display = 'none'; }, 4000);
+    }
+  });
+}
+
+/* ============================================================
    IMAGE ERROR HANDLING
    ============================================================ */
 function initImageFallbacks() {
@@ -908,6 +1155,8 @@ document.addEventListener('DOMContentLoaded', () => {
   initMorningChecks();
   initPrioridades();
   initDecision();
+  initPomodoro();
+  initBulkPrioritize();
   initClientes();
   initContenido();
   initBienestar();

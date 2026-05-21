@@ -126,58 +126,159 @@
         <img src="images/nati-writing.png" alt="Nati escribiendo" class="header-illustration" id="natiWritingImg" />
       </div>
 
-      <!-- Arranque del día -->
-      <div class="card" id="arranqueCard">
-        <h2 class="card-title">Arranque del día ☀️</h2>
-        <ul class="check-list" id="morningChecks">
-          <li class="check-item">
-            <label class="check-label">
-              <input type="checkbox" class="morning-check" data-key="t4" />
-              <span class="check-text">Tomar T4 💊</span>
-            </label>
-          </li>
-          <li class="check-item">
-            <label class="check-label">
-              <input type="checkbox" class="morning-check" data-key="elvanse" />
-              <span class="check-text">Tomar Elvanse + Desayuno ☕ (30 min)</span>
-            </label>
-          </li>
-          <li class="check-item">
-            <label class="check-label">
-              <input type="checkbox" class="morning-check" data-key="estiramientos" />
-              <span class="check-text">Estiramientos (08:30h) 🎯</span>
-            </label>
-          </li>
-        </ul>
-      </div>
+      <!-- 3-col top grid: Arranque | Accesos Rápidos | Spotify + Pomodoro -->
+      <div class="dashboard-top-grid">
 
-      <!-- Prioridades -->
+        <!-- Col 1: Arranque del día -->
+        <div class="card" id="arranqueCard">
+          <h2 class="card-title">Arranque del día</h2>
+          <ul class="check-list" id="morningChecks">
+            <li class="check-item">
+              <label class="check-label">
+                <input type="checkbox" class="morning-check" data-key="t4" />
+                <span class="check-text">Tomar T4</span>
+              </label>
+            </li>
+            <li class="check-item">
+              <label class="check-label">
+                <input type="checkbox" class="morning-check" data-key="elvanse" />
+                <span class="check-text">Tomar Elvanse + Desayuno (30 min)</span>
+              </label>
+            </li>
+            <li class="check-item">
+              <label class="check-label">
+                <input type="checkbox" class="morning-check" data-key="estiramientos" />
+                <span class="check-text">Estiramientos (08:30h)</span>
+              </label>
+            </li>
+          </ul>
+        </div>
+
+        <!-- Col 2: Accesos Rápidos -->
+        <div class="quick-access-card">
+          <h2 class="quick-access-title">Accesos Rápidos</h2>
+          <div class="quick-access-grid">
+            <a class="quick-access-item" href="https://mail.google.com" target="_blank" rel="noopener noreferrer" aria-label="Gmail">
+              <div class="quick-access-circle">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="26" height="26"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 7l10 7 10-7"/></svg>
+              </div>
+              <span class="quick-access-label">Gmail</span>
+            </a>
+            <a class="quick-access-item" href="https://drive.google.com" target="_blank" rel="noopener noreferrer" aria-label="Google Drive">
+              <div class="quick-access-circle">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="26" height="26"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0018 9h-1.26A8 8 0 103 16.3"/></svg>
+              </div>
+              <span class="quick-access-label">Drive</span>
+            </a>
+            <a class="quick-access-item" href="https://business.facebook.com" target="_blank" rel="noopener noreferrer" aria-label="Meta Business">
+              <div class="quick-access-circle">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="26" height="26"><path d="M12 12c-2-2.5-4-4-6-4a4 4 0 000 8c2 0 4-1.5 6-4z"/><path d="M12 12c2-2.5 4-4 6-4a4 4 0 010 8c-2 0-4-1.5-6-4z"/></svg>
+              </div>
+              <span class="quick-access-label">Meta</span>
+            </a>
+            <a class="quick-access-item" href="https://www.facturadirecta.com/" target="_blank" rel="noopener noreferrer" aria-label="Factura Directa">
+              <div class="quick-access-circle">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="26" height="26"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="12" y2="17"/></svg>
+              </div>
+              <span class="quick-access-label">Facturas</span>
+            </a>
+            <a class="quick-access-item" href="https://admin.cdmon.com/es/inicio" target="_blank" rel="noopener noreferrer" aria-label="CDMON">
+              <div class="quick-access-circle">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="26" height="26"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 010 20M12 2a15.3 15.3 0 000 20"/></svg>
+              </div>
+              <span class="quick-access-label">CDMON</span>
+            </a>
+            <a class="quick-access-item" href="https://canva.com" target="_blank" rel="noopener noreferrer" aria-label="Canva">
+              <div class="quick-access-circle">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="26" height="26"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125A1.64 1.64 0 0115.28 17h1.996c3.051 0 5.555-2.503 5.555-5.554C22.83 6.012 17.961 2 12 2z"/><circle cx="7" cy="12" r="1.1" fill="currentColor" stroke="none"/><circle cx="9.5" cy="8" r="1.1" fill="currentColor" stroke="none"/><circle cx="14.5" cy="7" r="1.1" fill="currentColor" stroke="none"/><circle cx="18" cy="11" r="1.1" fill="currentColor" stroke="none"/></svg>
+              </div>
+              <span class="quick-access-label">Canva</span>
+            </a>
+          </div>
+        </div>
+
+        <!-- Col 3: Spotify + Pomodoro -->
+        <div class="right-sidebar-col">
+
+          <!-- Spotify widget -->
+          <div class="card spotify-widget">
+            <a class="spotify-open-link" href="https://open.spotify.com/search/bts%20chill/playlists" target="_blank" rel="noopener noreferrer" aria-label="Abrir Focus Music en Spotify">
+              <div class="spotify-controls">
+                <button class="spotify-ctrl-btn" tabindex="-1" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/></svg>
+                </button>
+                <button class="spotify-ctrl-btn" tabindex="-1" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" width="16" height="16"><polygon points="19 20 9 12 19 4 19 20" fill="currentColor"/><rect x="5" y="4" width="2" height="16" fill="currentColor"/></svg>
+                </button>
+                <div class="spotify-play-btn">
+                  <svg viewBox="0 0 24 24" width="20" height="20"><polygon points="5 3 19 12 5 21 5 3" fill="currentColor"/></svg>
+                </div>
+                <button class="spotify-ctrl-btn" tabindex="-1" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" width="16" height="16"><polygon points="5 4 15 12 5 20 5 4" fill="currentColor"/><rect x="17" y="4" width="2" height="16" fill="currentColor"/></svg>
+                </button>
+                <button class="spotify-ctrl-btn" tabindex="-1" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 014-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 01-4 4H3"/></svg>
+                </button>
+              </div>
+              <span class="spotify-label">Focus Music</span>
+            </a>
+          </div>
+
+          <!-- Pomodoro widget -->
+          <div class="card pomodoro-widget">
+            <div class="pomodoro-timer" id="pomodoroTimer">25:00</div>
+            <div class="pomodoro-phase-label" id="pomodoroPhase"></div>
+            <div class="pomodoro-toggle-row">
+              <label class="toggle-switch">
+                <input type="checkbox" id="pomodoroToggle" />
+                <span class="toggle-slider"></span>
+              </label>
+              <span class="pomodoro-label">Activar Pomodoro 25/5</span>
+            </div>
+          </div>
+
+        </div>
+      </div><!-- end dashboard-top-grid -->
+
+      <!-- Prioridades del día -->
       <div class="priorities-header">
         <h2 class="section-title">Prioridades del día</h2>
-        <button class="btn btn-ghost btn-sm" id="decisionBtn">🎲 Decisiones</button>
+        <button class="btn btn-ghost btn-sm" id="decisionBtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><rect x="2" y="2" width="20" height="20" rx="3"/><circle cx="8" cy="8" r="1.5" fill="currentColor" stroke="none"/><circle cx="16" cy="8" r="1.5" fill="currentColor" stroke="none"/><circle cx="8" cy="16" r="1.5" fill="currentColor" stroke="none"/><circle cx="16" cy="16" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/></svg>
+          Decisiones
+        </button>
       </div>
       <div class="decision-highlight" id="decisionHighlight" style="display:none;"></div>
 
       <div class="priorities-grid">
-        <!-- Prioridad 1 -->
         <div class="card priority-card" id="prio-dinero">
-          <h3 class="priority-title">Prioridad 1: Dinero 💰</h3>
+          <h3 class="priority-title">Prioridad A</h3>
           <ul class="priority-list" id="list-dinero"></ul>
           <button class="btn btn-ghost btn-xs add-prio-btn" data-cat="dinero">+ Añadir</button>
         </div>
-        <!-- Prioridad 2 -->
         <div class="card priority-card" id="prio-clientes">
-          <h3 class="priority-title">Prioridad 2: Clientes 👥</h3>
+          <h3 class="priority-title">Prioridad B</h3>
           <ul class="priority-list" id="list-clientes-prio"></ul>
           <button class="btn btn-ghost btn-xs add-prio-btn" data-cat="clientes">+ Añadir</button>
         </div>
-        <!-- Prioridad 3 -->
         <div class="card priority-card" id="prio-marca">
-          <h3 class="priority-title">Prioridad 3: Marca ✨</h3>
+          <h3 class="priority-title">Prioridad C</h3>
           <ul class="priority-list" id="list-marca"></ul>
           <button class="btn btn-ghost btn-xs add-prio-btn" data-cat="marca">+ Añadir</button>
         </div>
       </div>
+
+      <!-- Captura masiva de tareas -->
+      <div class="card bulk-capture-card">
+        <h2 class="card-title">Captura masiva de tareas</h2>
+        <p class="card-desc">Escribe todas tus tareas (una por línea). Las clasificamos en A, B o C según su tipo.</p>
+        <textarea class="bulk-textarea" id="bulkTasksInput" placeholder="Cobrar factura a cliente&#10;Escribir newsletter de Casa Bella&#10;Publicar en Instagram&#10;Revisar propuesta..." rows="4"></textarea>
+        <button class="btn btn-primary btn-sm" id="bulkPrioritizeBtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+          Priorizar automáticamente
+        </button>
+      </div>
+
     </section>
 
     <!-- ==================== SCREEN: CLIENTES ==================== -->
@@ -220,7 +321,7 @@
       <div class="screen-header">
         <div class="header-text">
           <h1 class="screen-title">Bienestar</h1>
-          <p class="screen-subtitle">Cuídate, Nati 🌿</p>
+          <p class="screen-subtitle">Cuídate, Nati</p>
         </div>
         <img src="images/nati-cats.png" alt="Nati con Ula y Kai" class="header-illustration" id="natiCatsImg" />
       </div>
@@ -231,32 +332,35 @@
           <li class="check-item">
             <label class="check-label">
               <input type="checkbox" class="bienestar-check" data-key="mandalas" />
-              <span class="check-text">🎨 Mandalas (libro nuevo)</span>
+              <span class="check-text">Mandalas (libro nuevo)</span>
             </label>
           </li>
           <li class="check-item">
             <label class="check-label">
               <input type="checkbox" class="bienestar-check" data-key="sol" />
-              <span class="check-text">☀️ Salir 10 min al sol</span>
+              <span class="check-text">Salir al sol (10 min)</span>
             </label>
           </li>
           <li class="check-item">
             <label class="check-label">
               <input type="checkbox" class="bienestar-check" data-key="coreano" />
-              <span class="check-text">🌸 Coreano</span>
+              <span class="check-text">Coreano</span>
             </label>
           </li>
           <li class="check-item">
             <label class="check-label">
               <input type="checkbox" class="bienestar-check" data-key="kickboxing" />
-              <span class="check-text">🥊 Kickboxing</span>
+              <span class="check-text">Kickboxing</span>
             </label>
           </li>
         </ul>
       </div>
 
       <div class="bienestar-close-section">
-        <button class="btn btn-close-day" id="closeDayBtn">😴 Hora de cerrar</button>
+        <button class="btn btn-close-day" id="closeDayBtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
+          Hora de cerrar
+        </button>
       </div>
     </section>
 
@@ -336,7 +440,7 @@
   <div class="modal-overlay" id="capturaModal" style="display:none;" role="dialog" aria-modal="true" aria-label="Captura rápida de idea">
     <div class="modal">
       <div class="modal-header">
-        <h2 class="modal-title">⚡ Captura Completo</h2>
+        <h2 class="modal-title">Captura Completo</h2>
         <button class="modal-close" id="capturaModalClose" aria-label="Cerrar">×</button>
       </div>
       <textarea class="modal-textarea" id="capturaTextarea" placeholder="Escribe tu idea aquí..." rows="5"></textarea>
@@ -352,7 +456,7 @@
     <div class="lock-content">
       <img src="images/nati-cats.png" alt="Ula y Kai" class="lock-cats-img" />
       <h2 class="lock-title">Nati, hora de cerrar.</h2>
-      <p class="lock-subtitle">Kai y Ula te reclaman. 🐱</p>
+      <p class="lock-subtitle">Kai y Ula te reclaman.</p>
       <div class="lock-btn-wrap">
         <button class="lock-hold-btn" id="lockHoldBtn" oncontextmenu="return false;">
           <span class="lock-hold-text">Mantén pulsado 5s para volver</span>
