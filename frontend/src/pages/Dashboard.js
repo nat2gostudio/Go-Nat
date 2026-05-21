@@ -277,16 +277,15 @@ export default function Dashboard() {
         <div className="lg:col-span-5 space-y-6">
           
           {/* IMAGE CARD (NeuroAlly / Focus Mode) */}
-          <div className="bg-[#050505] rounded-2xl overflow-hidden shadow-md relative group border border-blue-900/30">
-            <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-transparent to-transparent z-10 opacity-80 pointer-events-none"></div>
+          <div className="bg-transparent flex flex-col items-center justify-center p-2 mb-2">
             <img 
               src="https://customer-assets.emergentagent.com/job_studio-minimal-15/artifacts/fg0hd3z4_nat_nat2gostudio_neuroally.png" 
               alt="NeuroAlly Flow"
-              className="w-full h-48 object-cover object-center opacity-90 group-hover:opacity-100 transition-opacity duration-500"
+              className="w-full h-48 object-contain object-center opacity-90 hover:opacity-100 hover:scale-105 transition-all duration-500 drop-shadow-md"
             />
-            <div className="absolute bottom-4 left-5 z-20">
-               <h3 className="text-white/90 font-medium tracking-wide">NeuroAlly Flow</h3>
-               <p className="text-blue-400 text-xs font-medium tracking-widest uppercase mt-0.5">Espacio libre de ruido</p>
+            <div className="mt-3 text-center">
+               <h3 className="text-blue-900 dark:text-blue-300 font-semibold tracking-wide">NeuroAlly Flow</h3>
+               <p className="text-blue-600/80 dark:text-blue-400/80 text-[10px] font-bold tracking-widest uppercase mt-1">Espacio libre de ruido</p>
             </div>
           </div>
 
