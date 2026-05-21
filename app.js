@@ -1273,6 +1273,37 @@ function initImageFallbacks() {
   });
 }
 
+/**
+ * Initialize accordion blocks with collapse/expand functionality
+ */
+function initAccordions() {
+  const accordionCards = document.querySelectorAll('.card--accordion');
+
+  accordionCards.forEach(card => {
+    const header = card.querySelector('.card-header');
+    if (!header) return;
+
+    header.addEventListener('click', () => {
+      card.classList.toggle('collapsed');
+      // Save accordion state to localStorage
+      const cardId = card.id;
+      if (cardId) {
+        const isCollapsed = card.classList.contains('collapsed');
+        lsSet(`accordion_${cardId}`, isCollapsed);
+      }
+    });
+
+    // Restore accordion state from localStorage
+    const cardId = card.id;
+    if (cardId) {
+      const wasCollapsed = lsGet(`accordion_${cardId}`, false);
+      if (wasCollapsed) {
+        card.classList.add('collapsed');
+      }
+    }
+  });
+}
+
 /* ============================================================
    MAIN INIT
    ============================================================ */
@@ -1312,6 +1343,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Initialize navigation
   initNav();
+
+  // Initialize accordion blocks
+  initAccordions();
 
   // Initialize all screens
   renderGreeting();

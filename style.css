@@ -1981,6 +1981,66 @@ body.dark .quick-access-circle {
   letter-spacing: 0.5px;
 }
 
+/* ---------- Accordion Blocks ---------- */
+.card--accordion {
+  position: relative;
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.card-header:hover {
+  opacity: 0.8;
+}
+
+.card-header-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.card-title--accordion {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.card-toggle-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  color: var(--text-muted);
+  transition: transform var(--transition);
+  flex-shrink: 0;
+}
+
+.card.collapsed .card-toggle-icon {
+  transform: rotate(-90deg);
+}
+
+.card-content {
+  max-height: 1000px;
+  overflow: hidden;
+  transition: max-height var(--transition), opacity var(--transition), padding var(--transition);
+  opacity: 1;
+  padding-top: 14px;
+}
+
+.card.collapsed .card-content {
+  max-height: 0;
+  opacity: 0;
+  padding-top: 0;
+}
+
 /* ---------- Responsive: tablet ---------- */
 @media (max-width: 1000px) {
   .dashboard-top-grid {
