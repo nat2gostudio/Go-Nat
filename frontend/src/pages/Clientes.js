@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Plus, Search, Calendar, FileText, X, RotateCcw, Link2, ExternalLink, CheckSquare } from 'lucide-react';
+import { Plus, Search, Calendar, FileText, X, RotateCcw, ExternalLink, ChevronDown } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Card, CardContent } from '../components/ui/card';
@@ -214,9 +214,10 @@ export default function Clientes() {
             const isWebOrNeuro = ['Web_Mantenimiento', 'NeuroAlly_PRO'].includes(client.service_type);
             const isNeuroPro = client.service_type === 'NeuroAlly_PRO';
             
+            const newslettersCompleted = (client.newsletters_count || 0) >= 2;
+            
             return (
               <Card key={client.id} className="shadow-none flex flex-col group relative overflow-hidden">
-                {/* Visual Progress Bar at the top */}
                 <div className="absolute top-0 left-0 right-0 h-1 bg-secondary/10">
                   <div className={`h-full transition-all duration-500 ${urgency.color}`} style={{ width: `${urgency.percent}%` }} />
                 </div>
@@ -256,131 +257,144 @@ export default function Clientes() {
                     </div>
                   </div>
 
-                  {/* Tracker Web_Mantenimiento / NeuroAlly_PRO */}
-                  {isWebOrNeuro && (
-                    <div className="mb-5 bg-blue-50/50 dark:bg-blue-900/10 p-3 rounded-lg border border-blue-100 dark:border-blue-900/30">
-                      <p className="text-xs font-semibold uppercase tracking-widest text-blue-700 dark:text-blue-400 mb-3">Mantenimiento Mensual</p>
-                      
-                      <div className="flex items-center justify-between bg-white dark:bg-card p-2 rounded-md border shadow-sm mb-3">
-                        <div>
-                          <span className="text-sm font-medium text-foreground">Newsletters</span>
-                          <p className="text-xs text-secondary">{client.newsletters_count || 0} de 2 completadas</p>
-                        </div>
-                        <Button 
-                          size="sm" 
-                          variant={(client.newsletters_count || 0) >= 2 ? "outline" : "secondary"}
-                          className={`h-8 ${((client.newsletters_count || 0) >= 2) ? 'border-emerald-200 text-emerald-700 bg-emerald-50 hover:bg-emerald-100' : ''}`}
-                          onClick={() => updateClientField(client.id, 'newsletters_count', (client.newsletters_count || 0) + 1)}
-                        >
-                          <Plus size={14} className="mr-1" /> 1 Newsletter
-                        </Button>
-                      </div>
-
-                      <div className="flex gap-4 px-1">
-                        <label className="flex items-center gap-2 cursor-pointer">
-                          <input 
-                            type="checkbox" 
-                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-600 w-4 h-4"
-                            checked={client.blog_done || false}
-                            onChange={() => updateClientField(client.id, 'blog_done', !client.blog_done)}
-                          />
-                          <span className="text-sm font-medium">Blog</span>
-                        </label>
-                        <label className="flex items-center gap-2 cursor-pointer">
-                          <input 
-                            type="checkbox" 
-                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-600 w-4 h-4"
-                            checked={client.banners_done || false}
-                            onChange={() => updateClientField(client.id, 'banners_done', !client.banners_done)}
-                          />
-                          <span className="text-sm font-medium">Banners</span>
-                        </label>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Checklist NeuroAlly PRO */}
-                  {isNeuroPro && client.checklist && client.checklist.length > 0 && (
-                    <div className="mb-5 space-y-2">
-                      <p className="text-xs font-semibold uppercase tracking-widest text-secondary flex items-center gap-1">
-                        <CheckSquare size={12} /> Checklist Setup
-                      </p>
-                      <div className="space-y-1">
-                        {client.checklist.map(item => (
-                          <label key={item.id} className="flex items-center gap-2 cursor-pointer p-1.5 hover:bg-muted/50 rounded-md transition-colors">
-                            <input 
-                              type="checkbox" 
-                              className="rounded border-gray-300 text-primary focus:ring-primary w-4 h-4 shrink-0"
-                              checked={item.done}
-                              onChange={() => toggleChecklistItem(client.id, client.checklist, item.id)}
-                            />
-                            <span className={`text-sm ${item.done ? 'text-secondary line-through' : 'font-medium'}`}>
-                              {item.text}
-                            </span>
-                          </label>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Social Posts Tracker */}
-                  {hasSocial && (
-                    <div className="mb-5 bg-muted/20 p-3 rounded-lg border">
-                      <div className="flex items-center justify-between mb-3">
-                        <p className="text-xs font-semibold uppercase tracking-widest text-secondary">RRSS Semanal</p>
-                        <button 
-                          onClick={() => resetWeeklyPosts(client.id, socialData)}
-                          className="text-secondary hover:text-primary transition-colors flex items-center gap-1"
-                          title="Poner contadores a 0"
-                        >
-                          <RotateCcw size={12} />
-                          <span className="text-[10px] uppercase">Reset</span>
-                        </button>
-                      </div>
-                      
-                      <div className="space-y-3">
-                        {Object.entries(socialData).map(([network, data]) => {
-                          if (!data || data.target <= 0) return null;
-                          const percent = Math.min(100, (data.completed / data.target) * 100);
-                          const isComplete = data.completed >= data.target;
-                          
-                          return (
-                            <div key={network} className="flex items-center gap-3">
-                              <div className="flex-1">
-                                <div className="flex justify-between text-xs mb-1">
-                                  <span className="font-medium text-secondary">{networkLabels[network]}</span>
-                                  <span className={isComplete ? "text-emerald-600 font-semibold" : "text-secondary"}>
-                                    {data.completed} de {data.target}
-                                  </span>
-                                </div>
-                                <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-                                  <div 
-                                    className={`h-full transition-all duration-300 ${isComplete ? 'bg-emerald-500' : 'bg-primary'}`} 
-                                    style={{ width: `${percent}%` }} 
-                                  />
-                                </div>
-                              </div>
-                              <Button 
-                                size="sm" 
-                                variant={isComplete ? "outline" : "secondary"} 
-                                className={`h-7 w-20 shrink-0 text-xs ${isComplete ? 'border-emerald-200 text-emerald-700 bg-emerald-50 hover:bg-emerald-100' : ''}`}
-                                onClick={() => incrementPost(client.id, network, socialData)}
-                              >
-                                <Plus size={12} className="mr-1" /> 1 Post
-                              </Button>
+                  {/* Accordions for Tasks */}
+                  <div className="space-y-2 mb-5">
+                    
+                    {/* Tracker Web_Mantenimiento / NeuroAlly_PRO */}
+                    {isWebOrNeuro && (
+                      <details className="group border border-border rounded-lg bg-card overflow-hidden">
+                        <summary className="flex items-center justify-between p-3 cursor-pointer select-none hover:bg-muted/50 transition-colors">
+                          <span className="text-sm font-semibold uppercase tracking-widest text-secondary">Mantenimiento Mensual</span>
+                          <ChevronDown size={16} className="text-secondary transition-transform duration-200 group-open:rotate-180" />
+                        </summary>
+                        <div className="p-3 border-t bg-muted/10">
+                          {/* Newsletters Block */}
+                          <div className={`flex items-center justify-between p-3 rounded-md border mb-3 transition-colors ${newslettersCompleted ? 'bg-muted/50 grayscale opacity-70 border-dashed' : 'bg-card shadow-sm border-border'}`}>
+                            <div>
+                              <span className={`text-sm font-medium ${newslettersCompleted ? 'text-secondary' : 'text-foreground'}`}>Newsletters enviadas:</span>
+                              <span className="text-sm ml-2 text-secondary">{client.newsletters_count || 0} de 2</span>
                             </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              className="h-7 px-3 text-xs shadow-none"
+                              disabled={newslettersCompleted}
+                              onClick={() => updateClientField(client.id, 'newsletters_count', (client.newsletters_count || 0) + 1)}
+                            >
+                              +1
+                            </Button>
+                          </div>
+
+                          <div className="flex flex-col gap-2">
+                            <label className="flex items-center gap-3 cursor-pointer group/chk">
+                              <input 
+                                type="checkbox" 
+                                className="rounded border-gray-300 text-primary focus:ring-primary w-4 h-4 shrink-0"
+                                checked={client.blog_done || false}
+                                onChange={() => updateClientField(client.id, 'blog_done', !client.blog_done)}
+                              />
+                              <span className={`text-sm select-none ${client.blog_done ? 'text-secondary line-through' : 'font-medium group-hover/chk:text-primary'}`}>Artículo de Blog</span>
+                            </label>
+                            <label className="flex items-center gap-3 cursor-pointer group/chk">
+                              <input 
+                                type="checkbox" 
+                                className="rounded border-gray-300 text-primary focus:ring-primary w-4 h-4 shrink-0"
+                                checked={client.banners_done || false}
+                                onChange={() => updateClientField(client.id, 'banners_done', !client.banners_done)}
+                              />
+                              <span className={`text-sm select-none ${client.banners_done ? 'text-secondary line-through' : 'font-medium group-hover/chk:text-primary'}`}>Banners Mensuales</span>
+                            </label>
+                          </div>
+                        </div>
+                      </details>
+                    )}
+
+                    {/* Checklist NeuroAlly PRO */}
+                    {isNeuroPro && client.checklist && client.checklist.length > 0 && (
+                      <details className="group border border-border rounded-lg bg-card overflow-hidden">
+                        <summary className="flex items-center justify-between p-3 cursor-pointer select-none hover:bg-muted/50 transition-colors">
+                          <span className="text-sm font-semibold uppercase tracking-widest text-secondary">Checklist Setup</span>
+                          <ChevronDown size={16} className="text-secondary transition-transform duration-200 group-open:rotate-180" />
+                        </summary>
+                        <div className="p-3 border-t bg-muted/10 space-y-2">
+                          {client.checklist.map(item => (
+                            <label key={item.id} className="flex items-center gap-3 cursor-pointer group/chk select-none">
+                              <input 
+                                type="checkbox" 
+                                className="rounded border-gray-300 text-primary focus:ring-primary w-4 h-4 shrink-0"
+                                checked={item.done}
+                                onChange={() => toggleChecklistItem(client.id, client.checklist, item.id)}
+                              />
+                              <span className={`text-sm ${item.done ? 'text-secondary line-through' : 'font-medium group-hover/chk:text-primary'}`}>
+                                {item.text}
+                              </span>
+                            </label>
+                          ))}
+                        </div>
+                      </details>
+                    )}
+
+                    {/* Social Posts Tracker */}
+                    {hasSocial && (
+                      <details className="group border border-border rounded-lg bg-card overflow-hidden">
+                        <summary className="flex items-center justify-between p-3 cursor-pointer select-none hover:bg-muted/50 transition-colors">
+                          <span className="text-sm font-semibold uppercase tracking-widest text-secondary">RRSS Semanal</span>
+                          <ChevronDown size={16} className="text-secondary transition-transform duration-200 group-open:rotate-180" />
+                        </summary>
+                        <div className="p-3 border-t bg-muted/10 space-y-3">
+                          <div className="flex justify-end mb-1">
+                            <button 
+                              onClick={() => resetWeeklyPosts(client.id, socialData)}
+                              className="text-secondary hover:text-primary transition-colors flex items-center gap-1"
+                              title="Poner contadores a 0"
+                            >
+                              <RotateCcw size={12} />
+                              <span className="text-[10px] uppercase">Reset</span>
+                            </button>
+                          </div>
+                          {Object.entries(socialData).map(([network, data]) => {
+                            if (!data || data.target <= 0) return null;
+                            const percent = Math.min(100, (data.completed / data.target) * 100);
+                            const isComplete = data.completed >= data.target;
+                            
+                            return (
+                              <div key={network} className="flex items-center gap-3">
+                                <div className="flex-1">
+                                  <div className="flex justify-between text-xs mb-1">
+                                    <span className="font-medium text-secondary">{networkLabels[network]}</span>
+                                    <span className={isComplete ? "text-emerald-600 font-semibold" : "text-secondary"}>
+                                      {data.completed} de {data.target}
+                                    </span>
+                                  </div>
+                                  <div className="h-1.5 bg-border rounded-full overflow-hidden">
+                                    <div 
+                                      className={`h-full transition-all duration-300 ${isComplete ? 'bg-emerald-500' : 'bg-primary'}`} 
+                                      style={{ width: `${percent}%` }} 
+                                    />
+                                  </div>
+                                </div>
+                                <Button 
+                                  size="sm" 
+                                  variant="outline"
+                                  className={`h-7 w-12 shrink-0 px-0 shadow-none ${isComplete ? 'opacity-50 grayscale' : ''}`}
+                                  onClick={() => incrementPost(client.id, network, socialData)}
+                                >
+                                  +1
+                                </Button>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </details>
+                    )}
+                  </div>
 
                   <div className="border-t border-border pt-4 mt-auto">
                     <p className="text-xs font-medium text-secondary mb-3 uppercase tracking-widest">Enlaces Rápidos</p>
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                       {client.url_promos && (
                         <a href={client.url_promos} target="_blank" rel="noreferrer" className="col-span-2 sm:col-span-4 mb-1">
-                          <Button variant="outline" size="sm" className="w-full text-xs h-8 border-blue-200 text-blue-700 hover:bg-blue-50 dark:border-blue-900 dark:text-blue-400">
+                          <Button variant="outline" size="sm" className="w-full text-xs h-8 shadow-none bg-blue-50/50 border-blue-200 text-blue-700 hover:bg-blue-100 dark:bg-blue-900/10 dark:border-blue-900/50 dark:text-blue-400">
                             <ExternalLink size={12} className="mr-2" /> Promos del Mes
                           </Button>
                         </a>
@@ -388,22 +402,22 @@ export default function Clientes() {
                       
                       {client.links?.canva && (
                         <a href={client.links.canva} target="_blank" rel="noreferrer">
-                          <Button variant="outline" size="sm" className="w-full text-xs h-8">Canva</Button>
+                          <Button variant="outline" size="sm" className="w-full text-xs h-8 shadow-none">Canva</Button>
                         </a>
                       )}
                       {client.links?.meta && (
                         <a href={client.links.meta} target="_blank" rel="noreferrer">
-                          <Button variant="outline" size="sm" className="w-full text-xs h-8">Meta</Button>
+                          <Button variant="outline" size="sm" className="w-full text-xs h-8 shadow-none">Meta</Button>
                         </a>
                       )}
                       {client.links?.web && (
                         <a href={client.links.web} target="_blank" rel="noreferrer">
-                          <Button variant="outline" size="sm" className="w-full text-xs h-8">Web</Button>
+                          <Button variant="outline" size="sm" className="w-full text-xs h-8 shadow-none">Web</Button>
                         </a>
                       )}
                       {client.links?.other && (
                         <a href={client.links.other} target="_blank" rel="noreferrer">
-                          <Button variant="outline" size="sm" className="w-full text-xs h-8">Otros</Button>
+                          <Button variant="outline" size="sm" className="w-full text-xs h-8 shadow-none">Otros</Button>
                         </a>
                       )}
                       {(!client.links || (!client.links.canva && !client.links.meta && !client.links.web && !client.links.other && !client.url_promos)) && (
@@ -484,7 +498,7 @@ export default function Clientes() {
                         <Input 
                           type="number" 
                           min="0" 
-                          className="h-8 text-sm"
+                          className="h-8 text-sm shadow-none"
                           value={formData.social_posts[key].target} 
                           onChange={e => handleSocialTargetChange(key, e.target.value)} 
                         />
@@ -498,25 +512,25 @@ export default function Clientes() {
                   
                   <div className="space-y-2 mb-4 bg-blue-50/50 dark:bg-blue-900/10 p-3 rounded-lg border border-blue-100 dark:border-blue-900/30">
                     <label className="text-xs font-semibold text-blue-700 dark:text-blue-400">URL Promos del Mes</label>
-                    <Input placeholder="https://..." value={formData.url_promos} onChange={e => setFormData({...formData, url_promos: e.target.value})} className="bg-white dark:bg-card" />
+                    <Input placeholder="https://..." value={formData.url_promos} onChange={e => setFormData({...formData, url_promos: e.target.value})} className="bg-white dark:bg-card shadow-none" />
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="space-y-1">
                       <label className="text-xs font-medium">Canva</label>
-                      <Input placeholder="https://canva.com/..." value={formData.links.canva} onChange={e => handleLinkChange('canva', e.target.value)} />
+                      <Input placeholder="https://canva.com/..." value={formData.links.canva} onChange={e => handleLinkChange('canva', e.target.value)} className="shadow-none" />
                     </div>
                     <div className="space-y-1">
                       <label className="text-xs font-medium">Meta Business</label>
-                      <Input placeholder="https://business.facebook.com/..." value={formData.links.meta} onChange={e => handleLinkChange('meta', e.target.value)} />
+                      <Input placeholder="https://business.facebook.com/..." value={formData.links.meta} onChange={e => handleLinkChange('meta', e.target.value)} className="shadow-none" />
                     </div>
                     <div className="space-y-1">
                       <label className="text-xs font-medium">Página Web</label>
-                      <Input placeholder="https://..." value={formData.links.web} onChange={e => handleLinkChange('web', e.target.value)} />
+                      <Input placeholder="https://..." value={formData.links.web} onChange={e => handleLinkChange('web', e.target.value)} className="shadow-none" />
                     </div>
                     <div className="space-y-1">
                       <label className="text-xs font-medium">Otros (Drive, Edit...)</label>
-                      <Input placeholder="https://..." value={formData.links.other} onChange={e => handleLinkChange('other', e.target.value)} />
+                      <Input placeholder="https://..." value={formData.links.other} onChange={e => handleLinkChange('other', e.target.value)} className="shadow-none" />
                     </div>
                   </div>
                 </div>
