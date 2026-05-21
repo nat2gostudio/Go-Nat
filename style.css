@@ -220,15 +220,20 @@ img.img-error {
 /* ---------- Screen Header ---------- */
 .screen-header {
   display: flex;
+  flex-direction: column;
   align-items: flex-start;
-  justify-content: space-between;
   margin-bottom: 28px;
-  gap: 16px;
+  gap: 12px;
+  padding-top: 16px;
+  background-color: rgba(255, 0, 0, 0.1);
+  padding: 16px;
+  border-radius: 8px;
 }
 
 .header-text {
   flex: 1;
   min-width: 0;
+  order: 2;
 }
 
 .greeting {
@@ -258,16 +263,17 @@ img.img-error {
 }
 
 .header-illustration {
-  width: 180px;
-  max-width: 180px;
+  width: 120px;
+  max-width: 120px;
   object-fit: contain;
   flex-shrink: 0;
   border-radius: var(--radius-sm);
+  order: 1;
 }
 
 .header-illustration--sm {
-  width: 140px;
-  max-width: 140px;
+  width: 120px;
+  max-width: 120px;
 }
 
 /* ---------- Cards ---------- */
@@ -793,7 +799,7 @@ body.dark .btn-close-day {
 /* ---------- Kanban Board ---------- */
 .kanban-board {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
   gap: 16px;
   align-items: start;
   padding-bottom: 40px;
@@ -1493,7 +1499,7 @@ body.dark .btn-close-day {
 /* ---------- Dashboard Top Grid ---------- */
 .dashboard-top-grid {
   display: grid;
-  grid-template-columns: 1fr 1.4fr 1fr;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 16px;
   margin-bottom: 20px;
   align-items: start;
@@ -1981,10 +1987,70 @@ body.dark .quick-access-circle {
   letter-spacing: 0.5px;
 }
 
+/* ---------- Accordion Blocks ---------- */
+.card--accordion {
+  position: relative;
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.card-header:hover {
+  opacity: 0.8;
+}
+
+.card-header-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.card-title--accordion {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.card-toggle-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  color: var(--text-muted);
+  transition: transform var(--transition);
+  flex-shrink: 0;
+}
+
+.card.collapsed .card-toggle-icon {
+  transform: rotate(-90deg);
+}
+
+.card-content {
+  max-height: 1000px;
+  overflow: hidden;
+  transition: max-height var(--transition), opacity var(--transition), padding var(--transition);
+  opacity: 1;
+  padding-top: 14px;
+}
+
+.card.collapsed .card-content {
+  max-height: 0;
+  opacity: 0;
+  padding-top: 0;
+}
+
 /* ---------- Responsive: tablet ---------- */
 @media (max-width: 1000px) {
   .dashboard-top-grid {
-    grid-template-columns: 1fr 1.2fr;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
   }
   .right-sidebar-col {
     grid-column: 1 / -1;
