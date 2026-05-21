@@ -7,7 +7,8 @@ load_dotenv()
 
 from fastapi import FastAPI, HTTPException, Depends, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse, FileResponse
+from fastapi.staticfiles import StaticFiles
 from pymongo import MongoClient
 from bson.objectid import ObjectId
 import bcrypt
@@ -23,18 +24,22 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 app = FastAPI()
 
+APP_URL = os.environ.get("APP_URL", "").rstrip("/")
+SECURE_COOKIES = APP_URL.startswith("https://")
+
+_cors_origins = ["http://localhost:3000", "http://localhost:8000"]
+if APP_URL:
+    _cors_origins.append(APP_URL)
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        os.environ.get("REACT_APP_BACKEND_URL", "http://localhost:3000").rstrip("/")
-    ],
+    allow_origins=_cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-MONGO_URL = os.environ.get("MONGO_URL", "mongodb://localhost:27017")
+MONGO_URL = os.environ.get("MONGO_URL") or os.environ.get("MONGODB_URL", "mongodb://localhost:27017")
 DB_NAME = os.environ.get("DB_NAME", "test_database")
 client = MongoClient(MONGO_URL)
 db = client[DB_NAME]
@@ -174,8 +179,8 @@ def login(creds: UserLogin, response: Response):
     access_token = create_access_token(user_id, user["email"])
     refresh_token = create_refresh_token(user_id)
     
-    response.set_cookie(key="access_token", value=access_token, httponly=True, secure=False, samesite="lax", max_age=3600, path="/")
-    response.set_cookie(key="refresh_token", value=refresh_token, httponly=True, secure=False, samesite="lax", max_age=604800, path="/")
+    response.set_cookie(key="access_token", value=access_token, httponly=True, secure=SECURE_COOKIES, samesite="lax", max_age=3600, path="/")
+    response.set_cookie(key="refresh_token", value=refresh_token, httponly=True, secure=SECURE_COOKIES, samesite="lax", max_age=604800, path="/")
     
     u = format_doc(user)
     u.pop("password_hash", None)
@@ -190,6 +195,14 @@ def logout(response: Response):
 @app.get("/api/auth/me")
 def get_me(user: dict = Depends(get_current_user)):
     return user
+
+@app.get("/api/health")
+def health_check():
+    try:
+        client.admin.command("ping")
+        return {"status": "ok"}
+    except Exception:
+        raise HTTPException(status_code=503, detail="Database unavailable")
 
 # --- CRUD ENDPOINTS ---
 
@@ -323,7 +336,10 @@ def delete_admin_task(task_id: str, user: dict = Depends(get_current_user)):
 # --- GOOGLE CALENDAR ENDPOINTS ---
 CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID")
 CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET")
-REDIRECT_URI = os.environ.get("REACT_APP_BACKEND_URL", "http://localhost:8001") + "/api/auth/google/callback"
+
+def _get_redirect_uri(request: Request) -> str:
+    base = APP_URL or str(request.base_url).rstrip("/")
+    return f"{base}/api/auth/google/callback"
 
 def get_google_creds(user_email: str):
     user = db.users.find_one({"email": user_email})
@@ -346,10 +362,11 @@ def get_google_creds(user_email: str):
     return creds
 
 @app.get("/api/auth/google/login")
-def google_login(user: dict = Depends(get_current_user)):
+def google_login(request: Request, user: dict = Depends(get_current_user)):
     if not CLIENT_ID or not CLIENT_SECRET:
         raise HTTPException(status_code=400, detail="Google credentials not configured")
-    
+
+    redirect_uri = _get_redirect_uri(request)
     flow = Flow.from_client_config({
         "web": {
             "client_id": CLIENT_ID,
@@ -357,36 +374,36 @@ def google_login(user: dict = Depends(get_current_user)):
             "auth_uri": "https://accounts.google.com/o/oauth2/auth",
             "token_uri": "https://oauth2.googleapis.com/token"
         }
-    }, scopes=["https://www.googleapis.com/auth/calendar.readonly"], redirect_uri=REDIRECT_URI)
-    
+    }, scopes=["https://www.googleapis.com/auth/calendar.readonly"], redirect_uri=redirect_uri)
+
     url, state = flow.authorization_url(
         access_type='offline',
         prompt='consent',
-        state=user["email"] # pass email as state to link account in callback
+        state=user["email"]
     )
     return {"authorization_url": url}
 
 @app.get("/api/auth/google/callback")
-def google_callback(code: str, state: str):
+def google_callback(request: Request, code: str, state: str):
     if not CLIENT_ID or not CLIENT_SECRET:
         raise HTTPException(status_code=400, detail="Google credentials not configured")
-    
+
+    redirect_uri = _get_redirect_uri(request)
     token_resp = requests.post('https://oauth2.googleapis.com/token', data={
         'code': code,
         'client_id': CLIENT_ID,
         'client_secret': CLIENT_SECRET,
-        'redirect_uri': REDIRECT_URI,
+        'redirect_uri': redirect_uri,
         'grant_type': 'authorization_code'
     }).json()
-    
+
     if "access_token" in token_resp:
         db.users.update_one(
             {"email": state},
             {"$set": {"google_tokens": token_resp}}
         )
-        
-    frontend_url = os.environ.get("REACT_APP_BACKEND_URL", "http://localhost:3000")
-    # if it's the external preview URL, usually we want to redirect to the root (which nginx routes to 3000)
+
+    frontend_url = APP_URL or str(request.base_url).rstrip("/")
     return RedirectResponse(url=f"{frontend_url}/?calendar_connected=true")
 
 @app.get("/api/calendar/events")
@@ -408,3 +425,22 @@ def get_calendar_events(user: dict = Depends(get_current_user)):
     except Exception as e:
         print("Calendar Error:", e)
         return []
+
+
+# --- SERVE REACT FRONTEND (production: when /app/frontend/build exists) ---
+_BUILD_DIR = os.path.join(os.path.dirname(__file__), "..", "frontend", "build")
+if os.path.exists(_BUILD_DIR):
+    _static_dir = os.path.join(_BUILD_DIR, "static")
+    if os.path.exists(_static_dir):
+        app.mount("/static", StaticFiles(directory=_static_dir), name="react-static")
+
+    @app.get("/")
+    async def serve_root():
+        return FileResponse(os.path.join(_BUILD_DIR, "index.html"))
+
+    @app.get("/{full_path:path}")
+    async def serve_react(full_path: str):
+        file_path = os.path.join(_BUILD_DIR, full_path)
+        if os.path.isfile(file_path):
+            return FileResponse(file_path)
+        return FileResponse(os.path.join(_BUILD_DIR, "index.html"))
