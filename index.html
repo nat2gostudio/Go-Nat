@@ -228,24 +228,24 @@
           </div>
 
         </div>
-      </div><!-- end dashboard-top-grid -->
 
-      <!-- Eventos del Calendar -->
-      <div class="card card--accordion calendar-widget" id="calendarCard">
-        <div class="card-header" data-toggle="calendarCard">
-          <div class="card-header-content">
-            <h2 class="card-title--accordion">Eventos de hoy</h2>
+        <!-- Eventos del Calendar - moved inside grid for tetris layout -->
+        <div class="card card--accordion calendar-widget" id="calendarCard">
+          <div class="card-header" data-toggle="calendarCard">
+            <div class="card-header-content">
+              <h2 class="card-title--accordion">Eventos de hoy</h2>
+            </div>
+            <div class="card-toggle-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><polyline points="6 9 12 15 18 9"></polyline></svg>
+            </div>
           </div>
-          <div class="card-toggle-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><polyline points="6 9 12 15 18 9"></polyline></svg>
+          <div class="card-content">
+            <div id="calendarEventsList" class="calendar-events-list">
+              <p class="calendar-empty">Cargando eventos...</p>
+            </div>
           </div>
         </div>
-        <div class="card-content">
-          <div id="calendarEventsList" class="calendar-events-list">
-            <p class="calendar-empty">Cargando eventos...</p>
-          </div>
-        </div>
-      </div>
+      </div><!-- end dashboard-top-grid -->
 
       <!-- Prioridades del día -->
       <div class="priorities-header">
