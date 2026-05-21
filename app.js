@@ -148,6 +148,106 @@ async function syncFromGAS() {
 }
 
 /* ============================================================
+   GOOGLE CALENDAR & HABITS (GAS Integration)
+   ============================================================ */
+
+// Token secreto para autorizar peticiones a GAS
+const GAS_TOKEN = '!n!g5G@86JnWouqDX6LLuP';
+
+/**
+ * Llamar a un endpoint de Google Apps Script con autenticación
+ */
+async function callGAS(action, method = 'GET', data = null) {
+  if (!settings.gasUrl) {
+    console.warn('GAS URL no configurada');
+    return null;
+  }
+
+  try {
+    let url = `${settings.gasUrl}?action=${action}&token=${GAS_TOKEN}`;
+    const options = {
+      method: method,
+      headers: { 'Content-Type': 'application/json' },
+      mode: 'cors'
+    };
+
+    if (method === 'POST' && data) {
+      options.body = JSON.stringify(data);
+      url += `&action=${action}&token=${GAS_TOKEN}`;
+    }
+
+    const response = await fetch(url, options);
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    return await response.json();
+  } catch (e) {
+    console.error(`GAS call error (${action}):`, e);
+    return null;
+  }
+}
+
+/**
+ * Cargar eventos del Google Calendar para hoy
+ */
+async function loadCalendarEvents() {
+  const result = await callGAS('calendar');
+  if (result && result.success) {
+    renderCalendarEvents(result.events);
+  } else {
+    renderCalendarEvents([]);
+  }
+}
+
+/**
+ * Renderizar eventos del calendar en el dashboard
+ */
+function renderCalendarEvents(events) {
+  const container = document.getElementById('calendarEventsList');
+  if (!container) return;
+
+  if (!events || events.length === 0) {
+    container.innerHTML = '<p class="calendar-empty">Sin eventos para hoy</p>';
+    return;
+  }
+
+  container.innerHTML = events.map(event => `
+    <div class="calendar-event">
+      <div class="calendar-event-time">${event.startTime}</div>
+      <div class="calendar-event-title">${esc(event.title)}</div>
+    </div>
+  `).join('');
+}
+
+/**
+ * Cargar rachas de hábitos desde GAS
+ */
+async function loadHabitStreaks() {
+  const result = await callGAS('habitStreak');
+  if (result && result.success) {
+    renderHabitStreaks(result.streaks);
+  }
+}
+
+/**
+ * Renderizar contadores de racha de hábitos
+ */
+function renderHabitStreaks(streaks) {
+  if (!streaks) return;
+  document.getElementById('mandalasStreak').textContent = streaks.mandalas || 0;
+  document.getElementById('solStreak').textContent = streaks.sol || 0;
+  document.getElementById('coreanoStreak').textContent = streaks.coreano || 0;
+  document.getElementById('kickboxingStreak').textContent = streaks.kickboxing || 0;
+}
+
+/**
+ * Guardar hábitos completados en GAS
+ */
+async function saveHabitsToGAS(habits) {
+  await callGAS('saveHabits', 'POST', habits);
+  // Recargar los streaks después de guardar
+  await loadHabitStreaks();
+}
+
+/* ============================================================
    NAVIGATION
    ============================================================ */
 let currentScreen = 'dashboard';
@@ -789,6 +889,8 @@ function saveBienestarChecks() {
   lsSet(KEYS.bienestar(), data);
   syncToGAS(KEYS.bienestar(), data);
   renderStats();
+  // Guardar en Google Apps Script para el tracker de hábitos
+  saveHabitsToGAS(data);
 }
 
 function initBienestar() {
@@ -1100,9 +1202,8 @@ function initBulkPrioritize() {
 }
 
 /* ============================================================
-   BUSINESS HOURS LOCK (after 18:00)
+   BUSINESS HOURS OVERLAY
    ============================================================ */
-
 function isAfterHours() {
   const now = new Date();
   return now.getHours() >= 18;
@@ -1110,35 +1211,25 @@ function isAfterHours() {
 
 function initBusinessHoursOverlay() {
   const overlay = document.getElementById('businessHoursOverlay');
-  const btn = document.getElementById('businessHoursBtn');
+  if (!overlay) return;
+
+  const holdBtn = document.getElementById('businessHoursBtn');
   const progressBar = document.getElementById('businessHoursProgressBar');
 
-  if (!overlay || !btn) return;
+  let holdTimer = null;
+  let checkTimer = null;
 
-  // Show overlay if after 18:00
-  function checkAndShowOverlay() {
+  const showOverlay = () => {
     if (isAfterHours()) {
       overlay.style.display = 'flex';
-    } else {
-      overlay.style.display = 'none';
     }
-  }
-
-  // Check on load
-  checkAndShowOverlay();
-
-  // Check every minute
-  setInterval(checkAndShowOverlay, 60000);
-
-  // Long-press handler
-  let holdTimer = null;
-  let holdStart = null;
+  };
 
   const startHold = (e) => {
     e.preventDefault();
-    holdStart = Date.now();
     progressBar.classList.remove('animating');
-    void progressBar.offsetWidth; // Force reflow
+    // Force reflow to restart animation
+    void progressBar.offsetWidth;
     progressBar.classList.add('animating');
 
     holdTimer = setTimeout(() => {
@@ -1159,12 +1250,16 @@ function initBusinessHoursOverlay() {
     }, 10);
   };
 
-  btn.addEventListener('mousedown', startHold);
-  btn.addEventListener('touchstart', startHold, { passive: false });
-  btn.addEventListener('mouseup', endHold);
-  btn.addEventListener('mouseleave', endHold);
-  btn.addEventListener('touchend', endHold);
-  btn.addEventListener('touchcancel', endHold);
+  holdBtn.addEventListener('mousedown', startHold);
+  holdBtn.addEventListener('touchstart', startHold, { passive: false });
+  holdBtn.addEventListener('mouseup', endHold);
+  holdBtn.addEventListener('mouseleave', endHold);
+  holdBtn.addEventListener('touchend', endHold);
+  holdBtn.addEventListener('touchcancel', endHold);
+
+  // Check every minute if we've crossed into after-hours
+  showOverlay();
+  checkTimer = setInterval(showOverlay, 60000);
 }
 
 /* ============================================================
@@ -1218,9 +1313,6 @@ document.addEventListener('DOMContentLoaded', () => {
   // Initialize navigation
   initNav();
 
-  // Initialize business hours overlay (after 18:00)
-  initBusinessHoursOverlay();
-
   // Initialize all screens
   renderGreeting();
   initMorningChecks();
@@ -1232,8 +1324,15 @@ document.addEventListener('DOMContentLoaded', () => {
   initContenido();
   initBienestar();
   initPerfil();
+  initBusinessHoursOverlay();
   initImageFallbacks();
   renderStats();
+
+  // Load calendar events and habit streaks from GAS
+  if (settings.gasUrl) {
+    loadCalendarEvents();
+    loadHabitStreaks();
+  }
 
   // Attempt GAS sync (background, will reinit if data found)
   if (settings.gasUrl) {

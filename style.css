@@ -198,7 +198,7 @@ img.img-error {
 .main-content {
   margin-left: var(--sidebar-width);
   min-height: 100vh;
-  padding: 20px 48px 48px 32px;
+  padding: 32px 40px 48px;
   max-width: calc(1200px + var(--sidebar-width));
 }
 
@@ -220,27 +220,23 @@ img.img-error {
 /* ---------- Screen Header ---------- */
 .screen-header {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
-  margin-bottom: 24px;
-  gap: 32px;
-  padding-top: 8px;
+  margin-bottom: 28px;
+  gap: 16px;
 }
 
 .header-text {
   flex: 1;
   min-width: 0;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
 }
 
 .greeting {
-  font-size: 26px;
+  font-size: 28px;
   font-weight: 700;
-  line-height: 1.3;
+  line-height: 1.2;
   color: var(--text);
-  margin-bottom: 2px;
+  margin-bottom: 4px;
 }
 
 .date-text {
@@ -262,8 +258,8 @@ img.img-error {
 }
 
 .header-illustration {
-  width: 160px;
-  max-width: 160px;
+  width: 180px;
+  max-width: 180px;
   object-fit: contain;
   flex-shrink: 0;
   border-radius: var(--radius-sm);
@@ -279,8 +275,8 @@ img.img-error {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-card);
-  padding: 16px 20px;
-  margin-bottom: 12px;
+  padding: 20px 24px;
+  margin-bottom: 16px;
   box-shadow: var(--shadow-sm);
   transition: background var(--transition), border-color var(--transition);
 }
@@ -1243,8 +1239,8 @@ body.dark .btn-close-day {
 .business-hours-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(2px);
+  background: rgba(15, 14, 13, 0.5);
+  backdrop-filter: blur(4px);
   z-index: 1001;
   display: flex;
   align-items: center;
@@ -1257,20 +1253,20 @@ body.dark .btn-close-day {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 20px;
+  gap: 16px;
   text-align: center;
-  padding: 32px 24px;
+  padding: 24px;
   background: var(--surface);
   border-radius: var(--radius-card);
-  box-shadow: var(--shadow-lg);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
   max-width: 380px;
-  width: 90vw;
+  width: 90%;
 }
 
 .business-hours-img {
-  width: 240px;
+  width: 280px;
   max-width: 100%;
-  height: auto;
+  border-radius: var(--radius-card);
   object-fit: contain;
 }
 
@@ -1278,18 +1274,16 @@ body.dark .btn-close-day {
   font-size: 24px;
   font-weight: 700;
   color: var(--text);
-  line-height: 1.3;
-  margin: 0;
+  line-height: 1.2;
 }
 
 .business-hours-subtitle {
-  font-size: 15px;
-  color: var(--text-muted);
-  margin: 0;
+  font-size: 14px;
+  color: var(--text-secondary);
 }
 
 .business-hours-btn-wrap {
-  margin-top: 12px;
+  margin-top: 8px;
 }
 
 .business-hours-hold-btn {
@@ -1297,21 +1291,21 @@ body.dark .btn-close-day {
   overflow: hidden;
   padding: 12px 24px;
   background: var(--primary);
-  color: #fff;
+  color: white;
   border-radius: var(--radius-btn);
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 500;
   border: none;
   cursor: pointer;
-  min-width: 240px;
+  min-width: 260px;
   user-select: none;
   -webkit-user-select: none;
   touch-action: none;
-  transition: background 0.2s;
+  transition: opacity 0.2s;
 }
 
 .business-hours-hold-btn:hover {
-  background: var(--primary-hover);
+  opacity: 0.9;
 }
 
 .business-hours-hold-text {
@@ -1326,7 +1320,8 @@ body.dark .btn-close-day {
   top: 0;
   height: 100%;
   width: 0;
-  background: rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.4);
+  opacity: 1;
   transition: none;
   pointer-events: none;
   z-index: 0;
@@ -1508,7 +1503,7 @@ body.dark .btn-close-day {
 .quick-access-card {
   background: var(--primary);
   border-radius: var(--radius-card);
-  padding: 16px 14px;
+  padding: 20px 16px;
   box-shadow: var(--shadow-md);
 }
 
@@ -1516,7 +1511,7 @@ body.dark .btn-close-day {
   font-size: 13px;
   font-weight: 700;
   color: #fff;
-  margin-bottom: 14px;
+  margin-bottom: 16px;
   text-align: center;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -1525,7 +1520,7 @@ body.dark .btn-close-day {
 .quick-access-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 10px 8px;
+  gap: 12px 8px;
 }
 
 .quick-access-item {
@@ -1586,18 +1581,74 @@ body.dark .quick-access-circle {
 
 /* ---------- Spotify Widget ---------- */
 .spotify-widget {
-  padding: 0;
-  overflow: hidden;
+  padding: 16px 20px;
 }
 
-.spotify-widget iframe {
-  display: block;
-  border-radius: var(--radius-card);
+.spotify-open-link {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.spotify-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.spotify-ctrl-btn {
+  color: var(--text-muted);
+  background: none;
+  border: none;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color var(--transition);
+  cursor: pointer;
+}
+
+.spotify-open-link:hover .spotify-ctrl-btn {
+  color: var(--primary);
+}
+
+.spotify-play-btn {
+  width: 42px;
+  height: 42px;
+  background: var(--primary);
+  color: #fff;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: transform 0.15s ease, background var(--transition);
+}
+
+.spotify-play-btn svg {
+  margin-left: 2px;
+}
+
+.spotify-open-link:hover .spotify-play-btn {
+  transform: scale(1.08);
+}
+
+.spotify-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
 /* ---------- Pomodoro Widget ---------- */
 .pomodoro-widget {
-  padding: 14px 16px;
+  padding: 16px 20px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1606,13 +1657,13 @@ body.dark .quick-access-circle {
 }
 
 .pomodoro-timer {
-  font-size: 28px;
+  font-size: 30px;
   font-weight: 700;
   color: var(--text);
   font-variant-numeric: tabular-nums;
   letter-spacing: 0;
   font-family: 'Courier New', Courier, monospace;
-  min-height: 36px;
+  min-height: 38px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1850,6 +1901,84 @@ body.dark .quick-access-circle {
 .priority-item-expand:hover {
   color: var(--primary);
   background: var(--primary-light);
+}
+
+/* ---------- Calendar Widget ---------- */
+.calendar-widget {
+  padding: 16px 20px;
+}
+
+.calendar-events-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.calendar-event {
+  padding: 12px;
+  background: var(--bg);
+  border-radius: 8px;
+  border-left: 3px solid var(--primary);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.calendar-event-time {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--primary);
+  min-width: 50px;
+}
+
+.calendar-event-title {
+  font-size: 13px;
+  color: var(--text);
+  flex: 1;
+  word-break: break-word;
+}
+
+.calendar-empty {
+  font-size: 13px;
+  color: var(--text-secondary);
+  text-align: center;
+  padding: 20px 0;
+}
+
+/* ---------- Habit Streak Card ---------- */
+.habit-streak-card {
+  padding: 16px 20px;
+}
+
+.habit-streak-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.habit-streak-item {
+  text-align: center;
+  padding: 12px;
+  background: var(--bg);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.habit-streak-number {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--primary);
+}
+
+.habit-streak-label {
+  font-size: 11px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 /* ---------- Responsive: tablet ---------- */
