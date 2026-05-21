@@ -2070,6 +2070,16 @@ body.dark .quick-access-circle {
 
 /* ---------- Responsive: mobile (new overrides) ---------- */
 @media (max-width: 768px) {
+  .screen-header {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .header-text {
+    margin-top: 12px;
+  }
+
   .dashboard-top-grid {
     grid-template-columns: 1fr;
   }
