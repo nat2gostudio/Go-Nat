@@ -1100,6 +1100,74 @@ function initBulkPrioritize() {
 }
 
 /* ============================================================
+   BUSINESS HOURS LOCK (after 18:00)
+   ============================================================ */
+
+function isAfterHours() {
+  const now = new Date();
+  return now.getHours() >= 18;
+}
+
+function initBusinessHoursOverlay() {
+  const overlay = document.getElementById('businessHoursOverlay');
+  const btn = document.getElementById('businessHoursBtn');
+  const progressBar = document.getElementById('businessHoursProgressBar');
+
+  if (!overlay || !btn) return;
+
+  // Show overlay if after 18:00
+  function checkAndShowOverlay() {
+    if (isAfterHours()) {
+      overlay.style.display = 'flex';
+    } else {
+      overlay.style.display = 'none';
+    }
+  }
+
+  // Check on load
+  checkAndShowOverlay();
+
+  // Check every minute
+  setInterval(checkAndShowOverlay, 60000);
+
+  // Long-press handler
+  let holdTimer = null;
+  let holdStart = null;
+
+  const startHold = (e) => {
+    e.preventDefault();
+    holdStart = Date.now();
+    progressBar.classList.remove('animating');
+    void progressBar.offsetWidth; // Force reflow
+    progressBar.classList.add('animating');
+
+    holdTimer = setTimeout(() => {
+      overlay.style.display = 'none';
+      progressBar.classList.remove('animating');
+      progressBar.style.width = '0';
+    }, 5000);
+  };
+
+  const endHold = (e) => {
+    if (holdTimer) {
+      clearTimeout(holdTimer);
+      holdTimer = null;
+    }
+    progressBar.classList.remove('animating');
+    setTimeout(() => {
+      progressBar.style.width = '0';
+    }, 10);
+  };
+
+  btn.addEventListener('mousedown', startHold);
+  btn.addEventListener('touchstart', startHold, { passive: false });
+  btn.addEventListener('mouseup', endHold);
+  btn.addEventListener('mouseleave', endHold);
+  btn.addEventListener('touchend', endHold);
+  btn.addEventListener('touchcancel', endHold);
+}
+
+/* ============================================================
    IMAGE ERROR HANDLING
    ============================================================ */
 function initImageFallbacks() {
@@ -1149,6 +1217,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Initialize navigation
   initNav();
+
+  // Initialize business hours overlay (after 18:00)
+  initBusinessHoursOverlay();
 
   // Initialize all screens
   renderGreeting();
