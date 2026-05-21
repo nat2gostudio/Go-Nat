@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Plus, Calendar, Mail, FileText, Image, AlertCircle, Briefcase, X, Trash2, Receipt, Dices, Coins, Users, Sparkles, Activity, Play, Pause, Timer, RotateCcw } from 'lucide-react';
+import { Plus, Calendar, Mail, FileText, Image, AlertCircle, Briefcase, X, Trash2, Receipt, Dices, Coins, Users, Sparkles, Activity, Play, Pause, Timer, RotateCcw, Clock } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Card, CardContent } from '../components/ui/card';
@@ -323,7 +323,7 @@ export default function Dashboard() {
               className="w-full h-48 object-contain object-center opacity-90 hover:opacity-100 hover:scale-105 transition-all duration-500 drop-shadow-md"
             />
             
-            <div className="flex gap-2 w-full justify-center">
+            <div className="flex flex-wrap gap-2 w-full justify-center">
                {/* Pomodoro Timer */}
                <div className="flex items-center bg-card border border-border shadow-sm rounded-full px-4 py-1.5 gap-3">
                  <Timer size={16} className={pomoActive ? "text-primary animate-pulse" : "text-secondary"} />
@@ -349,6 +349,17 @@ export default function Dashboard() {
                >
                   <Play size={14} className="mr-2" />
                   Música Focus
+               </Button>
+               
+               {/* Clockify Quick Action */}
+               <Button 
+                  variant="outline" 
+                  className="rounded-full px-5 shadow-sm transition-all duration-300 border-blue-200 text-blue-700 hover:bg-blue-50 hover:text-blue-800 dark:border-blue-900/50 dark:text-blue-400 dark:hover:bg-blue-900/20"
+                  onClick={() => window.open('https://clockify.me/tracker', '_blank')}
+                  title="Abrir Clockify"
+               >
+                  <Clock size={14} className="mr-2" />
+                  Clockify
                </Button>
             </div>
           </div>
