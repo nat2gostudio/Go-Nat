@@ -221,7 +221,7 @@ img.img-error {
 .screen-header {
   display: flex;
   flex-direction: row-reverse;
-  align-items: flex-start;
+  align-items: center;
   margin-bottom: 20px;
   gap: 16px;
 }
@@ -1503,7 +1503,7 @@ body.dark .btn-close-day {
 .dashboard-top-grid .card,
 .dashboard-top-grid .quick-access-card,
 .dashboard-top-grid .right-sidebar-col {
-  min-height: 300px;
+  min-height: auto;
   display: flex;
   flex-direction: column;
 }
