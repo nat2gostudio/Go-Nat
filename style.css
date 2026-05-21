@@ -225,6 +225,9 @@ img.img-error {
   margin-bottom: 28px;
   gap: 12px;
   padding-top: 16px;
+  background-color: rgba(255, 0, 0, 0.1);
+  padding: 16px;
+  border-radius: 8px;
 }
 
 .header-text {
