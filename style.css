@@ -220,11 +220,10 @@ img.img-error {
 /* ---------- Screen Header ---------- */
 .screen-header {
   display: flex;
-  flex-direction: column-reverse;
+  flex-direction: row-reverse;
   align-items: flex-start;
   margin-bottom: 20px;
-  gap: 6px;
-  padding-top: 0;
+  gap: 16px;
 }
 
 .header-text {
