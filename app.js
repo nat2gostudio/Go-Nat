@@ -1,0 +1,922 @@
+/* ============================================================
+   GO Nat — Centro de Operaciones Nat2Go Studio
+   app.js — Complete application logic
+   ============================================================ */
+
+'use strict';
+
+/* ============================================================
+   UTILITIES
+   ============================================================ */
+
+/**
+ * Return today's date as YYYY-MM-DD string (local time).
+ */
+function todayStr() {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+/**
+ * Safely parse JSON from localStorage. Returns fallback on failure.
+ */
+function lsGet(key, fallback) {
+  try {
+    const raw = localStorage.getItem(key);
+    if (raw === null || raw === undefined) return fallback;
+    return JSON.parse(raw);
+  } catch (e) {
+    return fallback;
+  }
+}
+
+/**
+ * Stringify and store value in localStorage.
+ */
+function lsSet(key, value) {
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch (e) {
+    console.warn('localStorage write failed:', key, e);
+  }
+}
+
+/**
+ * Generate a simple unique ID.
+ */
+function uid() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+}
+
+/**
+ * Escape HTML to prevent XSS when inserting user text.
+ */
+function esc(str) {
+  const d = document.createElement('div');
+  d.textContent = String(str);
+  return d.innerHTML;
+}
+
+/* ============================================================
+   STORAGE KEYS
+   ============================================================ */
+const KEYS = {
+  checks:      () => `gonat_checks_${todayStr()}`,
+  bienestar:   () => `gonat_bienestar_${todayStr()}`,
+  prioridades: 'gonat_prioridades',
+  clientes:    'gonat_clientes',
+  contenido:   'gonat_contenido',
+  settings:    'gonat_settings',
+};
+
+/* ============================================================
+   SETTINGS
+   ============================================================ */
+let settings = lsGet(KEYS.settings, { gasUrl: '', theme: 'light' });
+
+function saveSettings() {
+  lsSet(KEYS.settings, settings);
+  syncToGAS(KEYS.settings, settings);
+}
+
+/* ============================================================
+   GOOGLE APPS SCRIPT SYNC
+   ============================================================ */
+
+/**
+ * Push a single key/value pair to GAS (background, silent errors).
+ */
+function syncToGAS(key, value) {
+  if (!settings.gasUrl) return;
+  const tab = guessTab(key);
+  const body = JSON.stringify({ tab, key, value: JSON.stringify(value) });
+  fetch(settings.gasUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body,
+    mode: 'no-cors',
+  }).catch(e => console.log('GAS sync error (silent):', e));
+}
+
+/**
+ * Determine which GAS sheet tab a key belongs to.
+ */
+function guessTab(key) {
+  if (key.startsWith('gonat_checks_')) return 'Checks';
+  if (key.startsWith('gonat_bienestar_')) return 'Checks';
+  if (key === KEYS.prioridades) return 'Prioridades';
+  if (key === KEYS.clientes) return 'Clientes';
+  if (key === KEYS.contenido) return 'Contenido';
+  return 'Misc';
+}
+
+/**
+ * On load, attempt to fetch all data from GAS and merge.
+ * Sheet data takes priority for clientes, contenido, prioridades.
+ * localStorage takes priority for daily checks.
+ */
+async function syncFromGAS() {
+  if (!settings.gasUrl) return;
+  try {
+    const res = await fetch(settings.gasUrl, { mode: 'cors' });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    if (data && typeof data === 'object') {
+      // Merge remote data into localStorage (remote wins for persistent data)
+      const priorityKeys = [KEYS.prioridades, KEYS.clientes, KEYS.contenido];
+      priorityKeys.forEach(k => {
+        if (data[k] !== undefined) {
+          lsSet(k, data[k]);
+        }
+      });
+      // Reinitialize app with merged data
+      initApp();
+    }
+  } catch (e) {
+    console.log('GAS fetch error (silent):', e);
+  }
+}
+
+/* ============================================================
+   NAVIGATION
+   ============================================================ */
+let currentScreen = 'dashboard';
+
+function initNav() {
+  // Sidebar nav
+  document.querySelectorAll('.nav-item').forEach(item => {
+    item.querySelector('.nav-btn').addEventListener('click', () => {
+      navigateTo(item.dataset.screen);
+    });
+  });
+
+  // Bottom nav
+  document.querySelectorAll('.bottom-nav-item').forEach(item => {
+    item.querySelector('.bottom-nav-btn').addEventListener('click', () => {
+      navigateTo(item.dataset.screen);
+    });
+  });
+}
+
+function navigateTo(screenId) {
+  currentScreen = screenId;
+
+  // Update screens
+  document.querySelectorAll('.screen').forEach(s => {
+    s.classList.toggle('active', s.id === `screen-${screenId}`);
+  });
+
+  // Update sidebar nav
+  document.querySelectorAll('.nav-item').forEach(item => {
+    item.classList.toggle('active', item.dataset.screen === screenId);
+  });
+
+  // Update bottom nav
+  document.querySelectorAll('.bottom-nav-item').forEach(item => {
+    item.classList.toggle('active', item.dataset.screen === screenId);
+  });
+
+  // Refresh stats when navigating to perfil
+  if (screenId === 'perfil') {
+    renderStats();
+  }
+}
+
+/* ============================================================
+   SCREEN 1: DASHBOARD
+   ============================================================ */
+
+/* ---- Greeting & Date ---- */
+function renderGreeting() {
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? 'Buenos días, Nati' : 'Buenas tardes, Nati';
+  document.getElementById('greetingText').textContent = greeting;
+
+  const d = new Date();
+  const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+  document.getElementById('dateText').textContent =
+    d.toLocaleDateString('es-ES', options).replace(/^\w/, c => c.toUpperCase());
+}
+
+/* ---- Morning Checks ---- */
+function loadMorningChecks() {
+  const data = lsGet(KEYS.checks(), {});
+  document.querySelectorAll('.morning-check').forEach(cb => {
+    const key = cb.dataset.key;
+    cb.checked = !!data[key];
+    updateCheckLineThrough(cb);
+  });
+}
+
+function saveMorningChecks() {
+  const data = {};
+  document.querySelectorAll('.morning-check').forEach(cb => {
+    data[cb.dataset.key] = cb.checked;
+  });
+  lsSet(KEYS.checks(), data);
+  syncToGAS(KEYS.checks(), data);
+  renderStats();
+}
+
+function initMorningChecks() {
+  loadMorningChecks();
+  document.querySelectorAll('.morning-check').forEach(cb => {
+    cb.addEventListener('change', () => {
+      updateCheckLineThrough(cb);
+      saveMorningChecks();
+    });
+  });
+}
+
+function updateCheckLineThrough(cb) {
+  const textEl = cb.parentElement.querySelector('.check-text');
+  if (textEl) {
+    // CSS handles the line-through via :checked ~ .check-text
+    // but we trigger a small visual refresh just in case
+  }
+}
+
+/* ---- Prioridades ---- */
+let prioridades = lsGet(KEYS.prioridades, {
+  dinero: [],
+  clientes: [],
+  marca: [],
+});
+
+function savePrioridades() {
+  lsSet(KEYS.prioridades, prioridades);
+  syncToGAS(KEYS.prioridades, prioridades);
+}
+
+function renderPrioridades() {
+  ['dinero', 'clientes', 'marca'].forEach(cat => {
+    const listId = cat === 'clientes' ? 'list-clientes-prio' : `list-${cat}`;
+    const listEl = document.getElementById(listId);
+    if (!listEl) return;
+    listEl.innerHTML = '';
+    (prioridades[cat] || []).forEach((item, idx) => {
+      const li = document.createElement('li');
+      li.className = 'priority-item';
+      li.dataset.cat = cat;
+      li.dataset.idx = idx;
+      li.innerHTML = `
+        <input type="checkbox" ${item.done ? 'checked' : ''} />
+        <span class="priority-item-text${item.done ? ' done' : ''}">${esc(item.text)}</span>
+        <button class="priority-item-del" aria-label="Eliminar">×</button>
+      `;
+      const cb = li.querySelector('input[type="checkbox"]');
+      cb.addEventListener('change', () => {
+        prioridades[cat][idx].done = cb.checked;
+        savePrioridades();
+        renderPrioridades();
+        renderStats();
+      });
+      li.querySelector('.priority-item-del').addEventListener('click', () => {
+        prioridades[cat].splice(idx, 1);
+        savePrioridades();
+        renderPrioridades();
+      });
+      listEl.appendChild(li);
+    });
+  });
+}
+
+function initPrioridades() {
+  renderPrioridades();
+
+  document.querySelectorAll('.add-prio-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const cat = btn.dataset.cat;
+      const listId = cat === 'clientes' ? 'list-clientes-prio' : `list-${cat}`;
+      const listEl = document.getElementById(listId);
+      if (!listEl) return;
+
+      // Don't add multiple inline inputs
+      if (listEl.parentElement.querySelector('.inline-add-row')) return;
+
+      const row = document.createElement('div');
+      row.className = 'inline-add-row';
+      row.innerHTML = `
+        <input class="inline-add-input" type="text" placeholder="Nueva tarea..." maxlength="120" />
+        <button class="btn inline-add-ok">OK</button>
+      `;
+      btn.insertAdjacentElement('beforebegin', row);
+      const input = row.querySelector('.inline-add-input');
+      input.focus();
+
+      const confirm = () => {
+        const text = input.value.trim();
+        if (text) {
+          if (!prioridades[cat]) prioridades[cat] = [];
+          prioridades[cat].push({ id: uid(), text, done: false });
+          savePrioridades();
+          renderPrioridades();
+        }
+        row.remove();
+      };
+
+      row.querySelector('.inline-add-ok').addEventListener('click', confirm);
+      input.addEventListener('keydown', e => {
+        if (e.key === 'Enter') confirm();
+        if (e.key === 'Escape') row.remove();
+      });
+    });
+  });
+}
+
+/* ---- Decisiones button ---- */
+function initDecision() {
+  const btn = document.getElementById('decisionBtn');
+  const highlight = document.getElementById('decisionHighlight');
+
+  btn.addEventListener('click', () => {
+    const allUnchecked = [];
+    ['dinero', 'clientes', 'marca'].forEach(cat => {
+      (prioridades[cat] || []).forEach(item => {
+        if (!item.done) allUnchecked.push(item.text);
+      });
+    });
+
+    if (allUnchecked.length === 0) {
+      highlight.textContent = '🎉 ¡Todo completado! No hay tareas pendientes.';
+      highlight.style.display = 'block';
+      return;
+    }
+
+    const picked = allUnchecked[Math.floor(Math.random() * allUnchecked.length)];
+    highlight.textContent = `🎯 Ahora mismo: ${picked}`;
+    highlight.style.display = 'block';
+  });
+}
+
+/* ============================================================
+   SCREEN 2: CLIENTES
+   ============================================================ */
+
+let clientes = lsGet(KEYS.clientes, null);
+
+// Default clients if first visit
+if (clientes === null) {
+  clientes = [
+    {
+      id: uid(),
+      name: 'AE',
+      tasks: [
+        { id: uid(), text: 'Newsletter', done: false },
+        { id: uid(), text: 'Blog', done: false },
+      ],
+    },
+    {
+      id: uid(),
+      name: 'Casa Bella',
+      tasks: [
+        { id: uid(), text: 'Newsletter', done: false },
+        { id: uid(), text: 'Copys Web', done: false },
+        { id: uid(), text: 'Blog', done: false },
+      ],
+    },
+    {
+      id: uid(),
+      name: 'RoscónLab',
+      tasks: [
+        { id: uid(), text: 'Newsletter', done: false },
+        { id: uid(), text: 'Copywriting', done: false },
+      ],
+    },
+  ];
+  lsSet(KEYS.clientes, clientes);
+}
+
+function saveClientes() {
+  lsSet(KEYS.clientes, clientes);
+  syncToGAS(KEYS.clientes, clientes);
+}
+
+function renderClientes() {
+  const grid = document.getElementById('clientsGrid');
+  grid.innerHTML = '';
+  clientes.forEach((client, ci) => {
+    const card = document.createElement('div');
+    card.className = 'client-card';
+    card.dataset.id = client.id;
+
+    const tasksHtml = (client.tasks || []).map((task, ti) => `
+      <li class="client-task-item" data-ti="${ti}">
+        <input type="checkbox" ${task.done ? 'checked' : ''} aria-label="${esc(task.text)}" />
+        <span class="client-task-text">${esc(task.text)}</span>
+        <button class="client-task-del" aria-label="Eliminar tarea">×</button>
+      </li>
+    `).join('');
+
+    card.innerHTML = `
+      <div class="client-card-header">
+        <span class="client-name" title="Clic para editar">${esc(client.name)}</span>
+        <button class="client-del-btn" aria-label="Eliminar cliente">×</button>
+      </div>
+      <ul class="client-tasks">${tasksHtml}</ul>
+      <button class="btn btn-ghost btn-xs add-task-btn">+ Tarea</button>
+    `;
+
+    // Client name inline edit
+    const nameEl = card.querySelector('.client-name');
+    nameEl.addEventListener('click', () => {
+      const input = document.createElement('input');
+      input.className = 'client-name-input';
+      input.type = 'text';
+      input.value = client.name;
+      input.maxLength = 60;
+      nameEl.replaceWith(input);
+      input.focus();
+      input.select();
+
+      const finish = () => {
+        const newName = input.value.trim() || client.name;
+        clientes[ci].name = newName;
+        saveClientes();
+        renderClientes();
+      };
+      input.addEventListener('blur', finish);
+      input.addEventListener('keydown', e => {
+        if (e.key === 'Enter') finish();
+        if (e.key === 'Escape') { input.value = client.name; finish(); }
+      });
+    });
+
+    // Delete client
+    card.querySelector('.client-del-btn').addEventListener('click', () => {
+      if (confirm(`¿Eliminar el cliente "${client.name}"?`)) {
+        clientes.splice(ci, 1);
+        saveClientes();
+        renderClientes();
+      }
+    });
+
+    // Task checkboxes
+    card.querySelectorAll('.client-task-item').forEach(taskEl => {
+      const ti = parseInt(taskEl.dataset.ti, 10);
+      const cb = taskEl.querySelector('input[type="checkbox"]');
+      cb.addEventListener('change', () => {
+        clientes[ci].tasks[ti].done = cb.checked;
+        saveClientes();
+      });
+      taskEl.querySelector('.client-task-del').addEventListener('click', () => {
+        clientes[ci].tasks.splice(ti, 1);
+        saveClientes();
+        renderClientes();
+      });
+    });
+
+    // Add task
+    card.querySelector('.add-task-btn').addEventListener('click', () => {
+      const btn = card.querySelector('.add-task-btn');
+      if (card.querySelector('.inline-add-row')) return;
+
+      const row = document.createElement('div');
+      row.className = 'inline-add-row';
+      row.innerHTML = `
+        <input class="inline-add-input" type="text" placeholder="Nueva tarea..." maxlength="80" />
+        <button class="btn inline-add-ok">OK</button>
+      `;
+      btn.insertAdjacentElement('beforebegin', row);
+      const input = row.querySelector('.inline-add-input');
+      input.focus();
+
+      const confirm2 = () => {
+        const text = input.value.trim();
+        if (text) {
+          clientes[ci].tasks.push({ id: uid(), text, done: false });
+          saveClientes();
+          renderClientes();
+        } else {
+          row.remove();
+        }
+      };
+
+      row.querySelector('.inline-add-ok').addEventListener('click', confirm2);
+      input.addEventListener('keydown', e => {
+        if (e.key === 'Enter') confirm2();
+        if (e.key === 'Escape') row.remove();
+      });
+    });
+
+    grid.appendChild(card);
+  });
+}
+
+function initClientes() {
+  renderClientes();
+
+  document.getElementById('addClientBtn').addEventListener('click', () => {
+    const name = prompt('Nombre del nuevo cliente:');
+    if (name && name.trim()) {
+      clientes.push({
+        id: uid(),
+        name: name.trim(),
+        tasks: [],
+      });
+      saveClientes();
+      renderClientes();
+      navigateTo('clientes');
+    }
+  });
+}
+
+/* ============================================================
+   SCREEN 3: CONTENIDO (Kanban)
+   ============================================================ */
+
+const KANBAN_COLS = ['IDEAS', 'PENDIENTE', 'PUBLICADO', 'ENLACES'];
+
+let contenido = lsGet(KEYS.contenido, null);
+
+// Default content if first visit
+if (contenido === null) {
+  contenido = [
+    { id: uid(), text: 'Ideas para el próximo newsletter', status: 'IDEAS' },
+    { id: uid(), text: 'Post sobre productividad con TDAH', status: 'PENDIENTE' },
+    { id: uid(), text: 'Guía de herramientas de diseño 2024', status: 'PUBLICADO' },
+  ];
+  lsSet(KEYS.contenido, contenido);
+}
+
+function saveContenido() {
+  lsSet(KEYS.contenido, contenido);
+  syncToGAS(KEYS.contenido, contenido);
+}
+
+function renderKanban() {
+  const board = document.getElementById('kanbanBoard');
+  board.innerHTML = '';
+
+  KANBAN_COLS.forEach((col, colIdx) => {
+    const items = contenido.filter(c => c.status === col);
+    const canMove = colIdx < KANBAN_COLS.length - 1;
+    const canAdd = col === 'IDEAS' || col === 'ENLACES';
+
+    const colEl = document.createElement('div');
+    colEl.className = 'kanban-column';
+    colEl.dataset.col = col;
+
+    const cardsHtml = items.map(item => `
+      <div class="kanban-card" data-id="${item.id}">
+        <span class="kanban-card-text">${esc(item.text)}</span>
+        <div class="kanban-card-actions">
+          ${canMove ? `<button class="kanban-move-btn" title="Mover a ${KANBAN_COLS[colIdx + 1]}">→</button>` : ''}
+          <button class="kanban-del-btn" title="Eliminar">×</button>
+        </div>
+      </div>
+    `).join('');
+
+    colEl.innerHTML = `
+      <div class="kanban-col-header">
+        <span class="kanban-col-title">${col}</span>
+        <span class="kanban-col-count">${items.length}</span>
+      </div>
+      <div class="kanban-cards">${cardsHtml}</div>
+      ${canAdd ? `<button class="btn btn-ghost btn-xs kanban-add-btn" data-col="${col}">+ Añadir</button>` : ''}
+    `;
+
+    // Move buttons
+    colEl.querySelectorAll('.kanban-move-btn').forEach(btn => {
+      const cardEl = btn.closest('.kanban-card');
+      const itemId = cardEl.dataset.id;
+      btn.addEventListener('click', () => {
+        const item = contenido.find(c => c.id === itemId);
+        if (item) {
+          item.status = KANBAN_COLS[colIdx + 1];
+          saveContenido();
+          renderKanban();
+        }
+      });
+    });
+
+    // Delete buttons
+    colEl.querySelectorAll('.kanban-del-btn').forEach(btn => {
+      const cardEl = btn.closest('.kanban-card');
+      const itemId = cardEl.dataset.id;
+      btn.addEventListener('click', () => {
+        if (confirm('¿Eliminar esta tarjeta?')) {
+          contenido = contenido.filter(c => c.id !== itemId);
+          saveContenido();
+          renderKanban();
+        }
+      });
+    });
+
+    // Add button (IDEAS and ENLACES columns)
+    const addBtn = colEl.querySelector('.kanban-add-btn');
+    if (addBtn) {
+      addBtn.addEventListener('click', () => {
+        if (colEl.querySelector('.inline-add-row')) return;
+        const row = document.createElement('div');
+        row.className = 'inline-add-row';
+        row.innerHTML = `
+          <input class="inline-add-input" type="text" placeholder="Nueva tarjeta..." maxlength="200" />
+          <button class="btn inline-add-ok">OK</button>
+        `;
+        addBtn.insertAdjacentElement('beforebegin', row);
+        const input = row.querySelector('.inline-add-input');
+        input.focus();
+
+        const confirmAdd = () => {
+          const text = input.value.trim();
+          if (text) {
+            contenido.push({ id: uid(), text, status: col });
+            saveContenido();
+            renderKanban();
+          } else {
+            row.remove();
+          }
+        };
+
+        row.querySelector('.inline-add-ok').addEventListener('click', confirmAdd);
+        input.addEventListener('keydown', e => {
+          if (e.key === 'Enter') confirmAdd();
+          if (e.key === 'Escape') row.remove();
+        });
+      });
+    }
+
+    board.appendChild(colEl);
+  });
+}
+
+function initContenido() {
+  renderKanban();
+
+  // Captura Rápida modal
+  const modal = document.getElementById('capturaModal');
+  const textarea = document.getElementById('capturaTextarea');
+
+  const openModal = () => {
+    modal.style.display = 'flex';
+    textarea.value = '';
+    setTimeout(() => textarea.focus(), 50);
+  };
+
+  const closeModal = () => {
+    modal.style.display = 'none';
+  };
+
+  document.getElementById('capturaRapidaBtn').addEventListener('click', openModal);
+  document.getElementById('capturaModalClose').addEventListener('click', closeModal);
+  document.getElementById('capturaCancel').addEventListener('click', closeModal);
+
+  document.getElementById('capturaGuardar').addEventListener('click', () => {
+    const text = textarea.value.trim();
+    if (text) {
+      contenido.push({ id: uid(), text, status: 'IDEAS' });
+      saveContenido();
+      renderKanban();
+      closeModal();
+    }
+  });
+
+  // Close modal on overlay click
+  modal.addEventListener('click', e => {
+    if (e.target === modal) closeModal();
+  });
+
+  // Close modal on Escape
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && modal.style.display !== 'none') closeModal();
+  });
+}
+
+/* ============================================================
+   SCREEN 4: BIENESTAR
+   ============================================================ */
+
+function loadBienestarChecks() {
+  const data = lsGet(KEYS.bienestar(), {});
+  document.querySelectorAll('.bienestar-check').forEach(cb => {
+    cb.checked = !!data[cb.dataset.key];
+  });
+}
+
+function saveBienestarChecks() {
+  const data = {};
+  document.querySelectorAll('.bienestar-check').forEach(cb => {
+    data[cb.dataset.key] = cb.checked;
+  });
+  lsSet(KEYS.bienestar(), data);
+  syncToGAS(KEYS.bienestar(), data);
+  renderStats();
+}
+
+function initBienestar() {
+  loadBienestarChecks();
+  document.querySelectorAll('.bienestar-check').forEach(cb => {
+    cb.addEventListener('change', saveBienestarChecks);
+  });
+  initLockOverlay();
+}
+
+/* ---- Lock Overlay ---- */
+function initLockOverlay() {
+  const overlay = document.getElementById('lockOverlay');
+  const holdBtn = document.getElementById('lockHoldBtn');
+  const progressBar = document.getElementById('lockProgressBar');
+  const closeBtn = document.getElementById('closeDayBtn');
+
+  closeBtn.addEventListener('click', () => {
+    overlay.style.display = 'flex';
+  });
+
+  let holdTimer = null;
+  let holdStart = null;
+
+  const startHold = (e) => {
+    e.preventDefault();
+    holdStart = Date.now();
+    progressBar.classList.remove('animating');
+    // Force reflow to restart animation
+    void progressBar.offsetWidth;
+    progressBar.classList.add('animating');
+
+    holdTimer = setTimeout(() => {
+      overlay.style.display = 'none';
+      progressBar.classList.remove('animating');
+      progressBar.style.width = '0';
+    }, 5000);
+  };
+
+  const endHold = (e) => {
+    if (holdTimer) {
+      clearTimeout(holdTimer);
+      holdTimer = null;
+    }
+    progressBar.classList.remove('animating');
+    // Reset bar width after animation transition is removed
+    setTimeout(() => {
+      progressBar.style.width = '0';
+    }, 10);
+  };
+
+  holdBtn.addEventListener('mousedown', startHold);
+  holdBtn.addEventListener('touchstart', startHold, { passive: false });
+  holdBtn.addEventListener('mouseup', endHold);
+  holdBtn.addEventListener('mouseleave', endHold);
+  holdBtn.addEventListener('touchend', endHold);
+  holdBtn.addEventListener('touchcancel', endHold);
+}
+
+/* ============================================================
+   SCREEN 5: PERFIL
+   ============================================================ */
+
+function initPerfil() {
+  // Load saved GAS URL
+  const gasInput = document.getElementById('gasUrlInput');
+  const statusDot = document.querySelector('.status-dot');
+  const statusText = document.getElementById('statusText');
+
+  gasInput.value = settings.gasUrl || '';
+
+  const updateConnectionStatus = () => {
+    if (settings.gasUrl) {
+      statusDot.className = 'status-dot status-dot--green';
+      statusText.textContent = 'Conectado';
+    } else {
+      statusDot.className = 'status-dot status-dot--grey';
+      statusText.textContent = 'Sin conexión (modo local)';
+    }
+  };
+
+  updateConnectionStatus();
+
+  document.getElementById('saveGasBtn').addEventListener('click', () => {
+    settings.gasUrl = gasInput.value.trim();
+    saveSettings();
+    updateConnectionStatus();
+    if (settings.gasUrl) {
+      syncFromGAS();
+    }
+  });
+
+  // Theme
+  document.getElementById('themeLightBtn').addEventListener('click', () => {
+    setTheme('light');
+  });
+
+  document.getElementById('themeDarkBtn').addEventListener('click', () => {
+    setTheme('dark');
+  });
+
+  // Reset day
+  document.getElementById('resetDayBtn').addEventListener('click', () => {
+    if (confirm('¿Restablecer todos los checks diarios? Se borrarán los checks de Arranque y Bienestar de hoy.')) {
+      localStorage.removeItem(KEYS.checks());
+      localStorage.removeItem(KEYS.bienestar());
+      loadMorningChecks();
+      loadBienestarChecks();
+      renderStats();
+      alert('Checks del día restablecidos. ¡Buen día, Nati! ☀️');
+    }
+  });
+}
+
+/* ---- Theme ---- */
+function setTheme(theme) {
+  settings.theme = theme;
+  saveSettings();
+  document.body.classList.toggle('dark', theme === 'dark');
+
+  const lightBtn = document.getElementById('themeLightBtn');
+  const darkBtn = document.getElementById('themeDarkBtn');
+  if (lightBtn) lightBtn.classList.toggle('active', theme === 'light');
+  if (darkBtn) darkBtn.classList.toggle('active', theme === 'dark');
+}
+
+function applyTheme() {
+  setTheme(settings.theme || 'light');
+}
+
+/* ---- Stats ---- */
+function renderStats() {
+  const morningData = lsGet(KEYS.checks(), {});
+  const bienestarData = lsGet(KEYS.bienestar(), {});
+
+  const morningDone = Object.values(morningData).filter(Boolean).length;
+  const bienestarDone = Object.values(bienestarData).filter(Boolean).length;
+  const totalDone = morningDone + bienestarDone;
+
+  const elM = document.getElementById('statMorningDone');
+  const elB = document.getElementById('statBienestarDone');
+  const elT = document.getElementById('statTotalDone');
+  if (elM) elM.textContent = morningDone;
+  if (elB) elB.textContent = bienestarDone;
+  if (elT) elT.textContent = totalDone;
+}
+
+/* ============================================================
+   IMAGE ERROR HANDLING
+   ============================================================ */
+function initImageFallbacks() {
+  document.querySelectorAll('img').forEach(img => {
+    img.addEventListener('error', () => {
+      img.classList.add('img-error');
+    });
+  });
+}
+
+/* ============================================================
+   MAIN INIT
+   ============================================================ */
+function initApp() {
+  // Re-read data from localStorage (used after GAS sync merge)
+  prioridades = lsGet(KEYS.prioridades, { dinero: [], clientes: [], marca: [] });
+  clientes = lsGet(KEYS.clientes, []);
+  contenido = lsGet(KEYS.contenido, []);
+
+  renderGreeting();
+  loadMorningChecks();
+  renderPrioridades();
+  renderClientes();
+  renderKanban();
+  loadBienestarChecks();
+  renderStats();
+  applyTheme();
+
+  const gasInput = document.getElementById('gasUrlInput');
+  if (gasInput) gasInput.value = settings.gasUrl || '';
+  const statusDot = document.querySelector('.status-dot');
+  const statusText = document.getElementById('statusText');
+  if (statusDot && statusText) {
+    if (settings.gasUrl) {
+      statusDot.className = 'status-dot status-dot--green';
+      statusText.textContent = 'Conectado';
+    } else {
+      statusDot.className = 'status-dot status-dot--grey';
+      statusText.textContent = 'Sin conexión (modo local)';
+    }
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  // Apply theme immediately to avoid flash
+  applyTheme();
+
+  // Initialize navigation
+  initNav();
+
+  // Initialize all screens
+  renderGreeting();
+  initMorningChecks();
+  initPrioridades();
+  initDecision();
+  initClientes();
+  initContenido();
+  initBienestar();
+  initPerfil();
+  initImageFallbacks();
+  renderStats();
+
+  // Attempt GAS sync (background, will reinit if data found)
+  if (settings.gasUrl) {
+    syncFromGAS();
+  }
+});
