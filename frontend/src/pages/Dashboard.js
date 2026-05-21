@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Plus, Calendar, Mail, FileText, Image, AlertCircle, Briefcase, X, Trash2, Receipt, Dices, Coins, Users, Sparkles, Activity } from 'lucide-react';
+import { Plus, Calendar, Mail, FileText, Image, AlertCircle, Briefcase, X, Trash2, Receipt, Dices, Coins, Users, Sparkles, Activity, Headphones } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Card, CardContent } from '../components/ui/card';
@@ -276,13 +276,27 @@ export default function Dashboard() {
         {/* Right Column: Analytics, Image, Calendar & Quick Links (Spans 5 cols) */}
         <div className="lg:col-span-5 space-y-6">
           
-          {/* IMAGE CARD (NeuroAlly / Focus Mode) */}
-          <div className="bg-transparent flex flex-col items-center justify-center p-2 mb-2">
+          {/* IMAGE CARD (NeuroAlly / Focus Mode) & MUSIC PLAYER */}
+          <div className="bg-transparent flex flex-col items-center justify-center p-2 mb-4 space-y-4">
             <img 
               src="https://customer-assets.emergentagent.com/job_studio-minimal-15/artifacts/fg0hd3z4_nat_nat2gostudio_neuroally.png" 
               alt="NeuroAlly Flow"
               className="w-full h-48 object-contain object-center opacity-90 hover:opacity-100 hover:scale-105 transition-all duration-500 drop-shadow-md"
             />
+            {/* Spotify Lo-Fi Player for Focus */}
+            <div className="w-full bg-blue-50/30 dark:bg-blue-900/10 p-2 rounded-2xl border border-blue-100 dark:border-blue-900/30 shadow-sm transition-all hover:shadow-md hover:border-blue-200">
+              <iframe 
+                style={{ borderRadius: '12px' }} 
+                src="https://open.spotify.com/embed/playlist/37i9dQZF1DWWQRwui0ExPn?utm_source=generator&theme=0" 
+                width="100%" 
+                height="152" 
+                frameBorder="0" 
+                allowFullScreen="" 
+                allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" 
+                loading="lazy"
+                title="Lo-Fi Focus Playlist"
+              ></iframe>
+            </div>
           </div>
 
           {/* DYNAMIC CHART: Flujo de Energía */}
@@ -379,6 +393,7 @@ export default function Dashboard() {
             <h2 className="text-sm font-semibold tracking-widest uppercase text-secondary mb-3">Accesos Rápidos</h2>
             <div className="grid grid-cols-2 gap-3">
               {[
+                { name: 'Spotify (BTS Chill)', icon: Headphones, url: 'https://open.spotify.com/search/bts%20chill/playlists' },
                 { name: 'Factura Directa', icon: Receipt, url: 'https://app.facturadirecta.com' },
                 { name: 'Canva', icon: Image, url: 'https://canva.com' },
                 { name: 'Drive', icon: FileText, url: 'https://drive.google.com' },
