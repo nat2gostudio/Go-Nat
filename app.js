@@ -1100,6 +1100,67 @@ function initBulkPrioritize() {
 }
 
 /* ============================================================
+   BUSINESS HOURS OVERLAY
+   ============================================================ */
+function isAfterHours() {
+  const now = new Date();
+  return now.getHours() >= 18;
+}
+
+function initBusinessHoursOverlay() {
+  const overlay = document.getElementById('businessHoursOverlay');
+  if (!overlay) return;
+
+  const holdBtn = document.getElementById('businessHoursBtn');
+  const progressBar = document.getElementById('businessHoursProgressBar');
+
+  let holdTimer = null;
+  let checkTimer = null;
+
+  const showOverlay = () => {
+    if (isAfterHours()) {
+      overlay.style.display = 'flex';
+    }
+  };
+
+  const startHold = (e) => {
+    e.preventDefault();
+    progressBar.classList.remove('animating');
+    // Force reflow to restart animation
+    void progressBar.offsetWidth;
+    progressBar.classList.add('animating');
+
+    holdTimer = setTimeout(() => {
+      overlay.style.display = 'none';
+      progressBar.classList.remove('animating');
+      progressBar.style.width = '0';
+    }, 5000);
+  };
+
+  const endHold = (e) => {
+    if (holdTimer) {
+      clearTimeout(holdTimer);
+      holdTimer = null;
+    }
+    progressBar.classList.remove('animating');
+    setTimeout(() => {
+      progressBar.style.width = '0';
+    }, 10);
+  };
+
+  holdBtn.addEventListener('mousedown', startHold);
+  holdBtn.addEventListener('touchstart', startHold, { passive: false });
+  holdBtn.addEventListener('mouseup', endHold);
+  holdBtn.addEventListener('mouseleave', endHold);
+  holdBtn.addEventListener('touchend', endHold);
+  holdBtn.addEventListener('touchcancel', endHold);
+
+  // Check every minute if we've crossed into after-hours
+  showOverlay();
+  checkTimer = setInterval(showOverlay, 60000);
+}
+
+/* ============================================================
    IMAGE ERROR HANDLING
    ============================================================ */
 function initImageFallbacks() {
@@ -1161,6 +1222,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initContenido();
   initBienestar();
   initPerfil();
+  initBusinessHoursOverlay();
   initImageFallbacks();
   renderStats();
 
