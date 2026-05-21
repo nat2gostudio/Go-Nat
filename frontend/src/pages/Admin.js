@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { AlertTriangle, CheckCircle, Plus, X, Trash2, Receipt } from 'lucide-react';
+import { AlertTriangle, CheckCircle, Plus, X, Receipt } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Card, CardContent } from '../components/ui/card';
@@ -68,6 +68,23 @@ export default function Admin() {
     }
   };
 
+  const getUrgencyClasses = (dueDate, defaultClass) => {
+    if (!dueDate) return defaultClass;
+    const today = new Date();
+    today.setHours(0,0,0,0);
+    const due = new Date(dueDate);
+    const diffTime = due - today;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    // Alerta Suave: menos de 5 días
+    if (diffDays <= 5 && diffDays >= 0) {
+      return 'border-orange-300 bg-orange-100/50 dark:border-orange-900/60 dark:bg-orange-900/20';
+    } else if (diffDays < 0) {
+      return 'border-red-300 bg-red-100/50 dark:border-red-900/60 dark:bg-red-900/20';
+    }
+    return defaultClass;
+  };
+
   const obligaciones = tasks.filter(t => ['iva', 'irpf', 'cuota'].includes(t.type));
   const facturas = tasks.filter(t => ['factura', 'ingreso'].includes(t.type));
 
@@ -95,10 +112,10 @@ export default function Admin() {
             </Card>
           ) : (
             obligaciones.map(task => (
-              <Card key={task.id} className="shadow-none group border-amber-200 dark:border-amber-900/30 bg-amber-50/30 dark:bg-amber-900/10">
+              <Card key={task.id} className={`shadow-none group transition-colors ${getUrgencyClasses(task.due_date, 'border-amber-200 dark:border-amber-900/30 bg-amber-50/30 dark:bg-amber-900/10')}`}>
                 <CardContent className="p-4 flex items-center justify-between">
                   <div className="flex items-center gap-4">
-                    <div className="bg-white dark:bg-card p-2 rounded-md shadow-sm border border-amber-100 dark:border-amber-900/50">
+                    <div className="bg-white dark:bg-card p-2 rounded-md shadow-sm border border-black/5 dark:border-white/5">
                       {getIcon(task.type)}
                     </div>
                     <div>
@@ -129,10 +146,10 @@ export default function Admin() {
             </Card>
           ) : (
             facturas.map(task => (
-              <Card key={task.id} className="shadow-none border-blue-200 dark:border-blue-900/30 bg-blue-50/30 dark:bg-blue-900/10">
+              <Card key={task.id} className={`shadow-none transition-colors ${getUrgencyClasses(task.due_date, 'border-blue-200 dark:border-blue-900/30 bg-blue-50/30 dark:bg-blue-900/10')}`}>
                 <CardContent className="p-4 flex items-center justify-between">
                   <div className="flex items-center gap-4">
-                    <div className="bg-white dark:bg-card p-2 rounded-md shadow-sm border border-blue-100 dark:border-blue-900/50">
+                    <div className="bg-white dark:bg-card p-2 rounded-md shadow-sm border border-black/5 dark:border-white/5">
                       {getIcon(task.type)}
                     </div>
                     <div>

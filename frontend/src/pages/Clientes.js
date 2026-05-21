@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Plus, Search, Calendar, FileText, X, RotateCcw, ExternalLink, ChevronDown } from 'lucide-react';
+import { Plus, Search, Calendar, FileText, X, RotateCcw, ExternalLink, ChevronDown, CheckSquare } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Card, CardContent } from '../components/ui/card';
@@ -37,7 +37,30 @@ export default function Clientes() {
   const fetchClients = async () => {
     try {
       const res = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/api/clients`, { withCredentials: true });
-      setClients(res.data);
+      let fetched = res.data;
+      let nat2go = fetched.find(c => c.name === 'Nat2Go Studio (Mis Proyectos)');
+      
+      if (!nat2go) {
+         const newClient = {
+            name: 'Nat2Go Studio (Mis Proyectos)',
+            service_type: 'Internal',
+            project_status: 'Activo',
+            next_delivery: '',
+            billing_status: 'Propio',
+            links: {},
+            social_posts: { internal: { target: 4, completed: 0 } },
+            checklist: [
+              { id: 'c1', text: 'Revisar y cerrar textos de las secciones.', done: false },
+              { id: 'c2', text: 'Maquetar la interfaz elegida (Framer/WordPress).', done: false },
+              { id: 'c3', text: 'Conectar dominio y lanzar.', done: false }
+            ]
+         };
+         const createRes = await axios.post(`${process.env.REACT_APP_BACKEND_URL}/api/clients`, newClient, { withCredentials: true });
+         fetched = [createRes.data, ...fetched];
+      } else {
+         fetched = [nat2go, ...fetched.filter(c => c.id !== nat2go.id)];
+      }
+      setClients(fetched);
     } catch (e) {
       toast.error('Error al cargar clientes');
     } finally {
@@ -200,13 +223,85 @@ export default function Clientes() {
 
       {loading ? (
         <p className="text-secondary">Cargando...</p>
-      ) : clients.length === 0 ? (
-        <div className="text-center p-12 border border-dashed rounded-md bg-card/50">
-          <p className="text-secondary">No tienes clientes activos. Crea tu primer cliente.</p>
-        </div>
       ) : (
         <div className="grid grid-cols-1 xl:grid-cols-2 2xl:grid-cols-3 gap-6">
           {clients.map(client => {
+            
+            // SPECIAL RENDER FOR NAT2GO STUDIO CARD
+            if (client.name === 'Nat2Go Studio (Mis Proyectos)') {
+               const isComplete = (client.social_posts?.internal?.completed || 0) >= 4;
+               return (
+                 <Card key={client.id} className="shadow-none border-indigo-200 dark:border-indigo-900/50 bg-indigo-50/30 dark:bg-indigo-900/10 flex flex-col group relative overflow-hidden xl:col-span-2 2xl:col-span-3">
+                   <CardContent className="p-6 flex flex-col md:flex-row gap-6">
+                      <div className="flex-1">
+                          <div className="flex justify-between items-start mb-4">
+                             <div>
+                               <h3 className="text-xl font-medium text-indigo-900 dark:text-indigo-300">{client.name}</h3>
+                               <span className="inline-block mt-1 bg-indigo-100 text-indigo-800 dark:bg-indigo-900/50 dark:text-indigo-400 text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-sm">
+                                 Interno
+                               </span>
+                             </div>
+                          </div>
+                          
+                          <div className="space-y-4">
+                             <details className="group border border-indigo-200 dark:border-indigo-800 rounded-lg bg-white dark:bg-card overflow-hidden">
+                               <summary className="flex items-center justify-between p-3 cursor-pointer select-none hover:bg-indigo-50/50 dark:hover:bg-indigo-900/20 transition-colors">
+                                 <span className="text-sm font-semibold uppercase tracking-widest text-indigo-700 dark:text-indigo-400">Mi Web Profesional</span>
+                                 <ChevronDown size={16} className="text-indigo-400 transition-transform duration-200 group-open:rotate-180" />
+                               </summary>
+                               <div className="p-3 border-t border-indigo-100 dark:border-indigo-800 bg-indigo-50/20 dark:bg-indigo-900/10 space-y-2">
+                                 {client.checklist?.map(item => (
+                                   <label key={item.id} className="flex items-center gap-3 cursor-pointer group/chk select-none">
+                                     <input 
+                                       type="checkbox" 
+                                       className="rounded border-indigo-300 text-indigo-600 focus:ring-indigo-600 w-4 h-4 shrink-0"
+                                       checked={item.done}
+                                       onChange={() => toggleChecklistItem(client.id, client.checklist, item.id)}
+                                     />
+                                     <span className={`text-sm ${item.done ? 'text-secondary line-through' : 'font-medium group-hover/chk:text-indigo-700 dark:group-hover/chk:text-indigo-300'}`}>
+                                       {item.text}
+                                     </span>
+                                   </label>
+                                 ))}
+                               </div>
+                             </details>
+                          </div>
+                      </div>
+                      
+                      <div className="flex-1">
+                          <details className="group border border-indigo-200 dark:border-indigo-800 rounded-lg bg-white dark:bg-card overflow-hidden h-full">
+                               <summary className="flex items-center justify-between p-3 cursor-pointer select-none hover:bg-indigo-50/50 dark:hover:bg-indigo-900/20 transition-colors">
+                                 <span className="text-sm font-semibold uppercase tracking-widest text-indigo-700 dark:text-indigo-400">Mis Redes Sociales</span>
+                                 <ChevronDown size={16} className="text-indigo-400 transition-transform duration-200 group-open:rotate-180" />
+                               </summary>
+                               <div className="p-4 border-t border-indigo-100 dark:border-indigo-800 bg-indigo-50/20 dark:bg-indigo-900/10 h-full flex flex-col justify-center">
+                                   <div className={`flex flex-col gap-3 p-4 rounded-md border transition-colors ${isComplete ? 'bg-muted/50 grayscale opacity-70 border-dashed' : 'bg-white dark:bg-card shadow-sm border-indigo-200 dark:border-indigo-800'}`}>
+                                       <div className="flex justify-between items-center w-full">
+                                         <span className={`text-sm font-medium ${isComplete ? 'text-secondary' : 'text-foreground'}`}>Posts esta semana:</span>
+                                         <span className="text-sm font-semibold text-indigo-600 dark:text-indigo-400">{client.social_posts?.internal?.completed || 0} de 4</span>
+                                       </div>
+                                       <Button 
+                                         size="sm" 
+                                         variant={isComplete ? "outline" : "default"}
+                                         className={`w-full ${!isComplete ? 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-none' : 'shadow-none'}`}
+                                         disabled={isComplete}
+                                         onClick={() => incrementPost(client.id, 'internal', client.social_posts)}
+                                       >
+                                         +1 Post
+                                       </Button>
+                                   </div>
+                                   <div className="mt-3 text-right">
+                                      <button onClick={() => resetWeeklyPosts(client.id, client.social_posts)} className="text-[10px] uppercase text-secondary hover:text-indigo-600 transition-colors">Reset Semanal</button>
+                                   </div>
+                               </div>
+                          </details>
+                      </div>
+                   </CardContent>
+                 </Card>
+               )
+            }
+
+            // REGULAR CLIENT RENDER
             const urgency = getUrgency(client.next_delivery);
             const socialData = client.social_posts || {};
             const hasSocial = Object.values(socialData).some(n => n?.target > 0);
@@ -260,41 +355,15 @@ export default function Clientes() {
                   {/* Accordions for Tasks */}
                   <div className="space-y-2 mb-5">
                     
-                    {/* Tracker Web_Mantenimiento / NeuroAlly_PRO */}
+                    {/* Tracker Web_Mantenimiento / NeuroAlly_PRO - Divided into 3 independent accordions */}
                     {isWebOrNeuro && (
-                      <details className="group border border-border rounded-lg bg-card overflow-hidden">
-                        <summary className="flex items-center justify-between p-3 cursor-pointer select-none hover:bg-muted/50 transition-colors">
-                          <span className="text-sm font-semibold uppercase tracking-widest text-secondary">Mantenimiento Mensual</span>
-                          <ChevronDown size={16} className="text-secondary transition-transform duration-200 group-open:rotate-180" />
-                        </summary>
-                        <div className="p-3 border-t bg-muted/10">
-                          {/* Newsletters Block */}
-                          <div className={`flex items-center justify-between p-3 rounded-md border mb-3 transition-colors ${newslettersCompleted ? 'bg-muted/50 grayscale opacity-70 border-dashed' : 'bg-card shadow-sm border-border'}`}>
-                            <div>
-                              <span className={`text-sm font-medium ${newslettersCompleted ? 'text-secondary' : 'text-foreground'}`}>Newsletters enviadas:</span>
-                              <span className="text-sm ml-2 text-secondary">{client.newsletters_count || 0} de 2</span>
-                            </div>
-                            <Button 
-                              size="sm" 
-                              variant="outline"
-                              className="h-7 px-3 text-xs shadow-none"
-                              disabled={newslettersCompleted}
-                              onClick={() => updateClientField(client.id, 'newsletters_count', (client.newsletters_count || 0) + 1)}
-                            >
-                              +1
-                            </Button>
-                          </div>
-
-                          <div className="flex flex-col gap-2">
-                            <label className="flex items-center gap-3 cursor-pointer group/chk">
-                              <input 
-                                type="checkbox" 
-                                className="rounded border-gray-300 text-primary focus:ring-primary w-4 h-4 shrink-0"
-                                checked={client.blog_done || false}
-                                onChange={() => updateClientField(client.id, 'blog_done', !client.blog_done)}
-                              />
-                              <span className={`text-sm select-none ${client.blog_done ? 'text-secondary line-through' : 'font-medium group-hover/chk:text-primary'}`}>Artículo de Blog</span>
-                            </label>
+                      <>
+                        <details className="group border border-border rounded-lg bg-card overflow-hidden">
+                          <summary className="flex items-center justify-between p-3 cursor-pointer select-none hover:bg-muted/50 transition-colors">
+                            <span className="text-sm font-semibold uppercase tracking-widest text-secondary">Banners Home</span>
+                            <ChevronDown size={16} className="text-secondary transition-transform duration-200 group-open:rotate-180" />
+                          </summary>
+                          <div className="p-3 border-t bg-muted/10">
                             <label className="flex items-center gap-3 cursor-pointer group/chk">
                               <input 
                                 type="checkbox" 
@@ -302,11 +371,52 @@ export default function Clientes() {
                                 checked={client.banners_done || false}
                                 onChange={() => updateClientField(client.id, 'banners_done', !client.banners_done)}
                               />
-                              <span className={`text-sm select-none ${client.banners_done ? 'text-secondary line-through' : 'font-medium group-hover/chk:text-primary'}`}>Banners Mensuales</span>
+                              <span className={`text-sm select-none ${client.banners_done ? 'text-secondary line-through' : 'font-medium group-hover/chk:text-primary'}`}>Actualizar Banners Home</span>
                             </label>
                           </div>
-                        </div>
-                      </details>
+                        </details>
+
+                        <details className="group border border-border rounded-lg bg-card overflow-hidden">
+                          <summary className="flex items-center justify-between p-3 cursor-pointer select-none hover:bg-muted/50 transition-colors">
+                            <span className="text-sm font-semibold uppercase tracking-widest text-secondary">Newsletters</span>
+                            <ChevronDown size={16} className="text-secondary transition-transform duration-200 group-open:rotate-180" />
+                          </summary>
+                          <div className="p-3 border-t bg-muted/10">
+                            <div className={`flex items-center justify-between p-3 rounded-md border transition-colors ${newslettersCompleted ? 'bg-muted/50 grayscale opacity-70 border-dashed' : 'bg-card shadow-sm border-border'}`}>
+                              <div>
+                                <span className={`text-sm font-medium ${newslettersCompleted ? 'text-secondary' : 'text-foreground'}`}>{client.newsletters_count || 0} de 2 enviadas</span>
+                              </div>
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                className="h-7 px-3 text-xs shadow-none"
+                                disabled={newslettersCompleted}
+                                onClick={() => updateClientField(client.id, 'newsletters_count', (client.newsletters_count || 0) + 1)}
+                              >
+                                +1 Newsletter
+                              </Button>
+                            </div>
+                          </div>
+                        </details>
+
+                        <details className="group border border-border rounded-lg bg-card overflow-hidden">
+                          <summary className="flex items-center justify-between p-3 cursor-pointer select-none hover:bg-muted/50 transition-colors">
+                            <span className="text-sm font-semibold uppercase tracking-widest text-secondary">Blog Post</span>
+                            <ChevronDown size={16} className="text-secondary transition-transform duration-200 group-open:rotate-180" />
+                          </summary>
+                          <div className="p-3 border-t bg-muted/10">
+                            <label className="flex items-center gap-3 cursor-pointer group/chk">
+                              <input 
+                                type="checkbox" 
+                                className="rounded border-gray-300 text-primary focus:ring-primary w-4 h-4 shrink-0"
+                                checked={client.blog_done || false}
+                                onChange={() => updateClientField(client.id, 'blog_done', !client.blog_done)}
+                              />
+                              <span className={`text-sm select-none ${client.blog_done ? 'text-secondary line-through' : 'font-medium group-hover/chk:text-primary'}`}>Publicar Artículo de Blog</span>
+                            </label>
+                          </div>
+                        </details>
+                      </>
                     )}
 
                     {/* Checklist NeuroAlly PRO */}

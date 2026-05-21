@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Plus, X, Trash2, ArrowRight } from 'lucide-react';
+import { Plus, X, Trash2, ArrowRight, Zap } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { toast } from 'sonner';
@@ -8,6 +8,9 @@ import { toast } from 'sonner';
 export default function Contenido() {
   const [ideas, setIdeas] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isQuickCaptureOpen, setIsQuickCaptureOpen] = useState(false);
+  const [quickIdea, setQuickIdea] = useState('');
+  
   const [formData, setFormData] = useState({
     title: '',
     status: 'idea',
@@ -26,6 +29,27 @@ export default function Contenido() {
       setIdeas(res.data);
     } catch (e) {
       toast.error('Error al cargar contenido');
+    }
+  };
+
+  const handleQuickSubmit = async (e) => {
+    e.preventDefault();
+    if (!quickIdea.trim()) return;
+    
+    try {
+      await axios.post(`${process.env.REACT_APP_BACKEND_URL}/api/content`, {
+        title: quickIdea,
+        status: 'idea',
+        reusable: false,
+        notes: '',
+        reference_url: ''
+      }, { withCredentials: true });
+      toast.success('Idea capturada');
+      setQuickIdea('');
+      setIsQuickCaptureOpen(false);
+      fetchIdeas();
+    } catch (e) {
+      toast.error('Error al guardar');
     }
   };
 
@@ -72,14 +96,36 @@ export default function Contenido() {
 
   return (
     <div className="space-y-8 h-[calc(100vh-120px)] flex flex-col animate-in fade-in slide-in-from-bottom-2 duration-500 relative">
-      <div className="flex items-center justify-between shrink-0">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 shrink-0">
         <div>
           <h1 className="text-3xl font-semibold tracking-tight">Contenido</h1>
           <p className="text-secondary text-sm mt-1">Tus ideas sin fricción.</p>
         </div>
-        <Button onClick={() => setIsModalOpen(true)} data-testid="add-idea-btn">
-          <Plus className="mr-2 h-4 w-4" /> Nueva Idea
-        </Button>
+        
+        <div className="flex items-center gap-3">
+          {/* Quick Capture Form Inline */}
+          {isQuickCaptureOpen ? (
+            <form onSubmit={handleQuickSubmit} className="flex items-center gap-2 animate-in fade-in zoom-in-95 duration-200">
+              <Input 
+                autoFocus
+                placeholder="Escribe una idea brillante..."
+                className="w-64 border-primary/50 shadow-sm"
+                value={quickIdea}
+                onChange={e => setQuickIdea(e.target.value)}
+                onBlur={() => { if(!quickIdea) setIsQuickCaptureOpen(false); }}
+              />
+              <Button type="submit" size="sm" className="px-4">Añadir</Button>
+            </form>
+          ) : (
+            <Button onClick={() => setIsQuickCaptureOpen(true)} className="bg-amber-100 text-amber-800 hover:bg-amber-200 border border-amber-200 shadow-none dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-900/50">
+              <Zap className="mr-2 h-4 w-4" /> Captura Rápida de Emergencia
+            </Button>
+          )}
+
+          <Button variant="outline" onClick={() => setIsModalOpen(true)}>
+            <Plus className="mr-2 h-4 w-4" /> Idea Completa
+          </Button>
+        </div>
       </div>
 
       <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-6 overflow-hidden min-h-0">
@@ -131,7 +177,7 @@ export default function Contenido() {
         ))}
       </div>
 
-      {/* Modal Nueva Idea */}
+      {/* Modal Nueva Idea (Completa) */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-card w-full max-w-md rounded-xl border shadow-lg overflow-hidden flex flex-col">

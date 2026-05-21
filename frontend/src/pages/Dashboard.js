@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Plus, Link2, Calendar, Mail, FileText, ExternalLink, Image, AlertCircle, Briefcase, X, Trash2 } from 'lucide-react';
+import { Plus, Link2, Calendar, Mail, FileText, ExternalLink, Image, AlertCircle, Briefcase, X, Trash2, Receipt, Dices } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Card, CardContent } from '../components/ui/card';
@@ -11,12 +11,15 @@ export default function Dashboard() {
   const [tasks, setTasks] = useState([]);
   const [events, setEvents] = useState([]);
   
-  // Task Modal State
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
   const [taskData, setTaskData] = useState({
     title: '',
     category: 'priority',
   });
+
+  const [diceInput, setDiceInput] = useState('');
+  const [diceResult, setDiceResult] = useState('');
+  const [isRolling, setIsRolling] = useState(false);
 
   useEffect(() => {
     fetchTasks();
@@ -41,6 +44,35 @@ export default function Dashboard() {
     } catch (e) {
       console.error(e);
     }
+  };
+
+  const handleDiceRoll = () => {
+    if (!diceInput.trim()) return;
+    
+    let options = diceInput.split(/(?:\s+vs\s+|\s+o\s+|-|,)/i).map(s => s.trim()).filter(Boolean);
+    if (options.length < 2) {
+       options = diceInput.split(' ').map(s => s.trim()).filter(Boolean);
+       if (options.length < 2) {
+         toast.error('Escribe al menos dos opciones (Ej: Framer vs WordPress)');
+         return;
+       }
+    }
+    
+    setIsRolling(true);
+    setDiceResult('🎲 Pensando...');
+    
+    let counter = 0;
+    const interval = setInterval(() => {
+      setDiceResult(options[counter % options.length]);
+      counter++;
+    }, 100);
+
+    setTimeout(() => {
+      clearInterval(interval);
+      const winner = options[Math.floor(Math.random() * options.length)];
+      setDiceResult(`Tu intuición dice: ${winner} ✨`);
+      setIsRolling(false);
+    }, 1000);
   };
 
   const priorities = tasks.filter(t => t.category === 'priority' && !t.completed).slice(0, 3);
@@ -100,7 +132,6 @@ export default function Dashboard() {
         
         {/* Left Column: Priorities */}
         <div className="lg:col-span-2 space-y-8">
-          {/* Top 3 Priorities */}
           <section>
             <h2 className="text-sm font-semibold tracking-widest uppercase text-secondary mb-4">Top 3 Prioridades</h2>
             <div className="space-y-4">
@@ -129,7 +160,6 @@ export default function Dashboard() {
             </div>
           </section>
 
-          {/* Urgent & Deliveries */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <section>
               <h2 className="text-sm font-semibold tracking-widest uppercase text-destructive mb-4 flex items-center gap-2">
@@ -202,10 +232,35 @@ export default function Dashboard() {
             </Card>
           </section>
 
+          {/* DADO DE LA INTUICIÓN */}
+          <section className="bg-gradient-to-br from-indigo-50 to-blue-50 dark:from-indigo-950/30 dark:to-blue-950/30 p-5 rounded-xl border border-indigo-100 dark:border-indigo-900/30">
+            <h2 className="text-sm font-semibold tracking-widest uppercase text-indigo-800 dark:text-indigo-400 mb-3 flex items-center gap-2">
+              <Dices size={16} /> Desbloqueador de Decisiones
+            </h2>
+            <div className="flex gap-2 mb-3">
+               <Input 
+                 placeholder="Ej: Framer vs WordPress" 
+                 value={diceInput} 
+                 onChange={e => setDiceInput(e.target.value)} 
+                 className="bg-white dark:bg-card border-indigo-200 dark:border-indigo-800 shadow-none text-sm" 
+                 onKeyDown={(e) => { if(e.key === 'Enter') handleDiceRoll(); }}
+               />
+               <Button onClick={handleDiceRoll} disabled={isRolling} className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-none shrink-0">
+                 Lanzar
+               </Button>
+            </div>
+            {diceResult && (
+               <div className="text-center p-3 bg-white/60 dark:bg-black/20 rounded-md text-sm font-medium text-indigo-900 dark:text-indigo-300 animate-in fade-in zoom-in duration-200">
+                 {diceResult}
+               </div>
+            )}
+          </section>
+
           <section>
             <h2 className="text-sm font-semibold tracking-widest uppercase text-secondary mb-4">Accesos Rápidos</h2>
             <div className="grid grid-cols-2 gap-3">
               {[
+                { name: 'Factura Directa', icon: Receipt, url: 'https://app.facturadirecta.com' },
                 { name: 'Canva', icon: Image, url: 'https://canva.com' },
                 { name: 'Drive', icon: FileText, url: 'https://drive.google.com' },
                 { name: 'Meta Business', icon: Briefcase, url: 'https://business.facebook.com/' },
@@ -228,7 +283,6 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Modal Añadir Tarea */}
       {isTaskModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-card w-full max-w-sm rounded-xl border shadow-lg overflow-hidden flex flex-col">
