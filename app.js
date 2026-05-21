@@ -167,13 +167,12 @@ async function callGAS(action, method = 'GET', data = null) {
     let url = `${settings.gasUrl}?action=${action}&token=${GAS_TOKEN}`;
     const options = {
       method: method,
-      headers: { 'Content-Type': 'application/json' },
-      mode: 'cors'
+      mode: 'no-cors'
     };
 
     if (method === 'POST' && data) {
       options.body = JSON.stringify(data);
-      url += `&action=${action}&token=${GAS_TOKEN}`;
+      options.headers = { 'Content-Type': 'text/plain' };
     }
 
     const response = await fetch(url, options);
@@ -205,7 +204,12 @@ function renderCalendarEvents(events) {
   if (!container) return;
 
   if (!events || events.length === 0) {
-    container.innerHTML = '<p class="calendar-empty">Sin eventos para hoy</p>';
+    container.innerHTML = `
+      <p class="calendar-empty" style="color: #dc2626;">
+        ⚠️ Verificando Google Calendar...
+        <br><small style="color: #a09890;">Si persiste, revisa la consola (F12)</small>
+      </p>
+    `;
     return;
   }
 
