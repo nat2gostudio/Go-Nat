@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Plus, Calendar, Mail, FileText, Image, AlertCircle, Briefcase, X, Trash2, Receipt, Dices, Coins, Users, Sparkles, Activity, Headphones } from 'lucide-react';
+import { Plus, Calendar, Mail, FileText, Image, AlertCircle, Briefcase, X, Trash2, Receipt, Dices, Coins, Users, Sparkles, Activity, Headphones, Play, Pause } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Card, CardContent } from '../components/ui/card';
@@ -32,6 +32,28 @@ export default function Dashboard() {
   const [diceInput, setDiceInput] = useState('');
   const [diceResult, setDiceResult] = useState('');
   const [isRolling, setIsRolling] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const audioRef = React.useRef(null);
+
+  useEffect(() => {
+    audioRef.current = new Audio('https://streams.ilovemusic.de/iloveradio17.mp3');
+    audioRef.current.volume = 0.5;
+    
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+      }
+    };
+  }, []);
+
+  const togglePlay = () => {
+    if (isPlaying) {
+      audioRef.current.pause();
+    } else {
+      audioRef.current.play().catch(e => toast.error("Error al reproducir el audio"));
+    }
+    setIsPlaying(!isPlaying);
+  };
 
   useEffect(() => {
     fetchTasks();
@@ -283,20 +305,16 @@ export default function Dashboard() {
               alt="NeuroAlly Flow"
               className="w-full h-48 object-contain object-center opacity-90 hover:opacity-100 hover:scale-105 transition-all duration-500 drop-shadow-md"
             />
-            {/* Spotify Lo-Fi Player for Focus */}
-            <div className="w-full bg-blue-50/30 dark:bg-blue-900/10 p-2 rounded-2xl border border-blue-100 dark:border-blue-900/30 shadow-sm transition-all hover:shadow-md hover:border-blue-200">
-              <iframe 
-                style={{ borderRadius: '12px' }} 
-                src="https://open.spotify.com/embed/playlist/37i9dQZF1DWWQRwui0ExPn?utm_source=generator&theme=0" 
-                width="100%" 
-                height="152" 
-                frameBorder="0" 
-                allowFullScreen="" 
-                allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" 
-                loading="lazy"
-                title="Lo-Fi Focus Playlist"
-              ></iframe>
-            </div>
+            {/* Minimal Custom Lofi Player */}
+            <Button 
+               variant="outline" 
+               className={`rounded-full px-6 shadow-none transition-all duration-300 border-blue-200 text-blue-700 hover:bg-blue-50 hover:text-blue-800 dark:border-blue-900/50 dark:text-blue-400 dark:hover:bg-blue-900/20 ${isPlaying ? 'bg-blue-50 dark:bg-blue-900/20 shadow-sm border-blue-300 dark:border-blue-700' : ''}`}
+               onClick={togglePlay}
+               title="Reproducir emisora Lofi 24/7"
+            >
+               {isPlaying ? <Pause size={16} className="mr-2 animate-pulse" /> : <Play size={16} className="mr-2" />}
+               {isPlaying ? 'Pausar Focus' : 'Lofi Focus'}
+            </Button>
           </div>
 
           {/* DYNAMIC CHART: Flujo de Energía */}
