@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Plus, X, Trash2, ArrowRight, Zap } from 'lucide-react';
+import { Plus, X, Trash2, ArrowRight, Zap, Link2 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { toast } from 'sonner';
@@ -91,7 +91,8 @@ export default function Contenido() {
   const columns = [
     { id: 'idea', title: 'Ideas Rápidas', next: 'pending' },
     { id: 'pending', title: 'Pendiente', next: 'published' },
-    { id: 'published', title: 'Publicado', next: null }
+    { id: 'published', title: 'Publicado', next: null },
+    { id: 'link', title: 'Enlaces de Consulta', next: null }
   ];
 
   return (
@@ -99,7 +100,7 @@ export default function Contenido() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 shrink-0">
         <div>
           <h1 className="text-3xl font-semibold tracking-tight">Contenido</h1>
-          <p className="text-secondary text-sm mt-1">Tus ideas sin fricción.</p>
+          <p className="text-secondary text-sm mt-1">Tus ideas, enlaces y referencias sin fricción.</p>
         </div>
         
         <div className="flex items-center gap-3">
@@ -123,12 +124,12 @@ export default function Contenido() {
           )}
 
           <Button variant="outline" onClick={() => setIsModalOpen(true)}>
-            <Plus className="mr-2 h-4 w-4" /> Idea Completa
+            <Plus className="mr-2 h-4 w-4" /> Añadir Completo
           </Button>
         </div>
       </div>
 
-      <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-6 overflow-hidden min-h-0">
+      <div className="flex-1 grid grid-cols-1 md:grid-cols-4 gap-6 overflow-hidden min-h-0">
         {columns.map(col => (
           <div key={col.id} className="bg-muted/30 rounded-xl p-4 flex flex-col h-full border border-border/50 overflow-hidden">
             <h3 className="font-semibold mb-4 flex justify-between items-center text-sm uppercase tracking-widest text-secondary shrink-0">
@@ -146,8 +147,8 @@ export default function Contenido() {
                     <div className="pr-6">
                       <p className="font-medium text-sm leading-relaxed">{idea.title}</p>
                       {idea.reference_url && (
-                        <a href={idea.reference_url} target="_blank" rel="noreferrer" className="text-xs text-blue-500 hover:underline mt-1 block truncate">
-                          Link de ref.
+                        <a href={idea.reference_url} target="_blank" rel="noreferrer" className="text-xs text-blue-500 hover:underline mt-1 flex items-center gap-1 truncate">
+                          <Link2 size={12}/> Abrir Enlace
                         </a>
                       )}
                       {idea.notes && <p className="text-xs text-secondary mt-2 line-clamp-2">{idea.notes}</p>}
@@ -177,12 +178,12 @@ export default function Contenido() {
         ))}
       </div>
 
-      {/* Modal Nueva Idea (Completa) */}
+      {/* Modal Nueva Idea/Enlace (Completa) */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-card w-full max-w-md rounded-xl border shadow-lg overflow-hidden flex flex-col">
             <div className="p-5 border-b flex items-center justify-between">
-              <h2 className="text-lg font-semibold">Guardar Idea Rápida</h2>
+              <h2 className="text-lg font-semibold">Guardar Idea o Enlace</h2>
               <Button variant="ghost" size="icon" onClick={() => setIsModalOpen(false)}>
                 <X size={20} />
               </Button>
@@ -190,45 +191,62 @@ export default function Contenido() {
             
             <form id="idea-form" onSubmit={handleSubmit} className="p-6 space-y-4">
               <div className="space-y-2">
-                <label className="text-sm font-medium">Idea o Título *</label>
+                <label className="text-sm font-medium">Categoría</label>
+                <select 
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  value={formData.status} 
+                  onChange={e => setFormData({...formData, status: e.target.value})}
+                >
+                  <option value="idea">Nueva Idea de Contenido</option>
+                  <option value="link">Enlace de Consulta / Referencia</option>
+                </select>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Título o Descripción *</label>
                 <Input 
                   value={formData.title} 
                   onChange={e => setFormData({...formData, title: e.target.value})} 
                   required 
-                  placeholder="Ej. Reel sobre 3 tips de branding..." 
+                  placeholder={formData.status === 'link' ? "Ej. Herramienta de SEO" : "Ej. Reel sobre 3 tips de branding..."}
                   autoFocus
                 />
               </div>
               
               <div className="space-y-2">
-                <label className="text-sm font-medium">Link de Referencia (Opcional)</label>
+                <label className="text-sm font-medium">Link de Referencia</label>
                 <Input 
                   value={formData.reference_url} 
                   onChange={e => setFormData({...formData, reference_url: e.target.value})} 
-                  placeholder="https://instagram.com/..." 
+                  placeholder="https://..." 
+                  required={formData.status === 'link'}
                 />
               </div>
 
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Notas (Opcional)</label>
-                <textarea 
-                  className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 resize-none h-20"
-                  value={formData.notes} 
-                  onChange={e => setFormData({...formData, notes: e.target.value})} 
-                  placeholder="Audio trending, texto en pantalla..."
-                />
-              </div>
+              {formData.status === 'idea' && (
+                <>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Notas (Opcional)</label>
+                    <textarea 
+                      className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring resize-none h-20"
+                      value={formData.notes} 
+                      onChange={e => setFormData({...formData, notes: e.target.value})} 
+                      placeholder="Audio trending, texto en pantalla..."
+                    />
+                  </div>
 
-              <div className="flex items-center gap-2 pt-2">
-                <input 
-                  type="checkbox" 
-                  id="reusable" 
-                  className="rounded border-gray-300 text-primary focus:ring-primary h-4 w-4"
-                  checked={formData.reusable}
-                  onChange={e => setFormData({...formData, reusable: e.target.checked})}
-                />
-                <label htmlFor="reusable" className="text-sm font-medium">Marcar como contenido reutilizable</label>
-              </div>
+                  <div className="flex items-center gap-2 pt-2">
+                    <input 
+                      type="checkbox" 
+                      id="reusable" 
+                      className="rounded border-gray-300 text-primary focus:ring-primary h-4 w-4"
+                      checked={formData.reusable}
+                      onChange={e => setFormData({...formData, reusable: e.target.checked})}
+                    />
+                    <label htmlFor="reusable" className="text-sm font-medium">Marcar como contenido reutilizable</label>
+                  </div>
+                </>
+              )}
             </form>
             
             <div className="p-5 border-t bg-muted/20 flex justify-end gap-3">

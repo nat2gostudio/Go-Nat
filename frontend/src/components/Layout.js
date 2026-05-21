@@ -3,6 +3,7 @@ import { Outlet, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { LayoutDashboard, Users, LayoutList, Wallet, LogOut, Sun, Moon } from 'lucide-react';
 import { Button } from './ui/button';
+import { toast } from 'sonner';
 
 export default function Layout() {
   const { logout } = useAuth();
@@ -17,6 +18,30 @@ export default function Layout() {
     }
     localStorage.setItem('theme', theme);
   }, [theme]);
+
+  // Recordatorios Periódicos (TDAH & Bienestar)
+  useEffect(() => {
+    // Beber agua cada hora (60 mins)
+    const waterInterval = setInterval(() => {
+      toast('💧 Hora de beber agua', { description: 'Mantente hidratada para no perder el foco.' });
+    }, 1000 * 60 * 60);
+
+    // Estirar y relajar la vista cada 90 mins
+    const stretchInterval = setInterval(() => {
+      toast('🧘‍♀️ Pausa corta', { description: 'Estira los hombros y aparta la vista de la pantalla unos segundos.' });
+    }, 1000 * 60 * 90);
+
+    // Ejercicio / Mover el cuerpo cada 3 horas
+    const exerciseInterval = setInterval(() => {
+      toast('🏃‍♀️ ¡Mueve el cuerpo!', { description: 'Haz un pequeño paseo o estiramiento activo para reiniciar la mente.' });
+    }, 1000 * 60 * 180);
+
+    return () => {
+      clearInterval(waterInterval);
+      clearInterval(stretchInterval);
+      clearInterval(exerciseInterval);
+    };
+  }, []);
 
   const toggleTheme = () => setTheme(t => t === 'light' ? 'dark' : 'light');
 
