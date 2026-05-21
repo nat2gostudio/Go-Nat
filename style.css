@@ -1488,69 +1488,13 @@ body.dark .quick-access-circle {
 
 /* ---------- Spotify Widget ---------- */
 .spotify-widget {
-  padding: 14px 16px;
+  padding: 0;
+  overflow: hidden;
 }
 
-.spotify-open-link {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 10px;
-  text-decoration: none;
-  color: var(--text);
-  cursor: pointer;
-}
-
-.spotify-controls {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-}
-
-.spotify-ctrl-btn {
-  color: var(--text-muted);
-  background: none;
-  border: none;
-  padding: 4px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: color var(--transition);
-  cursor: pointer;
-}
-
-.spotify-open-link:hover .spotify-ctrl-btn {
-  color: var(--primary);
-}
-
-.spotify-play-btn {
-  width: 42px;
-  height: 42px;
-  background: var(--primary);
-  color: #fff;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  transition: transform 0.15s ease, background var(--transition);
-}
-
-.spotify-play-btn svg {
-  margin-left: 2px;
-}
-
-.spotify-open-link:hover .spotify-play-btn {
-  transform: scale(1.08);
-}
-
-.spotify-label {
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--text);
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+.spotify-widget iframe {
+  display: block;
+  border-radius: var(--radius-card);
 }
 
 /* ---------- Pomodoro Widget ---------- */
