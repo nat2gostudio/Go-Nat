@@ -222,8 +222,8 @@ img.img-error {
   display: flex;
   flex-direction: column-reverse;
   align-items: flex-start;
-  margin-bottom: 28px;
-  gap: 12px;
+  margin-bottom: 20px;
+  gap: 6px;
   padding-top: 0;
 }
 
@@ -449,11 +449,7 @@ body.dark .btn-close-day {
 
 /* ---------- Priorities Section ---------- */
 .priorities-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 12px;
-  margin-top: 4px;
+  display: none;
 }
 
 .priorities-grid {
@@ -1497,12 +1493,20 @@ body.dark .btn-close-day {
   grid-template-columns: repeat(3, 1fr);
   gap: 16px;
   margin-bottom: 20px;
-  align-items: start;
+  align-items: stretch;
 }
 
 #calendarCard {
   grid-column: 1 / -1;
   order: -1;
+}
+
+.dashboard-top-grid .card,
+.dashboard-top-grid .quick-access-card,
+.dashboard-top-grid .right-sidebar-col {
+  min-height: 300px;
+  display: flex;
+  flex-direction: column;
 }
 
 /* ---------- Quick Access Card ---------- */
