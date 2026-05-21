@@ -19,6 +19,7 @@ from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 from google.auth.transport.requests import Request as GoogleRequest
 from google_auth_oauthlib.flow import Flow
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 app = FastAPI()
 
@@ -64,9 +65,13 @@ class ClientCreate(BaseModel):
     billing_status: str
     notes: Optional[str] = ""
     briefing: Optional[str] = ""
-    checklist: List[str] = []
-    links: dict = {} # e.g. {"Canva": "url"}
+    checklist: list = []
+    links: dict = {}
     social_posts: dict = {}
+    newsletters_count: int = 0
+    blog_done: bool = False
+    banners_done: bool = False
+    url_promos: Optional[str] = ""
 
 class ContentIdeaCreate(BaseModel):
     title: str
@@ -126,6 +131,19 @@ async def get_current_user(request: Request) -> dict:
     except jwt.InvalidTokenError:
         raise HTTPException(status_code=401, detail="Invalid token")
 
+async def monthly_reset_job():
+    print("Running monthly reset job for clients...")
+    db.clients.update_many(
+        {"service_type": {"$in": ["Web_Mantenimiento", "NeuroAlly_PRO"]}},
+        {"$set": {
+            "newsletters_count": 0,
+            "blog_done": False,
+            "banners_done": False
+        }}
+    )
+
+scheduler = AsyncIOScheduler()
+
 @app.on_event("startup")
 def startup_db_client():
     db.users.create_index("email", unique=True)
@@ -138,6 +156,10 @@ def startup_db_client():
     else:
         # always reset password to env if running this env
         db.users.update_one({"email": admin_email}, {"$set": {"password_hash": hash_password(admin_password)}})
+        
+    # Start scheduler
+    scheduler.add_job(monthly_reset_job, 'cron', day=1, hour=0, minute=0)
+    scheduler.start()
 
 # --- AUTH ENDPOINTS ---
 @app.post("/api/auth/login")
@@ -208,6 +230,15 @@ def get_clients(user: dict = Depends(get_current_user)):
 def create_client(client: ClientCreate, user: dict = Depends(get_current_user)):
     new_client = client.model_dump()
     new_client["user_id"] = user["id"]
+    
+    if new_client.get("service_type") == "NeuroAlly_PRO":
+        new_client["checklist"] = [
+            {"id": "auditoria", "text": "Auditoría Inicial", "done": False},
+            {"id": "accesibilidad", "text": "Informe de Accesibilidad", "done": False},
+            {"id": "feedback", "text": "Sesión de Feedback", "done": False},
+            {"id": "plan", "text": "Plan de Implementación", "done": False}
+        ]
+        
     result = db.clients.insert_one(new_client)
     new_client["id"] = str(result.inserted_id)
     return format_doc(new_client)

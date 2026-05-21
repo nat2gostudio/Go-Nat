@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Plus, Search, Calendar, FileText, X, RotateCcw } from 'lucide-react';
+import { Plus, Search, Calendar, FileText, X, RotateCcw, Link2, ExternalLink, CheckSquare } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Card, CardContent } from '../components/ui/card';
@@ -21,12 +21,13 @@ export default function Clientes() {
 
   const [formData, setFormData] = useState({
     name: '',
-    service_type: '',
+    service_type: 'RRSS',
     project_status: 'Activo',
     next_delivery: '',
     billing_status: 'Al día',
     links: { canva: '', meta: '', web: '', other: '' },
-    social_posts: initialSocialPosts
+    social_posts: initialSocialPosts,
+    url_promos: ''
   });
 
   useEffect(() => {
@@ -74,9 +75,10 @@ export default function Clientes() {
       toast.success('Cliente creado correctamente');
       setIsModalOpen(false);
       setFormData({
-        name: '', service_type: '', project_status: 'Activo', next_delivery: '', billing_status: 'Al día',
+        name: '', service_type: 'RRSS', project_status: 'Activo', next_delivery: '', billing_status: 'Al día',
         links: { canva: '', meta: '', web: '', other: '' },
-        social_posts: initialSocialPosts
+        social_posts: initialSocialPosts,
+        url_promos: ''
       });
       fetchClients();
     } catch (error) {
@@ -105,9 +107,7 @@ export default function Clientes() {
       }
     };
     
-    // Optimistic UI Update
     setClients(clients.map(c => c.id === clientId ? { ...c, social_posts: updated } : c));
-    
     try {
       await axios.put(`${process.env.REACT_APP_BACKEND_URL}/api/clients/${clientId}`, { social_posts: updated }, { withCredentials: true });
     } catch (e) {
@@ -130,6 +130,29 @@ export default function Clientes() {
       toast.success("Contadores a 0");
     } catch (e) {
       toast.error("Error al resetear");
+      fetchClients();
+    }
+  };
+
+  const updateClientField = async (clientId, field, value) => {
+    setClients(clients.map(c => c.id === clientId ? { ...c, [field]: value } : c));
+    try {
+      await axios.put(`${process.env.REACT_APP_BACKEND_URL}/api/clients/${clientId}`, { [field]: value }, { withCredentials: true });
+    } catch (e) {
+      toast.error("Error al actualizar");
+      fetchClients();
+    }
+  };
+
+  const toggleChecklistItem = async (clientId, checklist, itemId) => {
+    const updatedChecklist = checklist.map(item => 
+      item.id === itemId ? { ...item, done: !item.done } : item
+    );
+    setClients(clients.map(c => c.id === clientId ? { ...c, checklist: updatedChecklist } : c));
+    try {
+      await axios.put(`${process.env.REACT_APP_BACKEND_URL}/api/clients/${clientId}`, { checklist: updatedChecklist }, { withCredentials: true });
+    } catch (e) {
+      toast.error("Error al actualizar checklist");
       fetchClients();
     }
   };
@@ -182,11 +205,14 @@ export default function Clientes() {
           <p className="text-secondary">No tienes clientes activos. Crea tu primer cliente.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 xl:grid-cols-2 2xl:grid-cols-3 gap-6">
           {clients.map(client => {
             const urgency = getUrgency(client.next_delivery);
             const socialData = client.social_posts || {};
             const hasSocial = Object.values(socialData).some(n => n?.target > 0);
+            
+            const isWebOrNeuro = ['Web_Mantenimiento', 'NeuroAlly_PRO'].includes(client.service_type);
+            const isNeuroPro = client.service_type === 'NeuroAlly_PRO';
             
             return (
               <Card key={client.id} className="shadow-none flex flex-col group relative overflow-hidden">
@@ -199,7 +225,9 @@ export default function Clientes() {
                   <div className="flex justify-between items-start mb-4 relative">
                     <div>
                       <h3 className="text-xl font-medium">{client.name}</h3>
-                      <p className="text-sm text-secondary mt-1">{client.service_type}</p>
+                      <span className="inline-block mt-1 bg-primary/10 text-primary text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-sm">
+                        {client.service_type.replace('_', ' ')}
+                      </span>
                     </div>
                     <button 
                       onClick={() => deleteClient(client.id)}
@@ -228,15 +256,82 @@ export default function Clientes() {
                     </div>
                   </div>
 
+                  {/* Tracker Web_Mantenimiento / NeuroAlly_PRO */}
+                  {isWebOrNeuro && (
+                    <div className="mb-5 bg-blue-50/50 dark:bg-blue-900/10 p-3 rounded-lg border border-blue-100 dark:border-blue-900/30">
+                      <p className="text-xs font-semibold uppercase tracking-widest text-blue-700 dark:text-blue-400 mb-3">Mantenimiento Mensual</p>
+                      
+                      <div className="flex items-center justify-between bg-white dark:bg-card p-2 rounded-md border shadow-sm mb-3">
+                        <div>
+                          <span className="text-sm font-medium text-foreground">Newsletters</span>
+                          <p className="text-xs text-secondary">{client.newsletters_count || 0} de 2 completadas</p>
+                        </div>
+                        <Button 
+                          size="sm" 
+                          variant={(client.newsletters_count || 0) >= 2 ? "outline" : "secondary"}
+                          className={`h-8 ${((client.newsletters_count || 0) >= 2) ? 'border-emerald-200 text-emerald-700 bg-emerald-50 hover:bg-emerald-100' : ''}`}
+                          onClick={() => updateClientField(client.id, 'newsletters_count', (client.newsletters_count || 0) + 1)}
+                        >
+                          <Plus size={14} className="mr-1" /> 1 Newsletter
+                        </Button>
+                      </div>
+
+                      <div className="flex gap-4 px-1">
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input 
+                            type="checkbox" 
+                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-600 w-4 h-4"
+                            checked={client.blog_done || false}
+                            onChange={() => updateClientField(client.id, 'blog_done', !client.blog_done)}
+                          />
+                          <span className="text-sm font-medium">Blog</span>
+                        </label>
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input 
+                            type="checkbox" 
+                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-600 w-4 h-4"
+                            checked={client.banners_done || false}
+                            onChange={() => updateClientField(client.id, 'banners_done', !client.banners_done)}
+                          />
+                          <span className="text-sm font-medium">Banners</span>
+                        </label>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Checklist NeuroAlly PRO */}
+                  {isNeuroPro && client.checklist && client.checklist.length > 0 && (
+                    <div className="mb-5 space-y-2">
+                      <p className="text-xs font-semibold uppercase tracking-widest text-secondary flex items-center gap-1">
+                        <CheckSquare size={12} /> Checklist Setup
+                      </p>
+                      <div className="space-y-1">
+                        {client.checklist.map(item => (
+                          <label key={item.id} className="flex items-center gap-2 cursor-pointer p-1.5 hover:bg-muted/50 rounded-md transition-colors">
+                            <input 
+                              type="checkbox" 
+                              className="rounded border-gray-300 text-primary focus:ring-primary w-4 h-4 shrink-0"
+                              checked={item.done}
+                              onChange={() => toggleChecklistItem(client.id, client.checklist, item.id)}
+                            />
+                            <span className={`text-sm ${item.done ? 'text-secondary line-through' : 'font-medium'}`}>
+                              {item.text}
+                            </span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   {/* Social Posts Tracker */}
                   {hasSocial && (
                     <div className="mb-5 bg-muted/20 p-3 rounded-lg border">
                       <div className="flex items-center justify-between mb-3">
-                        <p className="text-xs font-semibold uppercase tracking-widest text-secondary">Progreso Semanal</p>
+                        <p className="text-xs font-semibold uppercase tracking-widest text-secondary">RRSS Semanal</p>
                         <button 
                           onClick={() => resetWeeklyPosts(client.id, socialData)}
                           className="text-secondary hover:text-primary transition-colors flex items-center gap-1"
-                          title="Poner todos los contadores a 0"
+                          title="Poner contadores a 0"
                         >
                           <RotateCcw size={12} />
                           <span className="text-[10px] uppercase">Reset</span>
@@ -268,7 +363,7 @@ export default function Clientes() {
                               <Button 
                                 size="sm" 
                                 variant={isComplete ? "outline" : "secondary"} 
-                                className={`h-7 w-20 shrink-0 text-xs ${isComplete ? 'border-emerald-200 text-emerald-700' : ''}`}
+                                className={`h-7 w-20 shrink-0 text-xs ${isComplete ? 'border-emerald-200 text-emerald-700 bg-emerald-50 hover:bg-emerald-100' : ''}`}
                                 onClick={() => incrementPost(client.id, network, socialData)}
                               >
                                 <Plus size={12} className="mr-1" /> 1 Post
@@ -283,6 +378,14 @@ export default function Clientes() {
                   <div className="border-t border-border pt-4 mt-auto">
                     <p className="text-xs font-medium text-secondary mb-3 uppercase tracking-widest">Enlaces Rápidos</p>
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                      {client.url_promos && (
+                        <a href={client.url_promos} target="_blank" rel="noreferrer" className="col-span-2 sm:col-span-4 mb-1">
+                          <Button variant="outline" size="sm" className="w-full text-xs h-8 border-blue-200 text-blue-700 hover:bg-blue-50 dark:border-blue-900 dark:text-blue-400">
+                            <ExternalLink size={12} className="mr-2" /> Promos del Mes
+                          </Button>
+                        </a>
+                      )}
+                      
                       {client.links?.canva && (
                         <a href={client.links.canva} target="_blank" rel="noreferrer">
                           <Button variant="outline" size="sm" className="w-full text-xs h-8">Canva</Button>
@@ -303,7 +406,7 @@ export default function Clientes() {
                           <Button variant="outline" size="sm" className="w-full text-xs h-8">Otros</Button>
                         </a>
                       )}
-                      {(!client.links || (!client.links.canva && !client.links.meta && !client.links.web && !client.links.other)) && (
+                      {(!client.links || (!client.links.canva && !client.links.meta && !client.links.web && !client.links.other && !client.url_promos)) && (
                         <span className="text-xs text-secondary italic col-span-4">Sin enlaces configurados</span>
                       )}
                     </div>
@@ -338,7 +441,15 @@ export default function Clientes() {
                     </div>
                     <div className="space-y-2">
                       <label className="text-sm font-medium">Tipo de Servicio *</label>
-                      <Input value={formData.service_type} onChange={e => setFormData({...formData, service_type: e.target.value})} required placeholder="Ej. Gestión RRSS..." />
+                      <select 
+                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                        value={formData.service_type} 
+                        onChange={e => setFormData({...formData, service_type: e.target.value})}
+                      >
+                        <option value="RRSS">RRSS</option>
+                        <option value="Web_Mantenimiento">Web Mantenimiento</option>
+                        <option value="NeuroAlly_PRO">NeuroAlly PRO</option>
+                      </select>
                     </div>
                   </div>
                   
@@ -363,8 +474,8 @@ export default function Clientes() {
                 </div>
 
                 <div className="space-y-4 pt-4 border-t">
-                  <h3 className="text-xs font-semibold tracking-widest uppercase text-secondary">Objetivos Semanales de Contenido (Opcional)</h3>
-                  <p className="text-xs text-secondary mb-3">Introduce cuántos posts quieres hacer a la semana. Si dejas "0", esa red no aparecerá en la tarjeta.</p>
+                  <h3 className="text-xs font-semibold tracking-widest uppercase text-secondary">Objetivos Semanales de Contenido (RRSS)</h3>
+                  <p className="text-xs text-secondary mb-3">Introduce cuántos posts quieres hacer a la semana. (Deja en 0 si no aplica)</p>
                   
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                     {Object.entries(networkLabels).map(([key, label]) => (
@@ -383,7 +494,13 @@ export default function Clientes() {
                 </div>
 
                 <div className="space-y-4 pt-4 border-t">
-                  <h3 className="text-xs font-semibold tracking-widest uppercase text-secondary">Enlaces Rápidos (Opcional)</h3>
+                  <h3 className="text-xs font-semibold tracking-widest uppercase text-secondary">Enlaces Rápidos</h3>
+                  
+                  <div className="space-y-2 mb-4 bg-blue-50/50 dark:bg-blue-900/10 p-3 rounded-lg border border-blue-100 dark:border-blue-900/30">
+                    <label className="text-xs font-semibold text-blue-700 dark:text-blue-400">URL Promos del Mes</label>
+                    <Input placeholder="https://..." value={formData.url_promos} onChange={e => setFormData({...formData, url_promos: e.target.value})} className="bg-white dark:bg-card" />
+                  </div>
+
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="space-y-1">
                       <label className="text-xs font-medium">Canva</label>
