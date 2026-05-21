@@ -1218,9 +1218,10 @@ function initBusinessHoursOverlay() {
 
   let holdTimer = null;
   let checkTimer = null;
+  let userDismissed = false;
 
   const showOverlay = () => {
-    if (isAfterHours()) {
+    if (isAfterHours() && !userDismissed) {
       overlay.style.display = 'flex';
     }
   };
@@ -1228,12 +1229,12 @@ function initBusinessHoursOverlay() {
   const startHold = (e) => {
     e.preventDefault();
     progressBar.classList.remove('animating');
-    // Force reflow to restart animation
     void progressBar.offsetWidth;
     progressBar.classList.add('animating');
 
     holdTimer = setTimeout(() => {
       overlay.style.display = 'none';
+      userDismissed = true;
       progressBar.classList.remove('animating');
       progressBar.style.width = '0';
     }, 5000);
@@ -1257,9 +1258,21 @@ function initBusinessHoursOverlay() {
   holdBtn.addEventListener('touchend', endHold);
   holdBtn.addEventListener('touchcancel', endHold);
 
-  // Check every minute if we've crossed into after-hours
+  // Reset dismissal at midnight
+  const resetDismissal = () => {
+    const now = new Date();
+    const midnight = new Date(now);
+    midnight.setHours(24, 0, 0, 0);
+    const timeUntilMidnight = midnight - now;
+    setTimeout(() => {
+      userDismissed = false;
+      resetDismissal();
+    }, timeUntilMidnight);
+  };
+
   showOverlay();
   checkTimer = setInterval(showOverlay, 60000);
+  resetDismissal();
 }
 
 /* ============================================================
