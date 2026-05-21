@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Plus, Link2, Calendar, Mail, FileText, ExternalLink, Image, AlertCircle, Briefcase, X, Trash2, Receipt, Dices } from 'lucide-react';
+import { Plus, Link2, Calendar, Mail, FileText, ExternalLink, Image, AlertCircle, Briefcase, X, Trash2, Receipt, Dices, Coins, Users, Sparkles } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Card, CardContent } from '../components/ui/card';
@@ -10,11 +10,12 @@ import { format } from 'date-fns';
 export default function Dashboard() {
   const [tasks, setTasks] = useState([]);
   const [events, setEvents] = useState([]);
+  const [adminTasks, setAdminTasks] = useState([]);
   
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
   const [taskData, setTaskData] = useState({
     title: '',
-    category: 'priority',
+    category: 'dinero',
   });
 
   const [diceInput, setDiceInput] = useState('');
@@ -24,6 +25,7 @@ export default function Dashboard() {
   useEffect(() => {
     fetchTasks();
     fetchEvents();
+    fetchAdminTasks();
   }, []);
 
   const fetchTasks = async () => {
@@ -41,6 +43,15 @@ export default function Dashboard() {
       if (Array.isArray(res.data)) {
         setEvents(res.data);
       }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const fetchAdminTasks = async () => {
+    try {
+      const res = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/api/admin_tasks`, { withCredentials: true });
+      setAdminTasks(res.data);
     } catch (e) {
       console.error(e);
     }
@@ -75,9 +86,6 @@ export default function Dashboard() {
     }, 1000);
   };
 
-  const priorities = tasks.filter(t => t.category === 'priority' && !t.completed).slice(0, 3);
-  const urgent = tasks.filter(t => t.category === 'urgent' && !t.completed);
-
   const connectCalendar = () => {
     window.location.href = `${process.env.REACT_APP_BACKEND_URL}/api/auth/google/login`;
   };
@@ -108,12 +116,24 @@ export default function Dashboard() {
       await axios.post(`${process.env.REACT_APP_BACKEND_URL}/api/tasks`, taskData, { withCredentials: true });
       toast.success('Tarea añadida');
       setIsTaskModalOpen(false);
-      setTaskData({ title: '', category: 'priority' });
+      setTaskData({ title: '', category: 'dinero' });
       fetchTasks();
     } catch (e) {
       toast.error('Error al guardar la tarea');
     }
   };
+
+  const dineroTasks = tasks.filter(t => (t.category === 'dinero' || t.category === 'urgent' || t.category === 'priority') && !t.completed);
+  const clientesTasks = tasks.filter(t => t.category === 'clientes' && !t.completed);
+  const marcaTasks = tasks.filter(t => t.category === 'marca' && !t.completed);
+  
+  // Also show urgent pending invoices/taxes from Admin if they exist
+  const urgentAdminTasks = adminTasks.filter(t => {
+     if (!t.due_date) return false;
+     const diff = new Date(t.due_date) - new Date();
+     const diffDays = Math.ceil(diff / (1000 * 60 * 60 * 24));
+     return diffDays <= 7;
+  });
 
   return (
     <div className="space-y-12 animate-in fade-in slide-in-from-bottom-2 duration-500 relative">
@@ -130,69 +150,117 @@ export default function Dashboard() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         
-        {/* Left Column: Priorities */}
+        {/* Left Column: Ordered Priorities */}
         <div className="lg:col-span-2 space-y-8">
-          <section>
-            <h2 className="text-sm font-semibold tracking-widest uppercase text-secondary mb-4">Top 3 Prioridades</h2>
-            <div className="space-y-4">
-              {priorities.length === 0 ? (
-                <div className="p-8 border border-dashed rounded-md text-center text-secondary bg-muted/50">
-                  <p>No hay prioridades para hoy. ¡Todo listo!</p>
-                </div>
-              ) : (
-                priorities.map((task) => (
-                  <div key={task.id} className="flex items-center gap-4 p-4 md:p-6 bg-card border rounded-md group hover:border-primary/50 transition-colors relative">
+          
+          {/* PRIORIDAD 1: DINERO */}
+          <section className="bg-red-50/30 dark:bg-red-950/10 border border-red-100 dark:border-red-900/30 p-5 md:p-7 rounded-xl">
+            <div className="flex items-center gap-3 mb-2">
+               <div className="p-2 bg-red-100 text-red-600 dark:bg-red-900/50 dark:text-red-400 rounded-md">
+                 <Coins size={20} />
+               </div>
+               <div>
+                 <h2 className="text-lg font-semibold tracking-tight text-red-900 dark:text-red-300">Prioridad 1: DINERO</h2>
+                 <p className="text-xs font-medium text-red-700/70 dark:text-red-400/70 uppercase tracking-widest">Facturas pendientes de cobrar / Impuestos</p>
+               </div>
+            </div>
+            
+            <div className="mt-5 space-y-3">
+              {urgentAdminTasks.map(at => (
+                 <div key={at.id} className="p-4 bg-white dark:bg-card border border-red-200 dark:border-red-800/50 rounded-md flex items-center justify-between shadow-sm">
+                    <span className="text-sm font-medium text-foreground">{at.title}</span>
+                    <span className="text-xs bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-400 px-2 py-1 rounded-sm font-semibold">Vence: {at.due_date}</span>
+                 </div>
+              ))}
+              {dineroTasks.map((task) => (
+                  <div key={task.id} className="flex items-center gap-4 p-4 bg-white dark:bg-card border border-red-100 dark:border-red-900/20 rounded-md group hover:border-red-300 transition-colors relative shadow-sm">
                     <button 
                       onClick={() => toggleTask(task)}
-                      className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${task.completed ? 'bg-primary border-primary' : 'border-primary/20 hover:border-primary'}`}
-                    >
-                    </button>
-                    <span className="text-xl font-medium">{task.title}</span>
+                      className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors border-red-300 hover:border-red-500`}
+                    ></button>
+                    <span className="text-sm font-medium">{task.title}</span>
                     <button 
                       onClick={() => deleteTask(task.id)}
-                      className="absolute right-6 opacity-0 group-hover:opacity-100 text-secondary hover:text-destructive transition-opacity"
+                      className="absolute right-4 opacity-0 group-hover:opacity-100 text-red-300 hover:text-red-600 transition-opacity"
                     >
-                      <Trash2 size={18} />
+                      <Trash2 size={16} />
                     </button>
                   </div>
-                ))
+              ))}
+              {dineroTasks.length === 0 && urgentAdminTasks.length === 0 && (
+                <p className="text-sm text-red-800/50 dark:text-red-300/50 italic py-2">No hay tareas financieras pendientes.</p>
               )}
             </div>
           </section>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <section>
-              <h2 className="text-sm font-semibold tracking-widest uppercase text-destructive mb-4 flex items-center gap-2">
-                <AlertCircle size={16}/> Tareas Urgentes
-              </h2>
-              <div className="space-y-3">
-                {urgent.length === 0 ? (
-                  <p className="text-sm text-secondary">Nada urgente.</p>
-                ) : (
-                  urgent.map(task => (
-                    <div key={task.id} className="p-4 bg-red-50 dark:bg-red-950/20 border border-red-100 dark:border-red-900 rounded-md group relative">
-                      <span className="font-medium text-red-900 dark:text-red-400">{task.title}</span>
-                      <button 
-                        onClick={() => deleteTask(task.id)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-700 transition-opacity"
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    </div>
-                  ))
-                )}
-              </div>
-            </section>
+          {/* PRIORIDAD 2: CLIENTES */}
+          <section className="bg-blue-50/30 dark:bg-blue-950/10 border border-blue-100 dark:border-blue-900/30 p-5 md:p-7 rounded-xl">
+            <div className="flex items-center gap-3 mb-2">
+               <div className="p-2 bg-blue-100 text-blue-600 dark:bg-blue-900/50 dark:text-blue-400 rounded-md">
+                 <Users size={20} />
+               </div>
+               <div>
+                 <h2 className="text-lg font-semibold tracking-tight text-blue-900 dark:text-blue-300">Prioridad 2: CLIENTES</h2>
+                 <p className="text-xs font-medium text-blue-700/70 dark:text-blue-400/70 uppercase tracking-widest">Tareas de mantenimiento o NeuroAlly de este mes</p>
+               </div>
+            </div>
+            
+            <div className="mt-5 space-y-3">
+              {clientesTasks.map((task) => (
+                  <div key={task.id} className="flex items-center gap-4 p-4 bg-white dark:bg-card border border-blue-100 dark:border-blue-900/20 rounded-md group hover:border-blue-300 transition-colors relative shadow-sm">
+                    <button 
+                      onClick={() => toggleTask(task)}
+                      className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors border-blue-300 hover:border-blue-500`}
+                    ></button>
+                    <span className="text-sm font-medium">{task.title}</span>
+                    <button 
+                      onClick={() => deleteTask(task.id)}
+                      className="absolute right-4 opacity-0 group-hover:opacity-100 text-blue-300 hover:text-blue-600 transition-opacity"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+              ))}
+              {clientesTasks.length === 0 && (
+                <p className="text-sm text-blue-800/50 dark:text-blue-300/50 italic py-2">No hay tareas de clientes pendientes.</p>
+              )}
+            </div>
+          </section>
 
-            <section>
-              <h2 className="text-sm font-semibold tracking-widest uppercase text-secondary mb-4 flex items-center gap-2">
-                <Calendar size={16}/> Recordatorio
-              </h2>
-              <div className="p-6 border rounded-md bg-card text-secondary text-sm">
-                <p>Las entregas de clientes y tareas completadas se limpiarán al refrescar. Mantén tu lista enfocada.</p>
-              </div>
-            </section>
-          </div>
+          {/* PRIORIDAD 3: MARCA */}
+          <section className="bg-indigo-50/30 dark:bg-indigo-950/10 border border-indigo-100 dark:border-indigo-900/30 p-5 md:p-7 rounded-xl">
+            <div className="flex items-center gap-3 mb-2">
+               <div className="p-2 bg-indigo-100 text-indigo-600 dark:bg-indigo-900/50 dark:text-indigo-400 rounded-md">
+                 <Sparkles size={20} />
+               </div>
+               <div>
+                 <h2 className="text-lg font-semibold tracking-tight text-indigo-900 dark:text-indigo-300">Prioridad 3: MARCA</h2>
+                 <p className="text-xs font-medium text-indigo-700/70 dark:text-indigo-400/70 uppercase tracking-widest">Tus propios proyectos (Acabar tu web / Tus redes)</p>
+               </div>
+            </div>
+            
+            <div className="mt-5 space-y-3">
+              {marcaTasks.map((task) => (
+                  <div key={task.id} className="flex items-center gap-4 p-4 bg-white dark:bg-card border border-indigo-100 dark:border-indigo-900/20 rounded-md group hover:border-indigo-300 transition-colors relative shadow-sm">
+                    <button 
+                      onClick={() => toggleTask(task)}
+                      className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors border-indigo-300 hover:border-indigo-500`}
+                    ></button>
+                    <span className="text-sm font-medium">{task.title}</span>
+                    <button 
+                      onClick={() => deleteTask(task.id)}
+                      className="absolute right-4 opacity-0 group-hover:opacity-100 text-indigo-300 hover:text-indigo-600 transition-opacity"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+              ))}
+              {marcaTasks.length === 0 && (
+                <p className="text-sm text-indigo-800/50 dark:text-indigo-300/50 italic py-2">No hay tareas de marca pendientes.</p>
+              )}
+            </div>
+          </section>
+
         </div>
 
         {/* Right Column: Calendar & Quick Links */}
@@ -300,22 +368,22 @@ export default function Dashboard() {
                   value={taskData.title} 
                   onChange={e => setTaskData({...taskData, title: e.target.value})} 
                   required 
-                  placeholder="Ej. Revisar copys de Cliente X..." 
+                  placeholder="Ej. Revisar copys..." 
                   autoFocus
                 />
               </div>
               
               <div className="space-y-2">
-                <label className="text-sm font-medium">Prioridad</label>
+                <label className="text-sm font-medium">Categoría / Prioridad</label>
                 <select 
                   className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                   value={taskData.category} 
                   onChange={e => setTaskData({...taskData, category: e.target.value})}
                 >
-                  <option value="priority">Top 3 Prioridades (Día)</option>
-                  <option value="urgent">Urgente (Fuego)</option>
+                  <option value="dinero">[Prioridad 1] DINERO - Facturas / Impuestos</option>
+                  <option value="clientes">[Prioridad 2] CLIENTES - Entregas / Mantenimiento</option>
+                  <option value="marca">[Prioridad 3] MARCA - Nat2Go Studio</option>
                 </select>
-                <p className="text-xs text-secondary mt-1">Recuerda: Solo debes tener un máximo de 3 prioridades al día para evitar sobrecarga.</p>
               </div>
             </form>
             
