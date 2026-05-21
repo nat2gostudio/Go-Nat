@@ -66,6 +66,7 @@ class ClientCreate(BaseModel):
     briefing: Optional[str] = ""
     checklist: List[str] = []
     links: dict = {} # e.g. {"Canva": "url"}
+    social_posts: dict = {}
 
 class ContentIdeaCreate(BaseModel):
     title: str

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Plus, Search, Calendar, FileText, X } from 'lucide-react';
+import { Plus, Search, Calendar, FileText, X, RotateCcw } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Card, CardContent } from '../components/ui/card';
@@ -11,13 +11,22 @@ export default function Clientes() {
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   
+  const initialSocialPosts = {
+    instagram: { target: 0, completed: 0 },
+    facebook: { target: 0, completed: 0 },
+    tiktok: { target: 0, completed: 0 },
+    google_business: { target: 0, completed: 0 },
+    blog: { target: 0, completed: 0 }
+  };
+
   const [formData, setFormData] = useState({
     name: '',
     service_type: '',
     project_status: 'Activo',
     next_delivery: '',
     billing_status: 'Al día',
-    links: { canva: '', meta: '', web: '', other: '' }
+    links: { canva: '', meta: '', web: '', other: '' },
+    social_posts: initialSocialPosts
   });
 
   useEffect(() => {
@@ -42,6 +51,17 @@ export default function Clientes() {
     }));
   };
 
+  const handleSocialTargetChange = (network, value) => {
+    const num = parseInt(value, 10) || 0;
+    setFormData(prev => ({
+      ...prev,
+      social_posts: {
+        ...prev.social_posts,
+        [network]: { ...prev.social_posts[network], target: num }
+      }
+    }));
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.name || !formData.service_type) {
@@ -55,7 +75,8 @@ export default function Clientes() {
       setIsModalOpen(false);
       setFormData({
         name: '', service_type: '', project_status: 'Activo', next_delivery: '', billing_status: 'Al día',
-        links: { canva: '', meta: '', web: '', other: '' }
+        links: { canva: '', meta: '', web: '', other: '' },
+        social_posts: initialSocialPosts
       });
       fetchClients();
     } catch (error) {
@@ -74,6 +95,45 @@ export default function Clientes() {
     }
   };
 
+  const incrementPost = async (clientId, network, currentSocialPosts) => {
+    const current = currentSocialPosts || initialSocialPosts;
+    const updated = {
+      ...current,
+      [network]: {
+        ...current[network],
+        completed: (current[network]?.completed || 0) + 1
+      }
+    };
+    
+    // Optimistic UI Update
+    setClients(clients.map(c => c.id === clientId ? { ...c, social_posts: updated } : c));
+    
+    try {
+      await axios.put(`${process.env.REACT_APP_BACKEND_URL}/api/clients/${clientId}`, { social_posts: updated }, { withCredentials: true });
+    } catch (e) {
+      toast.error("Error al actualizar");
+      fetchClients();
+    }
+  };
+
+  const resetWeeklyPosts = async (clientId, currentSocialPosts) => {
+    if (!window.confirm('¿Poner todos los contadores de la semana a 0?')) return;
+    const current = currentSocialPosts || initialSocialPosts;
+    const updated = {};
+    for (let key in current) {
+      updated[key] = { ...current[key], completed: 0 };
+    }
+    
+    setClients(clients.map(c => c.id === clientId ? { ...c, social_posts: updated } : c));
+    try {
+      await axios.put(`${process.env.REACT_APP_BACKEND_URL}/api/clients/${clientId}`, { social_posts: updated }, { withCredentials: true });
+      toast.success("Contadores a 0");
+    } catch (e) {
+      toast.error("Error al resetear");
+      fetchClients();
+    }
+  };
+
   const getUrgency = (dateString) => {
     if (!dateString) return { percent: 0, color: 'bg-secondary/20', text: 'Sin fecha' };
     const today = new Date();
@@ -89,12 +149,20 @@ export default function Clientes() {
     return { percent: 25, color: 'bg-emerald-400', text: `En ${diffDays} días` };
   };
 
+  const networkLabels = {
+    instagram: "Instagram",
+    facebook: "Facebook",
+    tiktok: "TikTok",
+    google_business: "Google Business",
+    blog: "Blog"
+  };
+
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-500 relative">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-semibold tracking-tight">Base de Clientes</h1>
-          <p className="text-secondary text-sm mt-1">Gestiona los proyectos y accesos rápidos.</p>
+          <p className="text-secondary text-sm mt-1">Gestiona los proyectos, entregas y objetivos de contenido.</p>
         </div>
         <div className="flex items-center gap-3">
           <div className="relative">
@@ -117,6 +185,8 @@ export default function Clientes() {
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
           {clients.map(client => {
             const urgency = getUrgency(client.next_delivery);
+            const socialData = client.social_posts || {};
+            const hasSocial = Object.values(socialData).some(n => n?.target > 0);
             
             return (
               <Card key={client.id} className="shadow-none flex flex-col group relative overflow-hidden">
@@ -140,7 +210,7 @@ export default function Clientes() {
                     </button>
                   </div>
                   
-                  <div className="space-y-3 mb-6 flex-1">
+                  <div className="space-y-3 mb-5">
                     <div className="flex flex-col gap-1.5">
                       <div className="flex items-center text-sm gap-2">
                         <Calendar className="w-4 h-4 text-secondary" />
@@ -158,7 +228,59 @@ export default function Clientes() {
                     </div>
                   </div>
 
-                  <div className="border-t border-border pt-4">
+                  {/* Social Posts Tracker */}
+                  {hasSocial && (
+                    <div className="mb-5 bg-muted/20 p-3 rounded-lg border">
+                      <div className="flex items-center justify-between mb-3">
+                        <p className="text-xs font-semibold uppercase tracking-widest text-secondary">Progreso Semanal</p>
+                        <button 
+                          onClick={() => resetWeeklyPosts(client.id, socialData)}
+                          className="text-secondary hover:text-primary transition-colors flex items-center gap-1"
+                          title="Poner todos los contadores a 0"
+                        >
+                          <RotateCcw size={12} />
+                          <span className="text-[10px] uppercase">Reset</span>
+                        </button>
+                      </div>
+                      
+                      <div className="space-y-3">
+                        {Object.entries(socialData).map(([network, data]) => {
+                          if (!data || data.target <= 0) return null;
+                          const percent = Math.min(100, (data.completed / data.target) * 100);
+                          const isComplete = data.completed >= data.target;
+                          
+                          return (
+                            <div key={network} className="flex items-center gap-3">
+                              <div className="flex-1">
+                                <div className="flex justify-between text-xs mb-1">
+                                  <span className="font-medium text-secondary">{networkLabels[network]}</span>
+                                  <span className={isComplete ? "text-emerald-600 font-semibold" : "text-secondary"}>
+                                    {data.completed} de {data.target}
+                                  </span>
+                                </div>
+                                <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                                  <div 
+                                    className={`h-full transition-all duration-300 ${isComplete ? 'bg-emerald-500' : 'bg-primary'}`} 
+                                    style={{ width: `${percent}%` }} 
+                                  />
+                                </div>
+                              </div>
+                              <Button 
+                                size="sm" 
+                                variant={isComplete ? "outline" : "secondary"} 
+                                className={`h-7 w-20 shrink-0 text-xs ${isComplete ? 'border-emerald-200 text-emerald-700' : ''}`}
+                                onClick={() => incrementPost(client.id, network, socialData)}
+                              >
+                                <Plus size={12} className="mr-1" /> 1 Post
+                              </Button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="border-t border-border pt-4 mt-auto">
                     <p className="text-xs font-medium text-secondary mb-3 uppercase tracking-widest">Enlaces Rápidos</p>
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                       {client.links?.canva && (
@@ -193,10 +315,10 @@ export default function Clientes() {
         </div>
       )}
 
-      {/* Modal */}
+      {/* Modal Añadir Cliente */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-card w-full max-w-lg rounded-xl border shadow-lg overflow-hidden flex flex-col max-h-[90vh]">
+          <div className="bg-card w-full max-w-xl rounded-xl border shadow-lg overflow-hidden flex flex-col max-h-[90vh]">
             <div className="p-6 border-b flex items-center justify-between bg-muted/30">
               <h2 className="text-xl font-semibold">Añadir Nuevo Cliente</h2>
               <Button variant="ghost" size="icon" onClick={() => setIsModalOpen(false)}>
@@ -205,18 +327,18 @@ export default function Clientes() {
             </div>
             
             <div className="p-6 overflow-y-auto flex-1 custom-scrollbar">
-              <form id="client-form" onSubmit={handleSubmit} className="space-y-6">
+              <form id="client-form" onSubmit={handleSubmit} className="space-y-8">
                 
                 <div className="space-y-4">
                   <h3 className="text-xs font-semibold tracking-widest uppercase text-secondary">Información Básica</h3>
-                  <div className="grid grid-cols-1 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <label className="text-sm font-medium">Nombre del Cliente / Proyecto *</label>
-                      <Input value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} required placeholder="Ej. Clínica Dental Sonrisas" />
+                      <label className="text-sm font-medium">Nombre del Proyecto *</label>
+                      <Input value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} required placeholder="Ej. Clínica Dental" />
                     </div>
                     <div className="space-y-2">
                       <label className="text-sm font-medium">Tipo de Servicio *</label>
-                      <Input value={formData.service_type} onChange={e => setFormData({...formData, service_type: e.target.value})} required placeholder="Ej. Gestión RRSS, Diseño Web..." />
+                      <Input value={formData.service_type} onChange={e => setFormData({...formData, service_type: e.target.value})} required placeholder="Ej. Gestión RRSS..." />
                     </div>
                   </div>
                   
@@ -228,7 +350,7 @@ export default function Clientes() {
                     <div className="space-y-2">
                       <label className="text-sm font-medium">Estado de Pago</label>
                       <select 
-                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                         value={formData.billing_status} 
                         onChange={e => setFormData({...formData, billing_status: e.target.value})}
                       >
@@ -241,15 +363,34 @@ export default function Clientes() {
                 </div>
 
                 <div className="space-y-4 pt-4 border-t">
-                  <h3 className="text-xs font-semibold tracking-widest uppercase text-secondary">Enlaces Rápidos (Opcional)</h3>
+                  <h3 className="text-xs font-semibold tracking-widest uppercase text-secondary">Objetivos Semanales de Contenido (Opcional)</h3>
+                  <p className="text-xs text-secondary mb-3">Introduce cuántos posts quieres hacer a la semana. Si dejas "0", esa red no aparecerá en la tarjeta.</p>
                   
-                  <div className="space-y-3">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                    {Object.entries(networkLabels).map(([key, label]) => (
+                      <div key={key} className="space-y-1.5 bg-muted/30 p-2 rounded-md border border-border/50">
+                        <label className="text-xs font-medium">{label}</label>
+                        <Input 
+                          type="number" 
+                          min="0" 
+                          className="h-8 text-sm"
+                          value={formData.social_posts[key].target} 
+                          onChange={e => handleSocialTargetChange(key, e.target.value)} 
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-4 pt-4 border-t">
+                  <h3 className="text-xs font-semibold tracking-widest uppercase text-secondary">Enlaces Rápidos (Opcional)</h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="space-y-1">
-                      <label className="text-xs font-medium">Enlace a Canva</label>
+                      <label className="text-xs font-medium">Canva</label>
                       <Input placeholder="https://canva.com/..." value={formData.links.canva} onChange={e => handleLinkChange('canva', e.target.value)} />
                     </div>
                     <div className="space-y-1">
-                      <label className="text-xs font-medium">Enlace a Meta Business</label>
+                      <label className="text-xs font-medium">Meta Business</label>
                       <Input placeholder="https://business.facebook.com/..." value={formData.links.meta} onChange={e => handleLinkChange('meta', e.target.value)} />
                     </div>
                     <div className="space-y-1">
@@ -257,7 +398,7 @@ export default function Clientes() {
                       <Input placeholder="https://..." value={formData.links.web} onChange={e => handleLinkChange('web', e.target.value)} />
                     </div>
                     <div className="space-y-1">
-                      <label className="text-xs font-medium">Otro enlace (Drive, Edit, etc)</label>
+                      <label className="text-xs font-medium">Otros (Drive, Edit...)</label>
                       <Input placeholder="https://..." value={formData.links.other} onChange={e => handleLinkChange('other', e.target.value)} />
                     </div>
                   </div>
