@@ -283,10 +283,6 @@ export default function Dashboard() {
               alt="NeuroAlly Flow"
               className="w-full h-48 object-contain object-center opacity-90 hover:opacity-100 hover:scale-105 transition-all duration-500 drop-shadow-md"
             />
-            <div className="mt-3 text-center">
-               <h3 className="text-blue-900 dark:text-blue-300 font-semibold tracking-wide">NeuroAlly Flow</h3>
-               <p className="text-blue-600/80 dark:text-blue-400/80 text-[10px] font-bold tracking-widest uppercase mt-1">Espacio libre de ruido</p>
-            </div>
           </div>
 
           {/* DYNAMIC CHART: Flujo de Energía */}
