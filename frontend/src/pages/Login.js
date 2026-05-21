@@ -30,7 +30,7 @@ export default function Login() {
       <div className="w-full max-w-md bg-card/95 backdrop-blur-md p-10 rounded-xl border border-border shadow-2xl">
         <div className="mb-8 text-center">
           <h1 className="text-3xl font-semibold text-primary mb-2">Nat2Go OS</h1>
-          <p className="text-secondary text-sm">Minimalist studio operations</p>
+          <p className="text-secondary text-sm font-medium tracking-wide uppercase mt-1">Centro de Operaciones 2Go!</p>
         </div>
 
         <form onSubmit={handleLogin} className="space-y-6">
