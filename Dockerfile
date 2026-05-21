@@ -31,4 +31,5 @@ COPY backend/ ./backend/
 COPY --from=frontend-build /app/build ./frontend/build
 
 EXPOSE 8000
-CMD ["uvicorn", "backend.server:app", "--host", "0.0.0.0", "--port", "8000"]
+# PORT env var is set by Railway/Render dynamically; fallback to 8000 for local
+CMD ["sh", "-c", "uvicorn backend.server:app --host 0.0.0.0 --port ${PORT:-8000}"]
