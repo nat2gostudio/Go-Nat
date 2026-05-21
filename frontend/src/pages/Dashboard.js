@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Plus, Calendar, Mail, FileText, Image, AlertCircle, Briefcase, X, Trash2, Receipt, Dices, Coins, Users, Sparkles, Activity, Play, Pause, Timer, RotateCcw, Clock } from 'lucide-react';
+import { Plus, Calendar, Mail, FileText, Image, AlertCircle, Briefcase, X, Trash2, Receipt, Dices, Coins, Users, Sparkles, Activity, Play, Pause, Timer, RotateCcw, Clock, ChevronDown } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Card, CardContent } from '../components/ui/card';
@@ -32,6 +32,16 @@ export default function Dashboard() {
   const [diceInput, setDiceInput] = useState('');
   const [diceResult, setDiceResult] = useState('');
   const [isRolling, setIsRolling] = useState(false);
+
+  const [openSections, setOpenSections] = useState({
+    alertas: true,
+    clientes: false,
+    marca: false,
+  });
+
+  const toggleSection = (section) => {
+    setOpenSections(prev => ({ ...prev, [section]: !prev[section] }));
+  };
 
   // Pomodoro Timer State
   const [pomoTime, setPomoTime] = useState(25 * 60);
@@ -202,112 +212,160 @@ export default function Dashboard() {
         {/* Left Column: Ordered Priorities (Spans 7 cols) */}
         <div className="lg:col-span-7 space-y-8">
           
-          {/* PRIORIDAD 1: DINERO */}
-          <section className="bg-red-50/40 dark:bg-red-950/10 border border-red-100 dark:border-red-900/30 p-5 md:p-7 rounded-2xl">
-            <div className="flex items-center gap-3 mb-2">
-               <div className="p-2 bg-red-100 text-red-600 dark:bg-red-900/50 dark:text-red-400 rounded-lg">
-                 <Coins size={20} />
-               </div>
-               <div>
-                 <h2 className="text-lg font-semibold tracking-tight text-red-900 dark:text-red-300">Prioridad 1: DINERO</h2>
-                 <p className="text-xs font-medium text-red-700/70 dark:text-red-400/70 uppercase tracking-widest">Facturas pendientes de cobrar / Impuestos</p>
-               </div>
-            </div>
-            
-            <div className="mt-5 space-y-3">
-              {urgentAdminTasks.map(at => (
-                 <div key={at.id} className="p-4 bg-white dark:bg-card border border-red-200 dark:border-red-800/50 rounded-xl flex items-center justify-between shadow-sm">
+          {/* PRIORIDAD 1: ALERTAS DE HOY */}
+          <section className="bg-red-50/40 dark:bg-red-950/10 border border-red-100 dark:border-red-900/30 rounded-2xl overflow-hidden">
+            <button
+              onClick={() => toggleSection('alertas')}
+              className="w-full flex items-center gap-3 p-5 md:p-7 text-left hover:bg-red-50/60 dark:hover:bg-red-950/20 transition-colors"
+            >
+              <div className="p-2 bg-red-100 text-red-600 dark:bg-red-900/50 dark:text-red-400 rounded-lg shrink-0">
+                <Coins size={20} />
+              </div>
+              <div className="flex-1">
+                <h2 className="text-lg font-semibold tracking-tight text-red-900 dark:text-red-300">Alertas de Hoy</h2>
+                <p className="text-xs font-medium text-red-700/70 dark:text-red-400/70 uppercase tracking-widest">Facturas pendientes de cobrar / Impuestos</p>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                {(dineroTasks.length + urgentAdminTasks.length) > 0 && (
+                  <span className="text-xs bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-400 px-2 py-0.5 rounded-full font-semibold">
+                    {dineroTasks.length + urgentAdminTasks.length}
+                  </span>
+                )}
+                <ChevronDown
+                  size={18}
+                  className={`text-red-400 transition-transform duration-300 ${openSections.alertas ? 'rotate-180' : ''}`}
+                />
+              </div>
+            </button>
+
+            {openSections.alertas && (
+              <div className="px-5 md:px-7 pb-6 space-y-3 animate-in fade-in slide-in-from-top-2 duration-200">
+                {urgentAdminTasks.map(at => (
+                  <div key={at.id} className="p-4 bg-white dark:bg-card border border-red-200 dark:border-red-800/50 rounded-xl flex items-center justify-between shadow-sm">
                     <span className="text-sm font-medium text-foreground">{at.title}</span>
                     <span className="text-xs bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-400 px-2 py-1 rounded-md font-semibold">Vence: {at.due_date}</span>
-                 </div>
-              ))}
-              {dineroTasks.map((task) => (
+                  </div>
+                ))}
+                {dineroTasks.map((task) => (
                   <div key={task.id} className="flex items-center gap-4 p-4 bg-white dark:bg-card border border-red-100 dark:border-red-900/20 rounded-xl group hover:border-red-300 transition-colors relative shadow-sm">
-                    <button 
+                    <button
                       onClick={() => toggleTask(task)}
-                      className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors border-red-300 hover:border-red-500`}
+                      className="w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors border-red-300 hover:border-red-500"
                     ></button>
                     <span className="text-sm font-medium">{task.title}</span>
-                    <button 
+                    <button
                       onClick={() => deleteTask(task.id)}
                       className="absolute right-4 opacity-0 group-hover:opacity-100 text-red-300 hover:text-red-600 transition-opacity"
                     >
                       <Trash2 size={16} />
                     </button>
                   </div>
-              ))}
-              {dineroTasks.length === 0 && urgentAdminTasks.length === 0 && (
-                <p className="text-sm text-red-800/50 dark:text-red-300/50 italic py-2 px-2">No hay tareas financieras urgentes.</p>
-              )}
-            </div>
+                ))}
+                {dineroTasks.length === 0 && urgentAdminTasks.length === 0 && (
+                  <p className="text-sm text-red-800/50 dark:text-red-300/50 italic py-2 px-2">No hay tareas financieras urgentes.</p>
+                )}
+              </div>
+            )}
           </section>
 
           {/* PRIORIDAD 2: CLIENTES */}
-          <section className="bg-blue-50/40 dark:bg-blue-950/10 border border-blue-100 dark:border-blue-900/30 p-5 md:p-7 rounded-2xl">
-            <div className="flex items-center gap-3 mb-2">
-               <div className="p-2 bg-blue-100 text-blue-600 dark:bg-blue-900/50 dark:text-blue-400 rounded-lg">
-                 <Users size={20} />
-               </div>
-               <div>
-                 <h2 className="text-lg font-semibold tracking-tight text-blue-900 dark:text-blue-300">Prioridad 2: CLIENTES</h2>
-                 <p className="text-xs font-medium text-blue-700/70 dark:text-blue-400/70 uppercase tracking-widest">Tareas de mantenimiento o NeuroAlly de este mes</p>
-               </div>
-            </div>
-            
-            <div className="mt-5 space-y-3">
-              {clientesTasks.map((task) => (
+          <section className="bg-blue-50/40 dark:bg-blue-950/10 border border-blue-100 dark:border-blue-900/30 rounded-2xl overflow-hidden">
+            <button
+              onClick={() => toggleSection('clientes')}
+              className="w-full flex items-center gap-3 p-5 md:p-7 text-left hover:bg-blue-50/60 dark:hover:bg-blue-950/20 transition-colors"
+            >
+              <div className="p-2 bg-blue-100 text-blue-600 dark:bg-blue-900/50 dark:text-blue-400 rounded-lg shrink-0">
+                <Users size={20} />
+              </div>
+              <div className="flex-1">
+                <h2 className="text-lg font-semibold tracking-tight text-blue-900 dark:text-blue-300">Clientes</h2>
+                <p className="text-xs font-medium text-blue-700/70 dark:text-blue-400/70 uppercase tracking-widest">Tareas de mantenimiento o NeuroAlly de este mes</p>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                {clientesTasks.length > 0 && (
+                  <span className="text-xs bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-400 px-2 py-0.5 rounded-full font-semibold">
+                    {clientesTasks.length}
+                  </span>
+                )}
+                <ChevronDown
+                  size={18}
+                  className={`text-blue-400 transition-transform duration-300 ${openSections.clientes ? 'rotate-180' : ''}`}
+                />
+              </div>
+            </button>
+
+            {openSections.clientes && (
+              <div className="px-5 md:px-7 pb-6 space-y-3 animate-in fade-in slide-in-from-top-2 duration-200">
+                {clientesTasks.map((task) => (
                   <div key={task.id} className="flex items-center gap-4 p-4 bg-white dark:bg-card border border-blue-100 dark:border-blue-900/20 rounded-xl group hover:border-blue-300 transition-colors relative shadow-sm">
-                    <button 
+                    <button
                       onClick={() => toggleTask(task)}
-                      className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors border-blue-300 hover:border-blue-500`}
+                      className="w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors border-blue-300 hover:border-blue-500"
                     ></button>
                     <span className="text-sm font-medium">{task.title}</span>
-                    <button 
+                    <button
                       onClick={() => deleteTask(task.id)}
                       className="absolute right-4 opacity-0 group-hover:opacity-100 text-blue-300 hover:text-blue-600 transition-opacity"
                     >
                       <Trash2 size={16} />
                     </button>
                   </div>
-              ))}
-              {clientesTasks.length === 0 && (
-                <p className="text-sm text-blue-800/50 dark:text-blue-300/50 italic py-2 px-2">No hay tareas de clientes pendientes.</p>
-              )}
-            </div>
+                ))}
+                {clientesTasks.length === 0 && (
+                  <p className="text-sm text-blue-800/50 dark:text-blue-300/50 italic py-2 px-2">No hay tareas de clientes pendientes.</p>
+                )}
+              </div>
+            )}
           </section>
 
-          {/* PRIORIDAD 3: MARCA */}
-          <section className="bg-indigo-50/40 dark:bg-indigo-950/10 border border-indigo-100 dark:border-indigo-900/30 p-5 md:p-7 rounded-2xl">
-            <div className="flex items-center gap-3 mb-2">
-               <div className="p-2 bg-indigo-100 text-indigo-600 dark:bg-indigo-900/50 dark:text-indigo-400 rounded-lg">
-                 <Sparkles size={20} />
-               </div>
-               <div>
-                 <h2 className="text-lg font-semibold tracking-tight text-indigo-900 dark:text-indigo-300">Prioridad 3: MARCA</h2>
-                 <p className="text-xs font-medium text-indigo-700/70 dark:text-indigo-400/70 uppercase tracking-widest">Tus propios proyectos (Web / Redes)</p>
-               </div>
-            </div>
-            
-            <div className="mt-5 space-y-3">
-              {marcaTasks.map((task) => (
+          {/* PRIORIDAD 3: NAT2GO STUDIO */}
+          <section className="bg-indigo-50/40 dark:bg-indigo-950/10 border border-indigo-100 dark:border-indigo-900/30 rounded-2xl overflow-hidden">
+            <button
+              onClick={() => toggleSection('marca')}
+              className="w-full flex items-center gap-3 p-5 md:p-7 text-left hover:bg-indigo-50/60 dark:hover:bg-indigo-950/20 transition-colors"
+            >
+              <div className="p-2 bg-indigo-100 text-indigo-600 dark:bg-indigo-900/50 dark:text-indigo-400 rounded-lg shrink-0">
+                <Sparkles size={20} />
+              </div>
+              <div className="flex-1">
+                <h2 className="text-lg font-semibold tracking-tight text-indigo-900 dark:text-indigo-300">Nat2Go Studio</h2>
+                <p className="text-xs font-medium text-indigo-700/70 dark:text-indigo-400/70 uppercase tracking-widest">Tus propios proyectos (Web / Redes)</p>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                {marcaTasks.length > 0 && (
+                  <span className="text-xs bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-400 px-2 py-0.5 rounded-full font-semibold">
+                    {marcaTasks.length}
+                  </span>
+                )}
+                <ChevronDown
+                  size={18}
+                  className={`text-indigo-400 transition-transform duration-300 ${openSections.marca ? 'rotate-180' : ''}`}
+                />
+              </div>
+            </button>
+
+            {openSections.marca && (
+              <div className="px-5 md:px-7 pb-6 space-y-3 animate-in fade-in slide-in-from-top-2 duration-200">
+                {marcaTasks.map((task) => (
                   <div key={task.id} className="flex items-center gap-4 p-4 bg-white dark:bg-card border border-indigo-100 dark:border-indigo-900/20 rounded-xl group hover:border-indigo-300 transition-colors relative shadow-sm">
-                    <button 
+                    <button
                       onClick={() => toggleTask(task)}
-                      className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors border-indigo-300 hover:border-indigo-500`}
+                      className="w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors border-indigo-300 hover:border-indigo-500"
                     ></button>
                     <span className="text-sm font-medium">{task.title}</span>
-                    <button 
+                    <button
                       onClick={() => deleteTask(task.id)}
                       className="absolute right-4 opacity-0 group-hover:opacity-100 text-indigo-300 hover:text-indigo-600 transition-opacity"
                     >
                       <Trash2 size={16} />
                     </button>
                   </div>
-              ))}
-              {marcaTasks.length === 0 && (
-                <p className="text-sm text-indigo-800/50 dark:text-indigo-300/50 italic py-2 px-2">No hay tareas de marca pendientes.</p>
-              )}
-            </div>
+                ))}
+                {marcaTasks.length === 0 && (
+                  <p className="text-sm text-indigo-800/50 dark:text-indigo-300/50 italic py-2 px-2">No hay tareas de marca pendientes.</p>
+                )}
+              </div>
+            )}
           </section>
 
         </div>
