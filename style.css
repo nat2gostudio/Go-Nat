@@ -1903,6 +1903,84 @@ body.dark .quick-access-circle {
   background: var(--primary-light);
 }
 
+/* ---------- Calendar Widget ---------- */
+.calendar-widget {
+  padding: 16px 20px;
+}
+
+.calendar-events-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.calendar-event {
+  padding: 12px;
+  background: var(--bg);
+  border-radius: 8px;
+  border-left: 3px solid var(--primary);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.calendar-event-time {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--primary);
+  min-width: 50px;
+}
+
+.calendar-event-title {
+  font-size: 13px;
+  color: var(--text);
+  flex: 1;
+  word-break: break-word;
+}
+
+.calendar-empty {
+  font-size: 13px;
+  color: var(--text-secondary);
+  text-align: center;
+  padding: 20px 0;
+}
+
+/* ---------- Habit Streak Card ---------- */
+.habit-streak-card {
+  padding: 16px 20px;
+}
+
+.habit-streak-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.habit-streak-item {
+  text-align: center;
+  padding: 12px;
+  background: var(--bg);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.habit-streak-number {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--primary);
+}
+
+.habit-streak-label {
+  font-size: 11px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
 /* ---------- Responsive: tablet ---------- */
 @media (max-width: 1000px) {
   .dashboard-top-grid {
