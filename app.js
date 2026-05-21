@@ -164,20 +164,22 @@ async function callGAS(action, method = 'GET', data = null) {
   }
 
   try {
-    let url = `${settings.gasUrl}?action=${action}&token=${GAS_TOKEN}`;
-    const options = {
-      method: method,
-      mode: 'no-cors'
-    };
+    let gasUrl = `${settings.gasUrl}?action=${action}&token=${GAS_TOKEN}`;
+    let url = `https://api.allorigins.win/get?url=${encodeURIComponent(gasUrl)}`;
 
-    if (method === 'POST' && data) {
-      options.body = JSON.stringify(data);
-      options.headers = { 'Content-Type': 'text/plain' };
-    }
+    const options = {
+      method: 'GET',
+      headers: { 'Accept': 'application/json' }
+    };
 
     const response = await fetch(url, options);
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    return await response.json();
+    const data_response = await response.json();
+
+    if (data_response.contents) {
+      return JSON.parse(data_response.contents);
+    }
+    return null;
   } catch (e) {
     console.error(`GAS call error (${action}):`, e);
     return null;
