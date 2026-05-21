@@ -8,6 +8,22 @@ import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { AreaChart, Area, Tooltip, ResponsiveContainer } from 'recharts';
 
+const MORNING_ITEMS = [
+  { id: 't4', text: 'Tomar T4 💊' },
+  { id: 'elvanse', text: 'Tomar Elvanse + Desayuno ☕ (30 min después)' },
+  { id: 'estiramientos', text: 'Estiramientos y a trabajar (08:30h) 🎯' },
+];
+
+const getTodayKey = () => new Date().toISOString().split('T')[0];
+
+const getInitialMorningChecks = () => {
+  try {
+    const stored = JSON.parse(localStorage.getItem('morningChecks') || '{}');
+    if (stored.date === getTodayKey()) return stored.checks;
+  } catch (_) {}
+  return { t4: false, elvanse: false, estiramientos: false };
+};
+
 const mockChartData = [
   { name: 'L', energy: 30 },
   { name: 'M', energy: 50 },
@@ -41,6 +57,16 @@ export default function Dashboard() {
 
   const toggleSection = (section) => {
     setOpenSections(prev => ({ ...prev, [section]: !prev[section] }));
+  };
+
+  const [morningChecks, setMorningChecks] = useState(getInitialMorningChecks);
+
+  const toggleMorningCheck = (id) => {
+    setMorningChecks(prev => {
+      const updated = { ...prev, [id]: !prev[id] };
+      localStorage.setItem('morningChecks', JSON.stringify({ date: getTodayKey(), checks: updated }));
+      return updated;
+    });
   };
 
   // Pomodoro Timer State
@@ -240,6 +266,46 @@ export default function Dashboard() {
 
             {openSections.alertas && (
               <div className="px-5 md:px-7 pb-6 space-y-3 animate-in fade-in slide-in-from-top-2 duration-200">
+
+                {/* Rutina Matutina */}
+                <div className="bg-amber-50/60 dark:bg-amber-950/20 border border-amber-200/70 dark:border-amber-800/40 rounded-xl p-4 space-y-2.5">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-amber-600 dark:text-amber-400 mb-3">Rutina Matutina</p>
+                  {MORNING_ITEMS.map((item) => (
+                    <label key={item.id} className="flex items-center gap-3 cursor-pointer group/morning select-none">
+                      <div
+                        onClick={() => toggleMorningCheck(item.id)}
+                        className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all duration-200 cursor-pointer
+                          ${morningChecks[item.id]
+                            ? 'bg-amber-400 border-amber-400 dark:bg-amber-500 dark:border-amber-500'
+                            : 'border-amber-300 hover:border-amber-500 dark:border-amber-700 dark:hover:border-amber-500'
+                          }`}
+                      >
+                        {morningChecks[item.id] && (
+                          <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
+                            <path d="M1 4L3.5 6.5L9 1" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                          </svg>
+                        )}
+                      </div>
+                      <span className={`text-sm transition-colors duration-200 ${
+                        morningChecks[item.id]
+                          ? 'text-amber-400 dark:text-amber-600 line-through'
+                          : 'font-medium text-amber-900 dark:text-amber-200 group-hover/morning:text-amber-700'
+                      }`}>
+                        {item.text}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+
+                {/* Separator before financial tasks */}
+                {(urgentAdminTasks.length > 0 || dineroTasks.length > 0) && (
+                  <div className="flex items-center gap-2 pt-1">
+                    <div className="h-px flex-1 bg-red-100 dark:bg-red-900/30" />
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-red-400/70 dark:text-red-600/50">Finanzas urgentes</span>
+                    <div className="h-px flex-1 bg-red-100 dark:bg-red-900/30" />
+                  </div>
+                )}
+
                 {urgentAdminTasks.map(at => (
                   <div key={at.id} className="p-4 bg-white dark:bg-card border border-red-200 dark:border-red-800/50 rounded-xl flex items-center justify-between shadow-sm">
                     <span className="text-sm font-medium text-foreground">{at.title}</span>
