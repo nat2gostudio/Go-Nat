@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Plus, Link2, Calendar, Mail, FileText, ExternalLink, Image, AlertCircle, Briefcase } from 'lucide-react';
+import { Plus, Link2, Calendar, Mail, FileText, ExternalLink, Image, AlertCircle, Briefcase, X, Trash2 } from 'lucide-react';
 import { Button } from '../components/ui/button';
+import { Input } from '../components/ui/input';
 import { Card, CardContent } from '../components/ui/card';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
@@ -10,6 +11,13 @@ export default function Dashboard() {
   const [tasks, setTasks] = useState([]);
   const [events, setEvents] = useState([]);
   
+  // Task Modal State
+  const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
+  const [taskData, setTaskData] = useState({
+    title: '',
+    category: 'priority',
+  });
+
   useEffect(() => {
     fetchTasks();
     fetchEvents();
@@ -51,15 +59,39 @@ export default function Dashboard() {
     }
   };
 
+  const deleteTask = async (id) => {
+    try {
+      await axios.delete(`${process.env.REACT_APP_BACKEND_URL}/api/tasks/${id}`, { withCredentials: true });
+      fetchTasks();
+    } catch (e) {
+      toast.error("Error al eliminar la tarea");
+    }
+  };
+
+  const handleTaskSubmit = async (e) => {
+    e.preventDefault();
+    if (!taskData.title) return;
+    
+    try {
+      await axios.post(`${process.env.REACT_APP_BACKEND_URL}/api/tasks`, taskData, { withCredentials: true });
+      toast.success('Tarea añadida');
+      setIsTaskModalOpen(false);
+      setTaskData({ title: '', category: 'priority' });
+      fetchTasks();
+    } catch (e) {
+      toast.error('Error al guardar la tarea');
+    }
+  };
+
   return (
-    <div className="space-y-12 animate-in fade-in slide-in-from-bottom-2 duration-500">
+    <div className="space-y-12 animate-in fade-in slide-in-from-bottom-2 duration-500 relative">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-4xl sm:text-5xl font-semibold tracking-tight text-primary">Buenos días</h1>
           <p className="text-secondary mt-2 text-lg">¿Qué necesitamos hacer hoy?</p>
         </div>
-        <Button className="shrink-0 h-12 px-6 shadow-none" data-testid="quick-add-btn">
+        <Button onClick={() => setIsTaskModalOpen(true)} className="shrink-0 h-12 px-6 shadow-none" data-testid="quick-add-btn">
           <Plus className="mr-2" size={20} /> Añadir tarea rápida
         </Button>
       </div>
@@ -78,13 +110,19 @@ export default function Dashboard() {
                 </div>
               ) : (
                 priorities.map((task) => (
-                  <div key={task.id} className="flex items-center gap-4 p-4 md:p-6 bg-card border rounded-md group hover:border-primary/50 transition-colors">
+                  <div key={task.id} className="flex items-center gap-4 p-4 md:p-6 bg-card border rounded-md group hover:border-primary/50 transition-colors relative">
                     <button 
                       onClick={() => toggleTask(task)}
                       className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${task.completed ? 'bg-primary border-primary' : 'border-primary/20 hover:border-primary'}`}
                     >
                     </button>
                     <span className="text-xl font-medium">{task.title}</span>
+                    <button 
+                      onClick={() => deleteTask(task.id)}
+                      className="absolute right-6 opacity-0 group-hover:opacity-100 text-secondary hover:text-destructive transition-opacity"
+                    >
+                      <Trash2 size={18} />
+                    </button>
                   </div>
                 ))
               )}
@@ -102,8 +140,14 @@ export default function Dashboard() {
                   <p className="text-sm text-secondary">Nada urgente.</p>
                 ) : (
                   urgent.map(task => (
-                    <div key={task.id} className="p-4 bg-red-50 dark:bg-red-950/20 border border-red-100 dark:border-red-900 rounded-md">
+                    <div key={task.id} className="p-4 bg-red-50 dark:bg-red-950/20 border border-red-100 dark:border-red-900 rounded-md group relative">
                       <span className="font-medium text-red-900 dark:text-red-400">{task.title}</span>
+                      <button 
+                        onClick={() => deleteTask(task.id)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-700 transition-opacity"
+                      >
+                        <Trash2 size={14} />
+                      </button>
                     </div>
                   ))
                 )}
@@ -112,10 +156,10 @@ export default function Dashboard() {
 
             <section>
               <h2 className="text-sm font-semibold tracking-widest uppercase text-secondary mb-4 flex items-center gap-2">
-                <Calendar size={16}/> Próximas Entregas
+                <Calendar size={16}/> Recordatorio
               </h2>
               <div className="p-6 border rounded-md bg-card text-secondary text-sm">
-                <p>Las entregas de clientes aparecerán aquí.</p>
+                <p>Las entregas de clientes y tareas completadas se limpiarán al refrescar. Mantén tu lista enfocada.</p>
               </div>
             </section>
           </div>
@@ -130,9 +174,9 @@ export default function Dashboard() {
               <CardContent className="p-6">
                 {events.length === 0 ? (
                   <div className="text-center space-y-4">
-                    <p className="text-sm text-secondary">No hay reuniones próximas, o no has conectado tu calendario.</p>
+                    <p className="text-sm text-secondary">Aún no has conectado Google Calendar o no tienes eventos hoy.</p>
                     <Button variant="outline" size="sm" onClick={connectCalendar} className="w-full">
-                      <Calendar className="mr-2 h-4 w-4" /> Conectar Google Calendar
+                      <Calendar className="mr-2 h-4 w-4" /> Conectar Calendar
                     </Button>
                   </div>
                 ) : (
@@ -148,7 +192,7 @@ export default function Dashboard() {
                           </div>
                         </div>
                         <div className="flex-1 bg-muted rounded-md p-3">
-                          <p className="text-sm font-medium">{event.summary}</p>
+                          <p className="text-sm font-medium leading-tight">{event.summary}</p>
                         </div>
                       </div>
                     ))}
@@ -183,6 +227,51 @@ export default function Dashboard() {
 
         </div>
       </div>
+
+      {/* Modal Añadir Tarea */}
+      {isTaskModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-card w-full max-w-sm rounded-xl border shadow-lg overflow-hidden flex flex-col">
+            <div className="p-5 border-b flex items-center justify-between">
+              <h2 className="text-lg font-semibold">Añadir Tarea</h2>
+              <Button variant="ghost" size="icon" onClick={() => setIsTaskModalOpen(false)}>
+                <X size={20} />
+              </Button>
+            </div>
+            
+            <form id="task-form" onSubmit={handleTaskSubmit} className="p-6 space-y-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">¿Qué necesitas hacer?</label>
+                <Input 
+                  value={taskData.title} 
+                  onChange={e => setTaskData({...taskData, title: e.target.value})} 
+                  required 
+                  placeholder="Ej. Revisar copys de Cliente X..." 
+                  autoFocus
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Prioridad</label>
+                <select 
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  value={taskData.category} 
+                  onChange={e => setTaskData({...taskData, category: e.target.value})}
+                >
+                  <option value="priority">Top 3 Prioridades (Día)</option>
+                  <option value="urgent">Urgente (Fuego)</option>
+                </select>
+                <p className="text-xs text-secondary mt-1">Recuerda: Solo debes tener un máximo de 3 prioridades al día para evitar sobrecarga.</p>
+              </div>
+            </form>
+            
+            <div className="p-5 border-t bg-muted/20 flex justify-end gap-3">
+              <Button type="button" variant="ghost" onClick={() => setIsTaskModalOpen(false)}>Cancelar</Button>
+              <Button type="submit" form="task-form">Guardar Tarea</Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
