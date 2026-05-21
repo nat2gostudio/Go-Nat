@@ -230,6 +230,7 @@ img.img-error {
 .header-text {
   flex: 1;
   min-width: 0;
+  order: 2;
 }
 
 .greeting {
@@ -264,6 +265,7 @@ img.img-error {
   object-fit: contain;
   flex-shrink: 0;
   border-radius: var(--radius-sm);
+  order: 1;
 }
 
 .header-illustration--sm {
@@ -2045,7 +2047,7 @@ body.dark .quick-access-circle {
 /* ---------- Responsive: tablet ---------- */
 @media (max-width: 1000px) {
   .dashboard-top-grid {
-    grid-template-columns: 1fr 1.2fr;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
   }
   .right-sidebar-col {
     grid-column: 1 / -1;
