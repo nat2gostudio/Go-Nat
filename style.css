@@ -1508,6 +1508,10 @@ body.dark .btn-close-day {
   flex-direction: column;
 }
 
+#arranqueCard {
+  min-height: 280px;
+}
+
 /* ---------- Quick Access Card ---------- */
 .quick-access-card {
   background: var(--primary);
