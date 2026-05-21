@@ -11,19 +11,13 @@ export default function Clientes() {
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   
-  // Form State
   const [formData, setFormData] = useState({
     name: '',
     service_type: '',
     project_status: 'Activo',
     next_delivery: '',
     billing_status: 'Al día',
-    links: {
-      canva: '',
-      meta: '',
-      web: '',
-      other: ''
-    }
+    links: { canva: '', meta: '', web: '', other: '' }
   });
 
   useEffect(() => {
@@ -78,7 +72,22 @@ export default function Clientes() {
     } catch (error) {
       toast.error('Error al eliminar');
     }
-  }
+  };
+
+  const getUrgency = (dateString) => {
+    if (!dateString) return { percent: 0, color: 'bg-secondary/20', text: 'Sin fecha' };
+    const today = new Date();
+    today.setHours(0,0,0,0);
+    const delivery = new Date(dateString);
+    const diffTime = delivery - today;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffDays < 0) return { percent: 100, color: 'bg-red-500', text: 'Atrasado' };
+    if (diffDays === 0) return { percent: 100, color: 'bg-red-500', text: 'Hoy' };
+    if (diffDays <= 3) return { percent: 85, color: 'bg-orange-500', text: `En ${diffDays} días` };
+    if (diffDays <= 7) return { percent: 60, color: 'bg-amber-400', text: `En ${diffDays} días` };
+    return { percent: 25, color: 'bg-emerald-400', text: `En ${diffDays} días` };
+  };
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-500 relative">
@@ -106,69 +115,85 @@ export default function Clientes() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-          {clients.map(client => (
-            <Card key={client.id} className="shadow-none flex flex-col group">
-              <CardContent className="p-6 flex flex-col h-full flex-1">
-                <div className="flex justify-between items-start mb-4 relative">
-                  <div>
-                    <h3 className="text-xl font-medium">{client.name}</h3>
-                    <p className="text-sm text-secondary mt-1">{client.service_type}</p>
-                  </div>
-                  <button 
-                    onClick={() => deleteClient(client.id)}
-                    className="text-secondary hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity absolute right-0 top-0"
-                    title="Eliminar cliente"
-                  >
-                    <X size={16} />
-                  </button>
+          {clients.map(client => {
+            const urgency = getUrgency(client.next_delivery);
+            
+            return (
+              <Card key={client.id} className="shadow-none flex flex-col group relative overflow-hidden">
+                {/* Visual Progress Bar at the top */}
+                <div className="absolute top-0 left-0 right-0 h-1 bg-secondary/10">
+                  <div className={`h-full transition-all duration-500 ${urgency.color}`} style={{ width: `${urgency.percent}%` }} />
                 </div>
                 
-                <div className="space-y-3 mb-6 flex-1">
-                  <div className="flex items-center text-sm gap-2">
-                    <Calendar className="w-4 h-4 text-secondary" />
-                    <span className="text-secondary">Entrega: {client.next_delivery || 'Sin fecha'}</span>
+                <CardContent className="p-6 pt-7 flex flex-col h-full flex-1">
+                  <div className="flex justify-between items-start mb-4 relative">
+                    <div>
+                      <h3 className="text-xl font-medium">{client.name}</h3>
+                      <p className="text-sm text-secondary mt-1">{client.service_type}</p>
+                    </div>
+                    <button 
+                      onClick={() => deleteClient(client.id)}
+                      className="text-secondary hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity absolute right-0 top-0"
+                      title="Eliminar cliente"
+                    >
+                      <X size={16} />
+                    </button>
                   </div>
-                  <div className="flex items-center text-sm gap-2">
-                    <FileText className="w-4 h-4 text-secondary" />
-                    <span className="text-secondary">Pago: {client.billing_status || 'Pendiente'}</span>
+                  
+                  <div className="space-y-3 mb-6 flex-1">
+                    <div className="flex flex-col gap-1.5">
+                      <div className="flex items-center text-sm gap-2">
+                        <Calendar className="w-4 h-4 text-secondary" />
+                        <span className="text-secondary">Entrega: {client.next_delivery || 'Sin fecha'}</span>
+                        {client.next_delivery && (
+                          <span className={`text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded-sm font-semibold ${urgency.color.replace('bg-', 'text-').replace('-500', '-700').replace('-400', '-700')} ${urgency.color.replace('bg-', 'bg-').replace('500', '100').replace('400', '100')}`}>
+                            {urgency.text}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center text-sm gap-2">
+                      <FileText className="w-4 h-4 text-secondary" />
+                      <span className="text-secondary">Pago: {client.billing_status || 'Pendiente'}</span>
+                    </div>
                   </div>
-                </div>
 
-                <div className="border-t border-border pt-4">
-                  <p className="text-xs font-medium text-secondary mb-3 uppercase tracking-widest">Enlaces Rápidos</p>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                    {client.links?.canva && (
-                      <a href={client.links.canva} target="_blank" rel="noreferrer">
-                        <Button variant="outline" size="sm" className="w-full text-xs h-8">Canva</Button>
-                      </a>
-                    )}
-                    {client.links?.meta && (
-                      <a href={client.links.meta} target="_blank" rel="noreferrer">
-                        <Button variant="outline" size="sm" className="w-full text-xs h-8">Meta</Button>
-                      </a>
-                    )}
-                    {client.links?.web && (
-                      <a href={client.links.web} target="_blank" rel="noreferrer">
-                        <Button variant="outline" size="sm" className="w-full text-xs h-8">Web</Button>
-                      </a>
-                    )}
-                    {client.links?.other && (
-                      <a href={client.links.other} target="_blank" rel="noreferrer">
-                        <Button variant="outline" size="sm" className="w-full text-xs h-8">Otros</Button>
-                      </a>
-                    )}
-                    {(!client.links || (!client.links.canva && !client.links.meta && !client.links.web && !client.links.other)) && (
-                      <span className="text-xs text-secondary italic col-span-4">Sin enlaces configurados</span>
-                    )}
+                  <div className="border-t border-border pt-4">
+                    <p className="text-xs font-medium text-secondary mb-3 uppercase tracking-widest">Enlaces Rápidos</p>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                      {client.links?.canva && (
+                        <a href={client.links.canva} target="_blank" rel="noreferrer">
+                          <Button variant="outline" size="sm" className="w-full text-xs h-8">Canva</Button>
+                        </a>
+                      )}
+                      {client.links?.meta && (
+                        <a href={client.links.meta} target="_blank" rel="noreferrer">
+                          <Button variant="outline" size="sm" className="w-full text-xs h-8">Meta</Button>
+                        </a>
+                      )}
+                      {client.links?.web && (
+                        <a href={client.links.web} target="_blank" rel="noreferrer">
+                          <Button variant="outline" size="sm" className="w-full text-xs h-8">Web</Button>
+                        </a>
+                      )}
+                      {client.links?.other && (
+                        <a href={client.links.other} target="_blank" rel="noreferrer">
+                          <Button variant="outline" size="sm" className="w-full text-xs h-8">Otros</Button>
+                        </a>
+                      )}
+                      {(!client.links || (!client.links.canva && !client.links.meta && !client.links.web && !client.links.other)) && (
+                        <span className="text-xs text-secondary italic col-span-4">Sin enlaces configurados</span>
+                      )}
+                    </div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
       )}
 
-      {/* Simple Custom Modal for adding clients (ADHD-friendly, no clutter) */}
+      {/* Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-card w-full max-w-lg rounded-xl border shadow-lg overflow-hidden flex flex-col max-h-[90vh]">
@@ -217,7 +242,6 @@ export default function Clientes() {
 
                 <div className="space-y-4 pt-4 border-t">
                   <h3 className="text-xs font-semibold tracking-widest uppercase text-secondary">Enlaces Rápidos (Opcional)</h3>
-                  <p className="text-xs text-secondary mb-2">Añade los links que uses frecuentemente para este cliente para abrirlos en 1 clic.</p>
                   
                   <div className="space-y-3">
                     <div className="space-y-1">
