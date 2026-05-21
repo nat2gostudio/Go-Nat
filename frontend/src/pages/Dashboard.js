@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Plus, Link2, Calendar, Mail, FileText, ExternalLink, PenTool, Image, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Plus, Link2, Calendar, Mail, FileText, ExternalLink, Image, AlertCircle, Briefcase } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Card, CardContent } from '../components/ui/card';
 import { toast } from 'sonner';
@@ -57,7 +57,7 @@ export default function Dashboard() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-4xl sm:text-5xl font-semibold tracking-tight text-primary">Buenos días</h1>
-          <p className="text-secondary mt-2 text-lg">Qué necesitamos hacer hoy?</p>
+          <p className="text-secondary mt-2 text-lg">¿Qué necesitamos hacer hoy?</p>
         </div>
         <Button className="shrink-0 h-12 px-6 shadow-none" data-testid="quick-add-btn">
           <Plus className="mr-2" size={20} /> Añadir tarea rápida
@@ -81,7 +81,7 @@ export default function Dashboard() {
                   <div key={task.id} className="flex items-center gap-4 p-4 md:p-6 bg-card border rounded-md group hover:border-primary/50 transition-colors">
                     <button 
                       onClick={() => toggleTask(task)}
-                      className="w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 border-primary/20 hover:border-primary"
+                      className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${task.completed ? 'bg-primary border-primary' : 'border-primary/20 hover:border-primary'}`}
                     >
                     </button>
                     <span className="text-xl font-medium">{task.title}</span>
@@ -164,7 +164,7 @@ export default function Dashboard() {
               {[
                 { name: 'Canva', icon: Image, url: 'https://canva.com' },
                 { name: 'Drive', icon: FileText, url: 'https://drive.google.com' },
-                { name: 'Metricool', icon: PenTool, url: 'https://metricool.com' },
+                { name: 'Meta Business', icon: Briefcase, url: 'https://business.facebook.com/' },
                 { name: 'Gmail', icon: Mail, url: 'https://mail.google.com' }
               ].map((link) => (
                 <a 
@@ -175,7 +175,7 @@ export default function Dashboard() {
                   className="flex flex-col items-center justify-center p-4 border rounded-md bg-card hover:bg-muted transition-colors text-secondary hover:text-foreground"
                 >
                   <link.icon size={24} className="mb-2" />
-                  <span className="text-xs font-medium">{link.name}</span>
+                  <span className="text-xs font-medium text-center">{link.name}</span>
                 </a>
               ))}
             </div>
