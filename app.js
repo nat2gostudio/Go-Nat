@@ -70,6 +70,7 @@ const KEYS = {
   clientes:    'gonat_clientes',
   contenido:   'gonat_contenido',
   settings:    'gonat_settings',
+  seguimiento: 'gonat_seguimiento',
 };
 
 /* ============================================================
@@ -1292,6 +1293,122 @@ function initBusinessHoursOverlay() {
 }
 
 /* ============================================================
+   SEGUIMIENTO DE TAREAS (Task Follow-up Tracker)
+   ============================================================ */
+
+let seguimiento = lsGet(KEYS.seguimiento, []);
+
+function saveSeguimiento() {
+  lsSet(KEYS.seguimiento, seguimiento);
+}
+
+function relativeDate(dateStr) {
+  const now = new Date();
+  const then = new Date(dateStr + 'T12:00:00');
+  const diffDays = Math.floor((now - then) / 86400000);
+  if (diffDays <= 0) return 'hoy';
+  if (diffDays === 1) return 'ayer';
+  return `hace ${diffDays} días`;
+}
+
+function renderSeguimiento() {
+  const list = document.getElementById('seguimientoList');
+  const empty = document.getElementById('seguimientoEmpty');
+  const countEl = document.getElementById('seguimientoCount');
+  if (!list) return;
+
+  const pending = seguimiento.filter(item => !item.done);
+
+  if (countEl) {
+    countEl.textContent = pending.length;
+    countEl.style.display = pending.length > 0 ? 'inline-flex' : 'none';
+  }
+
+  list.querySelectorAll('.seguimiento-item, .seguimiento-add-form').forEach(el => el.remove());
+
+  if (pending.length === 0) {
+    if (empty) empty.style.display = 'block';
+    return;
+  }
+
+  if (empty) empty.style.display = 'none';
+
+  pending.forEach(item => {
+    const el = document.createElement('div');
+    el.className = 'seguimiento-item';
+    el.dataset.id = item.id;
+    el.innerHTML = `
+      <span class="seguimiento-item-text">${esc(item.text)}</span>
+      <span class="seguimiento-item-date">${relativeDate(item.addedAt)}</span>
+      <button class="seguimiento-item-done" aria-label="Marcar como listo">✓ Listo</button>
+      <button class="seguimiento-item-del" aria-label="Eliminar">×</button>
+    `;
+
+    el.querySelector('.seguimiento-item-done').addEventListener('click', () => {
+      seguimiento = seguimiento.filter(s => s.id !== item.id);
+      saveSeguimiento();
+      renderSeguimiento();
+    });
+
+    el.querySelector('.seguimiento-item-del').addEventListener('click', () => {
+      seguimiento = seguimiento.filter(s => s.id !== item.id);
+      saveSeguimiento();
+      renderSeguimiento();
+    });
+
+    list.appendChild(el);
+  });
+}
+
+function initSeguimiento() {
+  const addBtn = document.getElementById('seguimientoAddBtn');
+  if (!addBtn) return;
+
+  addBtn.addEventListener('click', () => {
+    const list = document.getElementById('seguimientoList');
+    if (list.querySelector('.seguimiento-add-form')) return;
+
+    const empty = document.getElementById('seguimientoEmpty');
+    if (empty) empty.style.display = 'none';
+
+    const form = document.createElement('div');
+    form.className = 'seguimiento-add-form';
+    form.innerHTML = `
+      <input class="seguimiento-add-input" type="text" placeholder="Ej: Enviado email a cliente, esperando respuesta..." maxlength="200" />
+      <button class="seguimiento-add-ok">Añadir</button>
+      <button class="seguimiento-add-cancel">Cancelar</button>
+    `;
+    list.appendChild(form);
+    const input = form.querySelector('.seguimiento-add-input');
+    input.focus();
+
+    const confirm = () => {
+      const text = input.value.trim();
+      if (text) {
+        seguimiento.push({ id: uid(), text, addedAt: todayStr(), done: false });
+        saveSeguimiento();
+        renderSeguimiento();
+      } else {
+        form.remove();
+        renderSeguimiento();
+      }
+    };
+
+    form.querySelector('.seguimiento-add-ok').addEventListener('click', confirm);
+    form.querySelector('.seguimiento-add-cancel').addEventListener('click', () => {
+      form.remove();
+      renderSeguimiento();
+    });
+    input.addEventListener('keydown', e => {
+      if (e.key === 'Enter') confirm();
+      if (e.key === 'Escape') { form.remove(); renderSeguimiento(); }
+    });
+  });
+
+  renderSeguimiento();
+}
+
+/* ============================================================
    IMAGE ERROR HANDLING
    ============================================================ */
 function initImageFallbacks() {
@@ -1383,6 +1500,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initDecision();
   initPomodoro();
   initBulkPrioritize();
+  initSeguimiento();
   initClientes();
   initContenido();
   initBienestar();
