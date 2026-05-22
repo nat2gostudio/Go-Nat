@@ -1340,9 +1340,47 @@ function renderSeguimiento() {
     el.innerHTML = `
       <span class="seguimiento-item-text">${esc(item.text)}</span>
       <span class="seguimiento-item-date">${relativeDate(item.addedAt)}</span>
+      <div class="seguimiento-prio-wrap">
+        <button class="seguimiento-item-prio" aria-label="Añadir a prioridades">→ Prio</button>
+        <div class="seguimiento-prio-picker" style="display:none;">
+          <span class="seguimiento-prio-label">Añadir a:</span>
+          <button class="seguimiento-prio-btn" data-cat="dinero">A</button>
+          <button class="seguimiento-prio-btn" data-cat="clientes">B</button>
+          <button class="seguimiento-prio-btn" data-cat="marca">C</button>
+          <button class="seguimiento-prio-cancel">✕</button>
+        </div>
+      </div>
       <button class="seguimiento-item-done" aria-label="Marcar como listo">✓ Listo</button>
       <button class="seguimiento-item-del" aria-label="Eliminar">×</button>
     `;
+
+    const prioBtn = el.querySelector('.seguimiento-item-prio');
+    const prioPicker = el.querySelector('.seguimiento-prio-picker');
+
+    prioBtn.addEventListener('click', () => {
+      prioBtn.style.display = 'none';
+      prioPicker.style.display = 'flex';
+    });
+
+    el.querySelector('.seguimiento-prio-cancel').addEventListener('click', () => {
+      prioPicker.style.display = 'none';
+      prioBtn.style.display = 'inline-flex';
+    });
+
+    el.querySelectorAll('.seguimiento-prio-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const cat = btn.dataset.cat;
+        if (!prioridades[cat]) prioridades[cat] = [];
+        prioridades[cat].push({ id: uid(), text: item.text, done: false, subtasks: [] });
+        savePrioridades();
+        renderPrioridades();
+        prioPicker.style.display = 'none';
+        prioBtn.textContent = '✓ Añadida';
+        prioBtn.classList.add('seguimiento-item-prio--added');
+        prioBtn.style.display = 'inline-flex';
+        prioBtn.disabled = true;
+      });
+    });
 
     el.querySelector('.seguimiento-item-done').addEventListener('click', () => {
       seguimiento = seguimiento.filter(s => s.id !== item.id);
