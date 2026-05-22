@@ -586,6 +586,13 @@ function saveClientes() {
   syncToGAS(KEYS.clientes, clientes);
 }
 
+function safeUrl(raw) {
+  const url = raw.trim();
+  if (/^https?:\/\//i.test(url)) return url;
+  if (/^\/\//.test(url)) return 'https:' + url;
+  return 'https://' + url;
+}
+
 function renderClientes() {
   const grid = document.getElementById('clientsGrid');
   grid.innerHTML = '';
@@ -602,6 +609,16 @@ function renderClientes() {
       </li>
     `).join('');
 
+    const linksHtml = (client.links || []).map((link, li) => `
+      <span class="client-link-wrap" data-li="${li}">
+        <a class="client-link-item" href="${esc(link.url)}" target="_blank" rel="noopener noreferrer">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="11" height="11"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+          ${esc(link.label)}
+        </a>
+        <button class="client-link-del" aria-label="Eliminar enlace">×</button>
+      </span>
+    `).join('');
+
     card.innerHTML = `
       <div class="client-card-header">
         <span class="client-name" title="Clic para editar">${esc(client.name)}</span>
@@ -609,6 +626,10 @@ function renderClientes() {
       </div>
       <ul class="client-tasks">${tasksHtml}</ul>
       <button class="btn btn-ghost btn-xs add-task-btn">+ Tarea</button>
+      <div class="client-links-section">
+        <div class="client-links-row" id="links-${client.id}">${linksHtml}</div>
+        <button class="client-link-add-btn" aria-label="Añadir enlace">+ Enlace</button>
+      </div>
     `;
 
     // Client name inline edit
@@ -690,6 +711,57 @@ function renderClientes() {
       input.addEventListener('keydown', e => {
         if (e.key === 'Enter') confirm2();
         if (e.key === 'Escape') row.remove();
+      });
+    });
+
+    // Delete link buttons
+    card.querySelectorAll('.client-link-del').forEach(btn => {
+      const li = parseInt(btn.closest('.client-link-wrap').dataset.li, 10);
+      btn.addEventListener('click', () => {
+        clientes[ci].links.splice(li, 1);
+        saveClientes();
+        renderClientes();
+      });
+    });
+
+    // Add link
+    card.querySelector('.client-link-add-btn').addEventListener('click', () => {
+      const section = card.querySelector('.client-links-section');
+      if (section.querySelector('.client-link-form')) return;
+
+      const form = document.createElement('div');
+      form.className = 'client-link-form';
+      form.innerHTML = `
+        <input class="client-link-label-input" type="text" placeholder="Nombre (Canva, Plan...)" maxlength="40" />
+        <input class="client-link-url-input" type="url" placeholder="https://..." maxlength="500" />
+        <button class="client-link-form-ok">OK</button>
+        <button class="client-link-form-cancel">✕</button>
+      `;
+      section.appendChild(form);
+      form.querySelector('.client-link-label-input').focus();
+
+      const confirmLink = () => {
+        const label = form.querySelector('.client-link-label-input').value.trim();
+        const rawUrl = form.querySelector('.client-link-url-input').value.trim();
+        if (label && rawUrl) {
+          if (!clientes[ci].links) clientes[ci].links = [];
+          clientes[ci].links.push({ id: uid(), label, url: safeUrl(rawUrl) });
+          saveClientes();
+          renderClientes();
+        } else {
+          form.remove();
+        }
+      };
+
+      form.querySelector('.client-link-form-ok').addEventListener('click', confirmLink);
+      form.querySelector('.client-link-form-cancel').addEventListener('click', () => form.remove());
+      form.querySelector('.client-link-url-input').addEventListener('keydown', e => {
+        if (e.key === 'Enter') confirmLink();
+        if (e.key === 'Escape') form.remove();
+      });
+      form.querySelector('.client-link-label-input').addEventListener('keydown', e => {
+        if (e.key === 'Escape') form.remove();
+        if (e.key === 'Enter') form.querySelector('.client-link-url-input').focus();
       });
     });
 
