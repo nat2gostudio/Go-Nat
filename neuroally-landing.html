@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NeuroAlly - Auditoría de Accesibilidad Cognitiva</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            max-width: 600px;
+            width: 100%;
+            padding: 40px;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 16px;
+            line-height: 1.5;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+            font-family: inherit;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        button {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .status {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 6px;
+            text-align: center;
+            display: none;
+            font-size: 14px;
+        }
+
+        .status.loading {
+            display: block;
+            background: #e3f2fd;
+            color: #1976d2;
+            border: 1px solid #1976d2;
+        }
+
+        .status.success {
+            display: block;
+            background: #e8f5e9;
+            color: #388e3c;
+            border: 1px solid #388e3c;
+        }
+
+        .status.error {
+            display: block;
+            background: #ffebee;
+            color: #c62828;
+            border: 1px solid #c62828;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(25, 118, 210, 0.3);
+            border-top-color: #1976d2;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-right: 8px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .success-link {
+            color: #388e3c;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .success-link:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧠 NeuroAlly</h1>
+        <p class="subtitle">Auditoría automática de accesibilidad cognitiva. Analiza tu sitio web en segundos.</p>
+
+        <form id="auditForm">
+            <div class="form-group">
+                <label for="url">URL del sitio web</label>
+                <input
+                    type="url"
+                    id="url"
+                    name="url"
+                    placeholder="https://ejemplo.com"
+                    required
+                    autocomplete="off"
+                >
+            </div>
+
+            <div class="form-group">
+                <label for="email">Tu email</label>
+                <input
+                    type="email"
+                    id="email"
+                    name="email"
+                    placeholder="tu@email.com"
+                    required
+                    autocomplete="off"
+                >
+            </div>
+
+            <button type="submit" id="submitBtn">Analizar sitio web</button>
+        </form>
+
+        <div id="status" class="status"></div>
+    </div>
+
+    <script>
+        const form = document.getElementById('auditForm');
+        const statusEl = document.getElementById('status');
+        const submitBtn = document.getElementById('submitBtn');
+        const urlInput = document.getElementById('url');
+        const emailInput = document.getElementById('email');
+
+        // Nueva URL del webhook sin autenticación
+        const webhookUrl = 'https://hook.eu1.make.com/tpxknr5jotrx6nzqlk44qxpu7qxfndyv';
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const urlValue = urlInput.value.trim();
+            const emailValue = emailInput.value.trim();
+
+            // Validación
+            if (!urlValue || !emailValue) {
+                showStatus('Por favor completa todos los campos', 'error');
+                return;
+            }
+
+            // Mostrar loading
+            showStatus('<span class="spinner"></span>Analizando tu sitio web...', 'loading');
+            submitBtn.disabled = true;
+
+            try {
+                const response = await fetch(webhookUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        url: urlValue,
+                        email: emailValue
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Error: ${response.status}`);
+                }
+
+                const data = await response.json();
+
+                // Éxito
+                showStatus(
+                    `✓ ¡Análisis iniciado! Recibirás el informe en <strong>${emailValue}</strong>`,
+                    'success'
+                );
+
+                // Limpiar formulario
+                form.reset();
+                submitBtn.disabled = false;
+
+            } catch (error) {
+                console.error('Error:', error);
+                showStatus(
+                    `Error al enviar: ${error.message}. Intenta de nuevo.`,
+                    'error'
+                );
+                submitBtn.disabled = false;
+            }
+        });
+
+        function showStatus(message, type) {
+            statusEl.textContent = '';
+            statusEl.innerHTML = message;
+            statusEl.className = `status ${type}`;
+        }
+    </script>
+</body>
+</html>
