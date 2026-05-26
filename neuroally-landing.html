@@ -230,9 +230,10 @@
 
                 const data = await response.json();
 
-                // Éxito
+                // Éxito - mostrar link de descarga
+                const downloadLink = data.pdf_url ? `<a href="${data.pdf_url}" download class="success-link">📥 Descargar PDF</a>` : '';
                 showStatus(
-                    `✓ ¡Análisis iniciado! Recibirás el informe en <strong>${emailValue}</strong>`,
+                    `✓ ¡Informe generado! ${downloadLink}<br><br>También recibirás el link por email en <strong>${emailValue}</strong>`,
                     'success'
                 );
 
