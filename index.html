@@ -28,10 +28,6 @@
       padding: 1.6rem;
       margin-bottom: 1.8rem;
       box-shadow: 0 4px 14px rgba(0, 0, 0, 0.03), 0 1px 3px rgba(0, 0, 0, 0.05);
-      transition: box-shadow 0.2s;
-    }
-    .card:hover {
-      box-shadow: 0 12px 24px -12px rgba(0, 47, 167, 0.12);
     }
 
     /* Tabla con celdas más aireadas */
@@ -59,17 +55,15 @@
       color: white;
       font-weight: 600;
       font-size: 0.8rem;
-      letter-spacing: 0.3px;
     }
 
-    /* Badges y etiquetas suaves */
+    /* Badges */
     .priority-badge {
       display: inline-block;
       padding: 6px 14px;
       border-radius: 40px;
       font-size: 0.75rem;
       font-weight: 600;
-      text-align: center;
     }
     .priority-A { background: #ffe2e2; color: #b91c1c; }
     .priority-B { background: #fff0db; color: #b45309; }
@@ -86,7 +80,7 @@
     .estado-curso { background: #dbeafe; color: #1e40af; }
     .estado-completada { background: #dcfce7; color: #166534; }
 
-    /* Barra de progreso más amigable */
+    /* Barra de progreso */
     .progress-bar {
       width: 100px;
       height: 8px;
@@ -101,7 +95,6 @@
       transition: width 0.2s ease;
     }
 
-    /* Botones pequeños */
     .btn-small {
       padding: 6px 14px;
       font-size: 0.7rem;
@@ -112,19 +105,10 @@
       transition: all 0.2s;
       font-weight: 500;
     }
-    .btn-small:hover {
-      background: #e2e8f0;
-      transform: translateY(-1px);
-    }
-    .btn-danger {
-      background: #fee2e2;
-      color: #b91c1c;
-    }
-    .btn-danger:hover {
-      background: #fecaca;
-    }
+    .btn-small:hover { background: #e2e8f0; }
+    .btn-danger { background: #fee2e2; color: #b91c1c; }
+    .btn-danger:hover { background: #fecaca; }
 
-    /* Campos de texto más espaciosos */
     input, textarea, select {
       font-size: 0.95rem;
       padding: 12px 16px;
@@ -141,7 +125,6 @@
     textarea {
       border-radius: 24px;
       resize: vertical;
-      line-height: 1.5;
     }
 
     /* Widgets superiores */
@@ -157,7 +140,6 @@
       padding: 1rem 1.2rem;
       flex: 1;
       min-width: 160px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.03);
       transition: transform 0.2s;
     }
     .widget:hover {
@@ -165,15 +147,12 @@
       background: #ffffff;
     }
 
-    /* Reproductor de Spotify limpio */
     .spotify-embed {
       width: 100%;
       border-radius: 24px;
       overflow: hidden;
-      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
     }
 
-    /* Botón principal azul Klein */
     .btn-primary {
       background: #002fa7;
       color: white;
@@ -209,7 +188,6 @@
       color: white;
     }
 
-    /* Contador */
     .counter-badge {
       background: #f1f5f9;
       padding: 6px 20px;
@@ -228,21 +206,15 @@
       color: #1e3a8a;
     }
 
-    /* Tabla responsive */
     @media (max-width: 700px) {
-      .tasks-table th, .tasks-table td {
-        padding: 12px 8px;
-        font-size: 0.75rem;
-      }
-      .widget {
-        min-width: 120px;
-      }
+      .tasks-table th, .tasks-table td { padding: 12px 8px; font-size: 0.75rem; }
+      .widget { min-width: 120px; }
     }
   </style>
 </head>
 <body>
 
-  <!-- SIDEBAR (igual, para mantener consistencia) -->
+  <!-- SIDEBAR -->
   <nav class="sidebar" id="sidebar">
     <div class="sidebar-logo"><span class="logo-mark">GN</span></div>
     <ul class="nav-list">
@@ -273,10 +245,10 @@
           <h1 class="greeting" id="greetingText">Buenos días, Nati</h1>
           <p class="date-text" id="dateText" style="color: #4b5563; margin-top: 4px;"></p>
         </div>
-        <img src="images/nati-writing.png" alt="Nati escribiendo" class="header-illustration" style="height: 64px;" />
+        <img src="images/nati-writing.png" alt="Nati" class="header-illustration" style="height: 64px;" />
       </div>
 
-      <!-- WIDGETS (SOLO SPOTIFY + POMODORO + ACCESOS) -->
+      <!-- WIDGETS SUPERIORES -->
       <div class="top-widgets">
         <div class="widget">
           <div style="font-weight: 600; margin-bottom: 8px; font-size: 0.7rem; color: #002fa7;">🍅 POMODORO</div>
@@ -297,7 +269,6 @@
           </div>
         </div>
 
-        <!-- SOLO EMBED DE SPOTIFY (sin texto extra) -->
         <div class="widget" style="padding: 0.5rem 0.8rem;">
           <iframe class="spotify-embed" src="https://open.spotify.com/embed/playlist/3py7MK3ipW2LVd0ryRlwzw?utm_source=generator" width="100%" height="70" frameborder="0" allow="autoplay; clipboard-write; encrypted-media; fullscreen" loading="lazy"></iframe>
         </div>
@@ -348,8 +319,7 @@
 Escribir newsletter de Casa Bella ✍️
 Vacunar a Ula 🐱
 Preparar propuesta RoscónLab 📑
-Pedir cita veterinario 🏥
-Revisar agenda semana"></textarea>
+Pedir cita veterinario 🏥"></textarea>
         <button id="bulkPrioritizeBtn" class="btn-primary" style="margin-top: 18px;">🤖 Priorizar todas con IA</button>
       </div>
 
@@ -364,7 +334,7 @@ Revisar agenda semana"></textarea>
       </div>
     </section>
 
-    <!-- CLIENTES, CONTENIDO, BIENESTAR, PERFIL (simplificado y consistente) -->
+    <!-- CLIENTES, CONTENIDO, BIENESTAR, PERFIL -->
     <section class="screen" id="screen-clientes"><div class="screen-header"><h1>Clientes</h1></div><div id="clientsGrid"></div><button class="fab" id="addClientBtn">+</button></section>
     <section class="screen" id="screen-contenido"><div class="screen-header"><h1>Contenido</h1></div><div id="kanbanBoard"></div></section>
     <section class="screen" id="screen-bienestar">
@@ -387,7 +357,6 @@ Revisar agenda semana"></textarea>
     let tareas = [];
     let sortType = 'prioridad';
 
-    // fecha actual
     document.getElementById('dateText').innerText = new Date().toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 
     function setSyncStatus(msg, isError = false) {
@@ -395,7 +364,6 @@ Revisar agenda semana"></textarea>
       if (el) { el.innerText = msg; el.style.background = isError ? '#ffe6e6' : '#eef2ff'; }
     }
 
-    // priorización con IA (DeepSeek)
     async function priorizarConDeepseek(texto) {
       try {
         const res = await fetch('https://api.deepseek.com/v1/chat/completions', {
@@ -414,7 +382,6 @@ Revisar agenda semana"></textarea>
       }
     }
 
-    // ordenar según criterio
     function ordenarTareas() {
       const copia = [...tareas];
       if (sortType === 'prioridad') {
@@ -456,7 +423,6 @@ Revisar agenda semana"></textarea>
       document.getElementById('contadorPendientes').innerText = `${pendientes} pendiente${pendientes !== 1 ? 's' : ''}`;
     }
 
-    // Acciones globales
     window.toggleTarea = (id) => {
       const t = tareas.find(t => t.id == id);
       if (t) { t.estado = t.estado === 'Completada' ? 'Pendiente' : 'Completada'; t.progreso = t.estado === 'Completada' ? 100 : t.progreso; renderizarTabla(); guardarTareas(); }
@@ -480,4 +446,25 @@ Revisar agenda semana"></textarea>
     async function agregarTarea(texto, modo) {
       if (!texto.trim()) return;
       let prioridad = modo === 'auto' ? await priorizarConDeepseek(texto) : modo;
-      tareas.unshift({ id: Date.now(), tarea: texto.trim(), prioridad, estado: 'Pendiente', progreso: 0, inicio: new Date().toLocaleDateString('es-ES'),
+      tareas.unshift({ id: Date.now(), tarea: texto.trim(), prioridad, estado: 'Pendiente', progreso: 0, inicio: new Date().toLocaleDateString('es-ES'), entrega: '', notas: '' });
+      renderizarTabla();
+      guardarTareas();
+    }
+
+    async function procesarCaptura() {
+      const ta = document.getElementById('bulkTasksInput');
+      if (!ta.value.trim()) { alert('Escribe al menos una tarea'); return; }
+      const lineas = ta.value.split(/\r?\n/).filter(l => l.trim());
+      setSyncStatus(`🤖 Procesando ${lineas.length} tareas...`);
+      for (const linea of lineas) await agregarTarea(linea, 'auto');
+      ta.value = '';
+      setSyncStatus(`✅ ${lineas.length} tareas añadidas`);
+      alert(`✨ ${lineas.length} tareas añadidas con IA`);
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      cargarTareas();
+      document.getElementById('agregarTareaBtn').onclick = async () => { await agregarTarea(document.getElementById('nuevaTareaInput').value, document.getElementById('prioridadManualSelect').value); document.getElementById('nuevaTareaInput').value = ''; };
+      document.getElementById('bulkPrioritizeBtn').onclick = procesarCaptura;
+      document.getElementById('limpiarCompletadasBtn').onclick = () => { if (confirm('¿Eliminar completadas?')) { tareas = tareas.filter(t => t.estado !== 'Completada'); renderizarTabla(); guardarTareas(); } };
+      document.querySelectorAll('.sort-btn').forEach
