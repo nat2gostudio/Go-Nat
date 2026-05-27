@@ -277,4 +277,33 @@
     function escapeHtml(t) { const d = document.createElement('div'); d.textContent = t; return d.innerHTML; }
 
     window.toggleTarea = (id) => { const t = misTareas.find(t => t.id == id); if(t) { t.estado = t.estado === 'Completada' ? 'Pendiente' : 'Completada'; t.progreso = t.estado === 'Completada' ? 100 : (t.progreso||0); renderizarTareas(); guardarTareas(); } };
-    window.cambiarProgreso = (id, p) => { const
+    window.cambiarProgreso = (id, p) => { const t = misTareas.find(t => t.id == id); if(t) { t.progreso = Math.min(100, Math.max(0, p)); if(t.progreso===100) t.estado='Completada'; else if(t.progreso>0 && t.estado!=='Completada') t.estado='En curso'; renderizarTareas(); guardarTareas(); } };
+    window.cambiarEntrega = (id, f) => { const t = misTareas.find(t => t.id == id); if(t) { t.entrega = f; guardarTareas(); } };
+    window.editarNotas = (id) => { const t = misTareas.find(t => t.id == id); if(t) { const n = prompt('Notas:', t.notas||''); if(n!==null) { t.notas=n; renderizarTareas(); guardarTareas(); } } };
+    window.eliminarTarea = (id) => { if(confirm('¿Eliminar tarea?')) { misTareas = misTareas.filter(t => t.id != id); renderizarTareas(); guardarTareas(); } };
+
+    async function agregarTarea(texto, modo) {
+      if (!texto.trim()) return;
+      let prioridad;
+      const statusEl = document.getElementById('syncStatus');
+      if (modo === 'auto') { if(statusEl) statusEl.innerHTML = '🤖 Nate pensando...'; prioridad = await priorizarConNate(texto); if(statusEl) statusEl.innerHTML = '✅ Nate priorizó'; }
+      else { prioridad = modo; }
+      misTareas.unshift({ id: Date.now(), tarea: texto.trim(), prioridad: prioridad, estado: 'Pendiente', progreso: 0, inicio: new Date().toLocaleDateString('es-ES'), entrega: '', notas: '' });
+      renderizarTareas();
+      guardarTareas();
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      cargarTareas();
+      const agregarBtn = document.getElementById('agregarTareaBtn');
+      const tareaInput = document.getElementById('nuevaTareaInput');
+      const prioridadSelect = document.getElementById('prioridadSelect');
+      if (agregarBtn) agregarBtn.onclick = () => { agregarTarea(tareaInput.value, prioridadSelect.value); tareaInput.value = ''; };
+      const limpiarBtn = document.getElementById('limpiarCompletadasBtn');
+      if (limpiarBtn) limpiarBtn.onclick = () => { if(confirm('¿Eliminar completadas?')) { misTareas = misTareas.filter(t => t.estado !== 'Completada'); renderizarTareas(); guardarTareas(); } };
+      const syncBtn = document.getElementById('syncTareasBtn');
+      if (syncBtn) syncBtn.onclick = () => { cargarTareas(); alert('✅ Tareas sincronizadas'); };
+    });
+  </script>
+</body>
+</html>
