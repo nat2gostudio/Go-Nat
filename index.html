@@ -2,51 +2,247 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
   <title>GO Nat — Centro de Operaciones Nat2Go Studio</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="./style.css" />
   <style>
+    /* ===== TIPOGRAFÍA NEUROFRIENDLY ===== */
+    body, p, li, span, input, textarea, button, select, .card-desc, .priority-text, .check-text, .greeting, .date-text {
+      font-family: 'Atkinson Hyperlegible', 'Inter', sans-serif;
+      line-height: 1.5;
+    }
+    h1, h2, h3, h4, .card-title, .priority-title, .section-title, .quick-access-title {
+      font-family: 'Inter', 'Atkinson Hyperlegible', sans-serif;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+    }
+
+    /* ===== ESPACIADO Y RELAJACIÓN VISUAL ===== */
+    .card {
+      background: white;
+      border-radius: 28px;
+      padding: 1.6rem;
+      margin-bottom: 1.8rem;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.03), 0 1px 3px rgba(0, 0, 0, 0.05);
+      transition: box-shadow 0.2s;
+    }
+    .card:hover {
+      box-shadow: 0 12px 24px -12px rgba(0, 47, 167, 0.12);
+    }
+
+    /* Tabla con celdas más aireadas */
     .tasks-table-container {
       background: white;
-      border-radius: 16px;
-      padding: 1rem;
-      margin-top: 1rem;
+      border-radius: 24px;
+      padding: 0.5rem 0;
+      margin-top: 1.2rem;
       overflow-x: auto;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
     }
     .tasks-table {
       width: 100%;
       border-collapse: collapse;
-      font-size: 0.85rem;
+      font-size: 0.9rem;
     }
-    .tasks-table th, .tasks-table td {
-      padding: 12px 8px;
+    .tasks-table th,
+    .tasks-table td {
+      padding: 16px 12px;
       text-align: left;
-      border-bottom: 1px solid #e2e8f0;
+      border-bottom: 1px solid #ecf3fa;
+      vertical-align: middle;
     }
-    .tasks-table th { background: #2d3748; color: white; font-weight: 600; }
-    .priority-badge { display: inline-block; padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; }
-    .priority-A { background: #fed7d7; color: #c53030; }
-    .priority-B { background: #feebc8; color: #c05621; }
-    .priority-C { background: #e6fffa; color: #234e52; }
-    .estado-badge { display: inline-block; padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 500; }
-    .estado-pendiente { background: #e2e8f0; color: #4a5568; }
-    .estado-curso { background: #bee3f8; color: #2c5282; }
-    .estado-completada { background: #c6f6d5; color: #276749; }
-    .progress-bar { width: 80px; height: 6px; background: #e2e8f0; border-radius: 3px; overflow: hidden; }
-    .progress-fill { height: 100%; background: #48bb78; transition: width 0.3s; }
-    .btn-small { padding: 4px 8px; font-size: 0.75rem; border-radius: 6px; border: none; cursor: pointer; background: #edf2f7; margin: 0 2px; }
-    .btn-danger { background: #f56565; color: white; }
-    .task-row.completada { opacity: 0.6; background: #f7fafc; }
-    .sync-status { font-size: 0.75rem; margin-top: 10px; padding: 8px; border-radius: 8px; background: #f0f9ff; }
+    .tasks-table th {
+      background: #002fa7;
+      color: white;
+      font-weight: 600;
+      font-size: 0.8rem;
+      letter-spacing: 0.3px;
+    }
+
+    /* Badges y etiquetas suaves */
+    .priority-badge {
+      display: inline-block;
+      padding: 6px 14px;
+      border-radius: 40px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-align: center;
+    }
+    .priority-A { background: #ffe2e2; color: #b91c1c; }
+    .priority-B { background: #fff0db; color: #b45309; }
+    .priority-C { background: #e0f2fe; color: #0f3b5c; }
+
+    .estado-badge {
+      display: inline-block;
+      padding: 6px 14px;
+      border-radius: 40px;
+      font-size: 0.75rem;
+      font-weight: 500;
+    }
+    .estado-pendiente { background: #f1f5f9; color: #334155; }
+    .estado-curso { background: #dbeafe; color: #1e40af; }
+    .estado-completada { background: #dcfce7; color: #166534; }
+
+    /* Barra de progreso más amigable */
+    .progress-bar {
+      width: 100px;
+      height: 8px;
+      background: #e2e8f0;
+      border-radius: 20px;
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      background: #3b82f6;
+      border-radius: 20px;
+      transition: width 0.2s ease;
+    }
+
+    /* Botones pequeños */
+    .btn-small {
+      padding: 6px 14px;
+      font-size: 0.7rem;
+      border-radius: 40px;
+      border: none;
+      cursor: pointer;
+      background: #f1f5f9;
+      transition: all 0.2s;
+      font-weight: 500;
+    }
+    .btn-small:hover {
+      background: #e2e8f0;
+      transform: translateY(-1px);
+    }
+    .btn-danger {
+      background: #fee2e2;
+      color: #b91c1c;
+    }
+    .btn-danger:hover {
+      background: #fecaca;
+    }
+
+    /* Campos de texto más espaciosos */
+    input, textarea, select {
+      font-size: 0.95rem;
+      padding: 12px 16px;
+      border-radius: 60px;
+      border: 1px solid #e2e8f0;
+      background: #ffffff;
+      transition: all 0.2s;
+    }
+    input:focus, textarea:focus, select:focus {
+      border-color: #002fa7;
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(0, 47, 167, 0.1);
+    }
+    textarea {
+      border-radius: 24px;
+      resize: vertical;
+      line-height: 1.5;
+    }
+
+    /* Widgets superiores */
+    .top-widgets {
+      display: flex;
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+      flex-wrap: wrap;
+    }
+    .widget {
+      background: #f8fafc;
+      border-radius: 28px;
+      padding: 1rem 1.2rem;
+      flex: 1;
+      min-width: 160px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+      transition: transform 0.2s;
+    }
+    .widget:hover {
+      transform: translateY(-2px);
+      background: #ffffff;
+    }
+
+    /* Reproductor de Spotify limpio */
+    .spotify-embed {
+      width: 100%;
+      border-radius: 24px;
+      overflow: hidden;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    }
+
+    /* Botón principal azul Klein */
+    .btn-primary {
+      background: #002fa7;
+      color: white;
+      border: none;
+      padding: 12px 28px;
+      border-radius: 60px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-primary:hover {
+      background: #001f73;
+      transform: scale(0.98);
+    }
+
+    .sort-buttons {
+      display: flex;
+      gap: 10px;
+      margin: 1rem 0 1.5rem;
+      flex-wrap: wrap;
+    }
+    .sort-btn {
+      background: #f1f5f9;
+      border: none;
+      padding: 8px 20px;
+      border-radius: 40px;
+      font-size: 0.75rem;
+      font-weight: 500;
+      cursor: pointer;
+    }
+    .sort-btn.active {
+      background: #002fa7;
+      color: white;
+    }
+
+    /* Contador */
+    .counter-badge {
+      background: #f1f5f9;
+      padding: 6px 20px;
+      border-radius: 40px;
+      font-size: 0.75rem;
+      font-weight: 500;
+    }
+
+    .sync-status {
+      margin-top: 1.5rem;
+      font-size: 0.7rem;
+      background: #eef2ff;
+      padding: 10px 20px;
+      border-radius: 60px;
+      text-align: center;
+      color: #1e3a8a;
+    }
+
+    /* Tabla responsive */
+    @media (max-width: 700px) {
+      .tasks-table th, .tasks-table td {
+        padding: 12px 8px;
+        font-size: 0.75rem;
+      }
+      .widget {
+        min-width: 120px;
+      }
+    }
   </style>
 </head>
 <body>
 
-  <!-- SIDEBAR -->
+  <!-- SIDEBAR (igual, para mantener consistencia) -->
   <nav class="sidebar" id="sidebar">
     <div class="sidebar-logo"><span class="logo-mark">GN</span></div>
     <ul class="nav-list">
@@ -58,7 +254,7 @@
     </ul>
   </nav>
 
-  <!-- BOTTOM NAV -->
+  <!-- BOTTOM NAV (mobile) -->
   <nav class="bottom-nav" id="bottomNav">
     <ul class="bottom-nav-list">
       <li class="bottom-nav-item active" data-screen="dashboard"><button class="bottom-nav-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z"/><path d="M9 21V12h6v9"/></svg></button></li>
@@ -69,344 +265,219 @@
     </ul>
   </nav>
 
-  <!-- MAIN CONTENT -->
   <main class="main-content" id="mainContent">
-
     <!-- DASHBOARD -->
     <section class="screen active" id="screen-dashboard">
       <div class="screen-header">
         <div class="header-text">
           <h1 class="greeting" id="greetingText">Buenos días, Nati</h1>
-          <p class="date-text" id="dateText"></p>
+          <p class="date-text" id="dateText" style="color: #4b5563; margin-top: 4px;"></p>
         </div>
-        <img src="images/nati-writing.png" alt="Nati escribiendo" class="header-illustration" />
+        <img src="images/nati-writing.png" alt="Nati escribiendo" class="header-illustration" style="height: 64px;" />
+      </div>
+
+      <!-- WIDGETS (SOLO SPOTIFY + POMODORO + ACCESOS) -->
+      <div class="top-widgets">
+        <div class="widget">
+          <div style="font-weight: 600; margin-bottom: 8px; font-size: 0.7rem; color: #002fa7;">🍅 POMODORO</div>
+          <div class="pomodoro-timer" id="pomodoroTimer" style="font-size: 2rem; font-weight: 700;">25:00</div>
+          <label style="display: flex; align-items: center; gap: 8px; margin-top: 8px;">
+            <input type="checkbox" id="pomodoroToggle" style="width: 18px; height: 18px;" />
+            <span style="font-size: 0.7rem;">Activar enfoque</span>
+          </label>
+        </div>
+
+        <div class="widget">
+          <div style="font-weight: 600; margin-bottom: 8px; font-size: 0.7rem; color: #002fa7;">⚡ ACCESOS RÁPIDOS</div>
+          <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <a href="https://mail.google.com" target="_blank" style="background: white; padding: 5px 14px; border-radius: 40px; text-decoration: none; font-size: 0.7rem;">📧 Gmail</a>
+            <a href="https://drive.google.com" target="_blank" style="background: white; padding: 5px 14px; border-radius: 40px; text-decoration: none; font-size: 0.7rem;">📁 Drive</a>
+            <a href="https://canva.com" target="_blank" style="background: white; padding: 5px 14px; border-radius: 40px; text-decoration: none; font-size: 0.7rem;">🎨 Canva</a>
+            <a href="https://business.facebook.com" target="_blank" style="background: white; padding: 5px 14px; border-radius: 40px; text-decoration: none; font-size: 0.7rem;">📊 Meta</a>
+          </div>
+        </div>
+
+        <!-- SOLO EMBED DE SPOTIFY (sin texto extra) -->
+        <div class="widget" style="padding: 0.5rem 0.8rem;">
+          <iframe class="spotify-embed" src="https://open.spotify.com/embed/playlist/3py7MK3ipW2LVd0ryRlwzw?utm_source=generator" width="100%" height="70" frameborder="0" allow="autoplay; clipboard-write; encrypted-media; fullscreen" loading="lazy"></iframe>
+        </div>
       </div>
 
       <!-- CORAZÓN DEL PROYECTO -->
-      <div class="card" style="margin-bottom: 1.5rem;">
-        <h2 style="display: flex; justify-content: space-between;">
-          🧠 Corazón del Proyecto
-        </h2>
-        
-        <div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;">
-          <input type="text" id="nuevaTareaInput" placeholder="Escribe una nueva tarea..." style="flex:2; padding:10px; border:2px solid #e2e8f0; border-radius:12px;">
-          <select id="prioridadManualSelect" style="padding:10px; border-radius:12px;">
-            <option value="auto">🤖 Priorización automática</option>
-            <option value="A">🔥 Prioridad A</option>
-            <option value="B">📌 Prioridad B</option>
-            <option value="C">⏰ Prioridad C</option>
+      <div class="card">
+        <h2 style="margin: 0 0 0.25rem 0;">🧠 Corazón del Proyecto</h2>
+        <div class="sort-buttons">
+          <button class="sort-btn active" data-sort="prioridad">🔽 Por prioridad</button>
+          <button class="sort-btn" data-sort="entrega">📅 Por fecha entrega</button>
+          <button class="sort-btn" data-sort="fecha">📆 Más recientes</button>
+        </div>
+
+        <div style="display: flex; gap: 16px; margin: 20px 0 28px; flex-wrap: wrap;">
+          <input type="text" id="nuevaTareaInput" placeholder="Ej: Vacunar a Ula · Redactar newsletter · Revisar contrato" style="flex: 2;" />
+          <select id="prioridadManualSelect" style="background: white; cursor: pointer;">
+            <option value="auto">🤖 Priorización automática (IA)</option>
+            <option value="A">🔥 Prioridad A – urgente</option>
+            <option value="B">📌 Prioridad B – importante</option>
+            <option value="C">⏰ Prioridad C – sin prisa</option>
           </select>
-          <button id="agregarTareaBtn" style="background:#ff6b6b; color:white; border:none; padding:0 20px; border-radius:12px;">+ Agregar</button>
+          <button id="agregarTareaBtn" class="btn-primary">+ Agregar tarea</button>
         </div>
 
         <div class="tasks-table-container">
           <table class="tasks-table">
-            <thead><tr><th>✅</th><th>Tarea</th><th>Prioridad</th><th>Sub</th><th>Estado</th><th>Progreso</th><th>Inicio</th><th>Entrega</th><th>📝</th><th>🗑️</th></tr></thead>
-            <tbody id="tasksTableBody"><tr><td colspan="10" style="text-align:center; padding:40px;">✨ Cargando... ✨</td></tr></tbody>
+            <thead>
+              <tr><th>✅</th><th>Tarea</th><th>Prioridad</th><th>Estado</th><th>Progreso</th><th>Inicio</th><th>Entrega</th><th>📝</th><th>🗑️</th></tr>
+            </thead>
+            <tbody id="tasksTableBody">
+              <tr><td colspan="9" style="padding: 3rem; text-align: center;">✨ Cargando tus tareas... ✨</td></tr>
+            </tbody>
           </table>
         </div>
 
-        <div style="display: flex; justify-content: space-between; margin-top: 15px;">
-          <div><button id="ordenarPrioridadBtn" class="btn-small">⬇️ Ordenar</button><button id="limpiarCompletadasBtn" class="btn-small btn-danger">🗑️ Limpiar completadas</button></div>
-          <div><span id="contadorPendientes" style="background:#edf2f7; padding:5px 12px; border-radius:20px;">0 pendientes</span></div>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 24px;">
+          <button id="limpiarCompletadasBtn" class="btn-small btn-danger">🗑️ Limpiar tareas completadas</button>
+          <span id="contadorPendientes" class="counter-badge">0 pendientes</span>
         </div>
-        <div class="sync-status" id="syncStatus">🔄 Conectando con Google Sheets...</div>
-      </div>
-
-      <!-- ACCESOS RÁPIDOS -->
-      <div class="quick-access-card">
-        <h2 class="quick-access-title">Accesos Rápidos</h2>
-        <div class="quick-access-grid">
-          <a class="quick-access-item" href="https://mail.google.com" target="_blank"><div class="quick-access-circle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="26" height="26"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 7l10 7 10-7"/></svg></div><span>Gmail</span></a>
-          <a class="quick-access-item" href="https://drive.google.com" target="_blank"><div class="quick-access-circle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="26" height="26"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0018 9h-1.26A8 8 0 103 16.3"/></svg></div><span>Drive</span></a>
-          <a class="quick-access-item" href="https://business.facebook.com" target="_blank"><div class="quick-access-circle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="26" height="26"><path d="M12 12c-2-2.5-4-4-6-4a4 4 0 000 8c2 0 4-1.5 6-4z"/><path d="M12 12c2-2.5 4-4 6-4a4 4 0 010 8c-2 0-4-1.5-6-4z"/></svg></div><span>Meta</span></a>
-          <a class="quick-access-item" href="https://canva.com" target="_blank"><div class="quick-access-circle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="26" height="26"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125A1.64 1.64 0 0115.28 17h1.996c3.051 0 5.555-2.503 5.555-5.554C22.83 6.012 17.961 2 12 2z"/><circle cx="7" cy="12" r="1.1" fill="currentColor" stroke="none"/><circle cx="9.5" cy="8" r="1.1" fill="currentColor" stroke="none"/><circle cx="14.5" cy="7" r="1.1" fill="currentColor" stroke="none"/><circle cx="18" cy="11" r="1.1" fill="currentColor" stroke="none"/></svg></div><span>Canva</span></a>
-        </div>
-      </div>
-
-      <!-- SPOTIFY + POMODORO -->
-      <div class="right-sidebar-col">
-        <div class="card spotify-widget">
-          <iframe src="https://open.spotify.com/embed/playlist/3py7MK3ipW2LVd0ryRlwzw?utm_source=generator" width="100%" height="152" frameborder="0" allowfullscreen="" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
-        </div>
-        <div class="card pomodoro-widget">
-          <div class="pomodoro-timer" id="pomodoroTimer">25:00</div>
-          <div class="pomodoro-toggle-row"><label class="toggle-switch"><input type="checkbox" id="pomodoroToggle" /><span class="toggle-slider"></span></label><span>Activar Pomodoro 25/5</span></div>
-        </div>
+        <div id="syncStatus" class="sync-status">💾 Todo se guarda automáticamente en Google Sheets</div>
       </div>
 
       <!-- CAPTURA MASIVA -->
-      <div class="card card--accordion" id="bulkCaptureCard">
-        <div class="card-header" data-toggle="bulkCaptureCard">
-          <div class="card-header-content"><h2 class="card-title--accordion">Captura masiva de tareas</h2></div>
-          <div class="card-toggle-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><polyline points="6 9 12 15 18 9"></polyline></svg></div>
-        </div>
-        <div class="card-content">
-          <textarea class="bulk-textarea" id="bulkTasksInput" placeholder="Cobrar factura a cliente&#10;Escribir newsletter&#10;Publicar en Instagram" rows="4"></textarea>
-          <button class="btn btn-primary btn-sm" id="bulkPrioritizeBtn">📥 Priorizar automáticamente</button>
-        </div>
+      <div class="card">
+        <h2>📥 Captura masiva de tareas</h2>
+        <textarea id="bulkTasksInput" rows="4" placeholder="Ejemplo: Cobrar factura cliente 📄
+Escribir newsletter de Casa Bella ✍️
+Vacunar a Ula 🐱
+Preparar propuesta RoscónLab 📑
+Pedir cita veterinario 🏥
+Revisar agenda semana"></textarea>
+        <button id="bulkPrioritizeBtn" class="btn-primary" style="margin-top: 18px;">🤖 Priorizar todas con IA</button>
+      </div>
+
+      <!-- PRIORIDADES A/B/C -->
+      <div class="priorities-header">
+        <h2 class="section-title">📌 Prioridades del día</h2>
+      </div>
+      <div class="priorities-grid" style="display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 1rem;">
+        <div class="card priority-card" style="flex: 1;" id="prio-dinero"><h3>Prioridad A</h3><ul id="list-dinero" style="padding-left: 1rem;"></ul><button class="btn-small add-prio-btn" data-cat="dinero">+ Añadir</button></div>
+        <div class="card priority-card" style="flex: 1;" id="prio-clientes"><h3>Prioridad B</h3><ul id="list-clientes-prio" style="padding-left: 1rem;"></ul><button class="btn-small add-prio-btn" data-cat="clientes">+ Añadir</button></div>
+        <div class="card priority-card" style="flex: 1;" id="prio-marca"><h3>Prioridad C</h3><ul id="list-marca" style="padding-left: 1rem;"></ul><button class="btn-small add-prio-btn" data-cat="marca">+ Añadir</button></div>
       </div>
     </section>
 
-    <!-- CORAZÓN DEL PROYECTO - TABLA DE TAREAS -->
-<div class="card" style="margin-bottom: 1.5rem; background: white; border-radius: 16px; padding: 1.5rem;">
-  <h2 style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-    🧠 Corazón del Proyecto
-    <button id="syncNowBtn" style="background: #4a90e2; color: white; border: none; padding: 6px 12px; border-radius: 20px; cursor: pointer;">🔄 Sincronizar</button>
-  </h2>
-  
-  <!-- Entrada rápida -->
-  <div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;">
-    <input type="text" id="nuevaTareaInput" placeholder="Escribe una nueva tarea..." style="flex: 2; padding: 10px; border: 1px solid #ddd; border-radius: 8px;">
-    <select id="prioridadManualSelect" style="padding: 10px; border-radius: 8px; border: 1px solid #ddd;">
-      <option value="auto">🤖 Priorización automática</option>
-      <option value="A">🔥 Prioridad A</option>
-      <option value="B">📌 Prioridad B</option>
-      <option value="C">⏰ Prioridad C</option>
-    </select>
-    <button id="agregarTareaBtn" style="background: #ff6b6b; color: white; border: none; padding: 0 20px; border-radius: 8px; cursor: pointer;">+ Agregar</button>
-  </div>
-
-  <!-- Tabla -->
-  <div style="overflow-x: auto;">
-    <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
-      <thead>
-        <tr style="background: #2d3748; color: white;">
-          <th style="padding: 10px;">✅</th><th style="padding: 10px;">Tarea</th><th style="padding: 10px;">Prioridad</th><th style="padding: 10px;">Estado</th><th style="padding: 10px;">Progreso</th><th style="padding: 10px;">Inicio</th><th style="padding: 10px;">Entrega</th><th style="padding: 10px;">📝</th><th style="padding: 10px;">🗑️</th>
-        </tr>
-      </thead>
-      <tbody id="tasksTableBody">
-        <tr><td colspan="9" style="text-align:center; padding:40px;">✨ Cargando tareas... ✨</td></tr>
-      </tbody>
-    </table>
-  </div>
-
-  <div style="display: flex; justify-content: space-between; margin-top: 15px;">
-    <button id="limpiarCompletadasBtn" style="background: #f56565; color: white; border: none; padding: 5px 12px; border-radius: 6px; cursor: pointer;">🗑️ Limpiar completadas</button>
-    <span id="contadorPendientes" style="background: #edf2f7; padding: 5px 12px; border-radius: 20px;">0 pendientes</span>
-  </div>
-  <div id="syncStatus" style="font-size: 0.75rem; margin-top: 10px; padding: 8px; border-radius: 8px; background: #f0f9ff;">🔄 Conectando con Google Sheets...</div>
-</div>
-
-    <!-- OTRAS PANTALLAS (simplificadas pero funcionales) -->
-    <section class="screen" id="screen-clientes"><div class="screen-header"><h1>Clientes</h1></div><div id="clientsGrid"></div></section>
+    <!-- CLIENTES, CONTENIDO, BIENESTAR, PERFIL (simplificado y consistente) -->
+    <section class="screen" id="screen-clientes"><div class="screen-header"><h1>Clientes</h1></div><div id="clientsGrid"></div><button class="fab" id="addClientBtn">+</button></section>
     <section class="screen" id="screen-contenido"><div class="screen-header"><h1>Contenido</h1></div><div id="kanbanBoard"></div></section>
-    <section class="screen" id="screen-bienestar"><div class="screen-header"><h1>Bienestar</h1></div><ul class="check-list" id="bienestarChecks"><li><label><input type="checkbox" data-key="mandalas"/> Mandalas</label></li><li><label><input type="checkbox" data-key="sol"/> Sol</label></li><li><label><input type="checkbox" data-key="coreano"/> Coreano</label></li><li><label><input type="checkbox" data-key="kickboxing"/> Kickboxing</label></li></ul></section>
-    <section class="screen" id="screen-perfil"><div class="screen-header"><h1>Perfil</h1></div><div class="card"><h2>Nati Pérez</h2><p>@nat2gostudio</p></div></section>
+    <section class="screen" id="screen-bienestar">
+      <div class="screen-header"><h1>Bienestar</h1><p>Cuídate, Nati</p></div>
+      <div class="card"><h2>Rutinas de hoy</h2><ul class="check-list" id="bienestarChecks"><li><label><input type="checkbox" data-key="mandalas"/> Mandalas</label></li><li><label><input type="checkbox" data-key="sol"/> Salir al sol</label></li><li><label><input type="checkbox" data-key="coreano"/> Coreano</label></li><li><label><input type="checkbox" data-key="kickboxing"/> Kickboxing</label></li></ul></div>
+      <div class="card"><h2>Racha 🔥</h2><div class="habit-streak-grid" style="display: flex; gap: 1rem;"><div>Mandalas: <span id="mandalasStreak">0</span></div><div>Sol: <span id="solStreak">0</span></div><div>Coreano: <span id="coreanoStreak">0</span></div><div>Kickboxing: <span id="kickboxingStreak">0</span></div></div></div>
+    </section>
+    <section class="screen" id="screen-perfil">
+      <div class="screen-header"><h1>Perfil</h1></div>
+      <div class="card"><h2>Nati Pérez</h2><p>@nat2gostudio</p></div>
+      <div class="card"><h2>Apariencia</h2><button class="btn-small" id="themeLightBtn">☀️ Claro</button> <button class="btn-small" id="themeDarkBtn">🌙 Oscuro</button></div>
+    </section>
   </main>
 
+  <script src="./app.js"></script>
   <script>
-    // ==========================================
-    // NAT2GO - CON GOOGLE SHEETS (SIN CORS)
-    // ==========================================
-    
-    // 👇 ACTUALIZA ESTA URL CON LA DE TU APPS SCRIPT
+    // ===================== CONFIGURACIÓN GLOBAL =====================
     const URL_API = 'https://script.google.com/macros/s/AKfycbwnBN3A5YYfLZaDuyh9Glw2hR5hiX0gKRelT8p2ZKT45B7Bp6c0u8YfeyDGY6YTJGr9Ng/exec';
-    
+    const DEEPSEEK_API_KEY = 'sk-f0d93900b799462bb6229872d8084939';
     let tareas = [];
-    
-    function setSyncStatus(text, isError) {
+    let sortType = 'prioridad';
+
+    // fecha actual
+    document.getElementById('dateText').innerText = new Date().toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+
+    function setSyncStatus(msg, isError = false) {
       const el = document.getElementById('syncStatus');
-      if (el) { el.innerHTML = text; el.style.background = isError ? '#fee' : '#f0f9ff'; el.style.color = isError ? '#c00' : '#0066cc'; }
+      if (el) { el.innerText = msg; el.style.background = isError ? '#ffe6e6' : '#eef2ff'; }
     }
-    
-    function priorizar(texto) {
-      const t = texto.toLowerCase();
-      if (t.includes('urgente') || t.includes('hoy') || t.includes('cliente') || t.includes('entrega') || t.includes('cobrar')) return 'A';
-      if (t.includes('preparar') || t.includes('revisar') || t.includes('enviar') || t.includes('crear')) return 'B';
-      return 'C';
-    }
-    
-    function subPrioridad(texto) {
-      const t = texto.toLowerCase();
-      if (t.includes('cliente')) return 'Cliente';
-      if (t.includes('factura') || t.includes('cobrar')) return 'Dinero';
-      if (t.includes('newsletter') || t.includes('blog')) return 'Contenido';
-      return 'General';
-    }
-    
-    async function guardarTareas() {
+
+    // priorización con IA (DeepSeek)
+    async function priorizarConDeepseek(texto) {
       try {
-        const tareasJSON = encodeURIComponent(JSON.stringify(tareas));
-        const res = await fetch(`${URL_API}?tareas=${tareasJSON}`);
+        const res = await fetch('https://api.deepseek.com/v1/chat/completions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${DEEPSEEK_API_KEY}` },
+          body: JSON.stringify({ model: 'deepseek-chat', messages: [{ role: 'user', content: `Prioriza esta tarea solo con A, B o C (sin explicaciones): "${texto}"` }], temperature: 0.3, max_tokens: 5 })
+        });
         const data = await res.json();
-        if (data.success) setSyncStatus(`✅ ${tareas.length} tareas guardadas`);
-        else setSyncStatus(`⚠️ ${data.error || 'Error'}`, true);
-        localStorage.setItem('nat_tareas', JSON.stringify(tareas));
-      } catch(e) {
-        setSyncStatus(`⚠️ Guardado local: ${e.message}`, true);
-        localStorage.setItem('nat_tareas', JSON.stringify(tareas));
+        let p = data.choices[0].message.content.trim().toUpperCase();
+        return ['A', 'B', 'C'].includes(p) ? p : 'B';
+      } catch (e) {
+        const t = texto.toLowerCase();
+        if (t.includes('urgente') || t.includes('hoy') || t.includes('cliente') || t.includes('vacunar') || t.includes('veterinario') || t.includes('ula') || t.includes('kai') || t.includes('cobrar')) return 'A';
+        if (t.includes('preparar') || t.includes('revisar') || t.includes('enviar')) return 'B';
+        return 'C';
       }
     }
-    
-    async function cargarTareas() {
-      try {
-        setSyncStatus('🔄 Cargando...');
-        const res = await fetch(`${URL_API}?accion=tareas`);
-        const data = await res.json();
-        if (data.tareas && data.tareas.length) tareas = data.tareas;
-        else cargarLocal();
-        renderizarTabla();
-        setSyncStatus(`✅ ${tareas.length} tareas cargadas`);
-      } catch(e) { cargarLocal(); renderizarTabla(); setSyncStatus(`📦 Modo local: ${tareas.length} tareas`, true); }
+
+    // ordenar según criterio
+    function ordenarTareas() {
+      const copia = [...tareas];
+      if (sortType === 'prioridad') {
+        const peso = { A: 1, B: 2, C: 3 };
+        copia.sort((a, b) => (peso[a.prioridad] || 3) - (peso[b.prioridad] || 3));
+      } else if (sortType === 'entrega') {
+        copia.sort((a, b) => (a.entrega || '9999-12-31').localeCompare(b.entrega || '9999-12-31'));
+      } else if (sortType === 'fecha') {
+        copia.sort((a, b) => b.id - a.id);
+      }
+      return copia;
     }
-    
-    function cargarLocal() { const local = localStorage.getItem('nat_tareas'); if (local) tareas = JSON.parse(local); else tareas = []; }
-    
+
+    function escapeHtml(str) { const div = document.createElement('div'); div.textContent = str; return div.innerHTML; }
+
     function renderizarTabla() {
       const tbody = document.getElementById('tasksTableBody');
       if (!tbody) return;
-      const orden = { 'A':1, 'B':2, 'C':3 };
-      const ordenadas = [...tareas].sort((a,b) => (orden[a.prioridad]||3) - (orden[b.prioridad]||3));
-      if (!ordenadas.length) { tbody.innerHTML = '<tr><td colspan="10">🎉 No hay tareas</td></tr>'; return; }
+      const ordenadas = ordenarTareas();
+      if (!ordenadas.length) {
+        tbody.innerHTML = '<tr><td colspan="9" style="padding: 2rem; text-align: center;">🌱 No hay tareas pendientes. ¡Añade una!</td></tr>';
+        document.getElementById('contadorPendientes').innerText = '0 pendientes';
+        return;
+      }
       tbody.innerHTML = ordenadas.map(t => `
-        <tr class="${t.estado === 'Completada' ? 'completada' : ''}">
-          <td><input type="checkbox" ${t.estado === 'Completada' ? 'checked' : ''} onchange="toggleTarea(${t.id})"></td>
-          <td><strong>${escapeHtml(t.tarea)}</strong>${t.notas ? `<br><small>📌 ${escapeHtml(t.notas)}</small>` : ''}</td>
-          <td><span class="priority-badge priority-${t.prioridad}">${t.prioridad}</span></td>
-          <td>${t.subPrioridad || 'General'}</td>
-          <td><span class="estado-badge estado-${t.estado === 'Completada' ? 'completada' : 'pendiente'}">${t.estado || 'Pendiente'}</span></td>
-          <td><div style="display:flex; gap:5px;"><span>${t.progreso||0}%</span><div class="progress-bar"><div class="progress-fill" style="width:${t.progreso||0}%"></div></div><button class="btn-small" onclick="cambiarProgreso(${t.id},${(t.progreso||0)+10})">+10%</button></div></td>
+        <tr style="${t.estado === 'Completada' ? 'opacity: 0.7; background: #f9fafb;' : ''}">
+          <td style="vertical-align: middle;"><input type="checkbox" ${t.estado === 'Completada' ? 'checked' : ''} onchange="toggleTarea(${t.id})" style="width: 20px; height: 20px;"></td>
+          <td><strong>${escapeHtml(t.tarea)}</strong>${t.notas ? `<br><small style="color: #64748b;">📌 ${escapeHtml(t.notas)}</small>` : ''}</td>
+          <td><span class="priority-badge priority-${t.prioridad}">Prioridad ${t.prioridad}</span></td>
+          <td><span class="estado-badge estado-${t.estado === 'Completada' ? 'completada' : (t.progreso > 0 ? 'curso' : 'pendiente')}">${t.estado || 'Pendiente'}</span></td>
+          <td><div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;"><span>${t.progreso || 0}%</span><div class="progress-bar"><div class="progress-fill" style="width: ${t.progreso || 0}%"></div></div><button class="btn-small" onclick="cambiarProgreso(${t.id}, ${(t.progreso || 0) + 10})">+10%</button></div></td>
           <td>${t.inicio || ''}</td>
-          <td><input type="date" value="${t.entrega || ''}" onchange="cambiarEntrega(${t.id}, this.value)" style="padding:4px; font-size:0.7rem;"></td>
-          <td><button class="btn-small" onclick="editarNotas(${t.id})">📝</button></td>
+          <td><input type="date" value="${t.entrega || ''}" onchange="cambiarEntrega(${t.id}, this.value)" style="border-radius: 40px; padding: 6px 12px;"></td>
+          <td><button class="btn-small" onclick="editarNotas(${t.id})">✏️ Nota</button></td>
           <td><button class="btn-small btn-danger" onclick="eliminarTarea(${t.id})">🗑️</button></td>
         </tr>
       `).join('');
       const pendientes = tareas.filter(t => t.estado !== 'Completada').length;
-      document.getElementById('contadorPendientes') && (document.getElementById('contadorPendientes').innerText = `${pendientes} pendientes`);
+      document.getElementById('contadorPendientes').innerText = `${pendientes} pendiente${pendientes !== 1 ? 's' : ''}`;
     }
-    
-    function escapeHtml(t) { const d = document.createElement('div'); d.textContent = t; return d.innerHTML; }
-    
-    window.toggleTarea = (id) => { const t = tareas.find(t => t.id == id); if(t) { t.estado = t.estado === 'Completada' ? 'Pendiente' : 'Completada'; t.progreso = t.estado === 'Completada' ? 100 : (t.progreso||0); renderizarTabla(); guardarTareas(); } };
-    window.cambiarProgreso = (id, p) => { const t = tareas.find(t => t.id == id); if(t) { t.progreso = Math.min(100, Math.max(0, p)); if(t.progreso===100) t.estado='Completada'; else if(t.progreso>0 && t.estado!=='Completada') t.estado='En curso'; renderizarTabla(); guardarTareas(); } };
-    window.cambiarEntrega = (id, f) => { const t = tareas.find(t => t.id == id); if(t) { t.entrega = f; guardarTareas(); } };
-    window.editarNotas = (id) => { const t = tareas.find(t => t.id == id); if(t) { const n = prompt('Notas:', t.notas||''); if(n!==null) { t.notas=n; renderizarTabla(); guardarTareas(); } } };
-    window.eliminarTarea = (id) => { if(confirm('¿Eliminar?')) { tareas = tareas.filter(t => t.id != id); renderizarTabla(); guardarTareas(); } };
-    
-    function agregarTarea(texto, manual) {
+
+    // Acciones globales
+    window.toggleTarea = (id) => {
+      const t = tareas.find(t => t.id == id);
+      if (t) { t.estado = t.estado === 'Completada' ? 'Pendiente' : 'Completada'; t.progreso = t.estado === 'Completada' ? 100 : t.progreso; renderizarTabla(); guardarTareas(); }
+    };
+    window.cambiarProgreso = (id, p) => {
+      const t = tareas.find(t => t.id == id);
+      if (t) { t.progreso = Math.min(100, Math.max(0, p)); if (t.progreso === 100) t.estado = 'Completada'; else if (t.progreso > 0 && t.estado !== 'Completada') t.estado = 'En curso'; renderizarTabla(); guardarTareas(); }
+    };
+    window.cambiarEntrega = (id, fecha) => { const t = tareas.find(t => t.id == id); if (t) { t.entrega = fecha; guardarTareas(); } };
+    window.editarNotas = (id) => { const t = tareas.find(t => t.id == id); if (t) { const nota = prompt('Nota adicional:', t.notas || ''); if (nota !== null) { t.notas = nota; renderizarTabla(); guardarTareas(); } } };
+    window.eliminarTarea = (id) => { if (confirm('¿Eliminar esta tarea?')) { tareas = tareas.filter(t => t.id != id); renderizarTabla(); guardarTareas(); } };
+
+    async function guardarTareas() {
+      try { await fetch(`${URL_API}?tareas=${encodeURIComponent(JSON.stringify(tareas))}`); localStorage.setItem('nat_tareas', JSON.stringify(tareas)); setSyncStatus(`✅ ${tareas.length} tareas guardadas`); } catch(e) { localStorage.setItem('nat_tareas', JSON.stringify(tareas)); setSyncStatus('⚠️ Modo local activo', true); }
+    }
+
+    async function cargarTareas() {
+      try { const res = await fetch(`${URL_API}?accion=tareas`); const data = await res.json(); tareas = data.tareas?.length ? data.tareas : JSON.parse(localStorage.getItem('nat_tareas') || '[]'); renderizarTabla(); setSyncStatus(`✅ ${tareas.length} tareas sincronizadas`); } catch(e) { tareas = JSON.parse(localStorage.getItem('nat_tareas') || '[]'); renderizarTabla(); setSyncStatus('📡 Modo sin conexión', true); }
+    }
+
+    async function agregarTarea(texto, modo) {
       if (!texto.trim()) return;
-      const prioridad = manual === 'auto' ? priorizar(texto) : manual;
-      tareas.unshift({ id: Date.now(), tarea: texto.trim(), prioridad: prioridad, subPrioridad: subPrioridad(texto), estado: 'Pendiente', progreso: 0, inicio: new Date().toLocaleDateString('es-ES'), entrega: '', notas: '' });
-      renderizarTabla();
-      guardarTareas();
-    }
-    
-    function procesarCaptura() {
-      const ta = document.getElementById('bulkTasksInput');
-      if (!ta || !ta.value.trim()) { alert('Escribe tareas (una por línea)'); return; }
-      ta.value.split(/\r?\n/).filter(l => l.trim()).forEach(l => agregarTarea(l, 'auto'));
-      ta.value = '';
-      alert('✅ Tareas añadidas');
-    }
-    
-    document.addEventListener('DOMContentLoaded', () => {
-      cargarTareas();
-      document.getElementById('agregarTareaBtn').onclick = () => { agregarTarea(document.getElementById('nuevaTareaInput').value, document.getElementById('prioridadManualSelect').value); document.getElementById('nuevaTareaInput').value = ''; };
-      document.getElementById('bulkPrioritizeBtn').onclick = procesarCaptura;
-      document.getElementById('limpiarCompletadasBtn').onclick = () => { if(confirm('¿Eliminar completadas?')) { tareas = tareas.filter(t => t.estado !== 'Completada'); renderizarTabla(); guardarTareas(); } };
-      document.getElementById('ordenarPrioridadBtn').onclick = () => renderizarTabla();
-      document.getElementById('syncNowBtn').onclick = () => guardarTareas();
-    });
-  </script>
-
-  <script>
-// ==========================================
-// NAT2GO - CONEXIÓN CON GOOGLE SHEETS
-// ==========================================
-
-const URL_API = 'https://script.google.com/macros/s/AKfycbxLp71Lvy70bjSFrn0tLWI7CSey8tkeKqKe46x6CnSOQCxY96iQgiT17dBW4UmUSY794A/exec';
-
-let tareas = [];
-
-function setSyncStatus(text, isError) {
-  const el = document.getElementById('syncStatus');
-  if (el) { el.innerHTML = text; el.style.background = isError ? '#fee' : '#f0f9ff'; }
-}
-
-function priorizar(texto) {
-  const t = texto.toLowerCase();
-  if (t.includes('urgente') || t.includes('hoy') || t.includes('cliente') || t.includes('entrega') || t.includes('cobrar')) return 'A';
-  if (t.includes('preparar') || t.includes('revisar') || t.includes('enviar')) return 'B';
-  return 'C';
-}
-
-async function guardarTareas() {
-  try {
-    const tareasJSON = encodeURIComponent(JSON.stringify(tareas));
-    await fetch(`${URL_API}?tareas=${tareasJSON}`);
-    setSyncStatus(`✅ ${tareas.length} tareas guardadas`);
-    localStorage.setItem('nat_tareas', JSON.stringify(tareas));
-  } catch(e) {
-    setSyncStatus(`⚠️ Guardado local`, true);
-    localStorage.setItem('nat_tareas', JSON.stringify(tareas));
-  }
-}
-
-async function cargarTareas() {
-  try {
-    setSyncStatus('🔄 Cargando...');
-    const res = await fetch(`${URL_API}?accion=tareas`);
-    const data = await res.json();
-    if (data.tareas && data.tareas.length) tareas = data.tareas;
-    else cargarLocal();
-    renderizarTabla();
-    setSyncStatus(`✅ ${tareas.length} tareas cargadas`);
-  } catch(e) { cargarLocal(); renderizarTabla(); setSyncStatus(`📦 Modo local`, true); }
-}
-
-function cargarLocal() { 
-  const local = localStorage.getItem('nat_tareas'); 
-  tareas = local ? JSON.parse(local) : []; 
-}
-
-function renderizarTabla() {
-  const tbody = document.getElementById('tasksTableBody');
-  if (!tbody) return;
-  if (!tareas.length) { tbody.innerHTML = '<tr><td colspan="9">🎉 No hay tareas</td></tr>'; return; }
-  tbody.innerHTML = tareas.map(t => `
-    <tr style="${t.estado === 'Completada' ? 'opacity:0.6' : ''}">
-      <td style="padding:10px"><input type="checkbox" ${t.estado === 'Completada' ? 'checked' : ''} onchange="toggleTarea(${t.id})"></td>
-      <td style="padding:10px"><strong>${escapeHtml(t.tarea)}</strong>${t.notas ? `<br><small>📌 ${escapeHtml(t.notas)}</small>` : ''}</td>
-      <td style="padding:10px"><span style="background:${t.prioridad==='A'?'#fed7d7':t.prioridad==='B'?'#feebc8':'#e6fffa'}; padding:4px 8px; border-radius:12px;">${t.prioridad}</span></td>
-      <td style="padding:10px">${t.estado || 'Pendiente'}</td>
-      <td style="padding:10px"><div style="display:flex; align-items:center; gap:5px;"><span>${t.progreso||0}%</span><div style="width:60px; height:6px; background:#ddd; border-radius:3px;"><div style="width:${t.progreso||0}%; height:100%; background:#48bb78; border-radius:3px;"></div></div><button class="btn-small" onclick="cambiarProgreso(${t.id},${(t.progreso||0)+10})" style="background:#edf2f7; border:none; border-radius:4px; padding:2px 6px;">+10%</button></div></td>
-      <td style="padding:10px">${t.inicio || ''}</td>
-      <td style="padding:10px"><input type="date" value="${t.entrega || ''}" onchange="cambiarEntrega(${t.id}, this.value)" style="padding:4px; border:1px solid #ddd; border-radius:4px;"></td>
-      <td style="padding:10px"><button onclick="editarNotas(${t.id})" style="background:none; border:none; cursor:pointer;">📝</button></td>
-      <td style="padding:10px"><button onclick="eliminarTarea(${t.id})" style="background:#f56565; color:white; border:none; border-radius:4px; padding:4px 8px; cursor:pointer;">🗑️</button></td>
-    </tr>
-  `).join('');
-  const pendientes = tareas.filter(t => t.estado !== 'Completada').length;
-  const cont = document.getElementById('contadorPendientes');
-  if (cont) cont.innerText = `${pendientes} pendientes`;
-}
-
-function escapeHtml(text) { const d = document.createElement('div'); d.textContent = text; return d.innerHTML; }
-
-window.toggleTarea = (id) => { const t = tareas.find(t => t.id == id); if(t) { t.estado = t.estado === 'Completada' ? 'Pendiente' : 'Completada'; t.progreso = t.estado === 'Completada' ? 100 : (t.progreso||0); renderizarTabla(); guardarTareas(); } };
-window.cambiarProgreso = (id, p) => { const t = tareas.find(t => t.id == id); if(t) { t.progreso = Math.min(100, Math.max(0, p)); if(t.progreso===100) t.estado='Completada'; else if(t.progreso>0 && t.estado!=='Completada') t.estado='En curso'; renderizarTabla(); guardarTareas(); } };
-window.cambiarEntrega = (id, f) => { const t = tareas.find(t => t.id == id); if(t) { t.entrega = f; guardarTareas(); } };
-window.editarNotas = (id) => { const t = tareas.find(t => t.id == id); if(t) { const n = prompt('Notas:', t.notas||''); if(n!==null) { t.notas=n; renderizarTabla(); guardarTareas(); } } };
-window.eliminarTarea = (id) => { if(confirm('¿Eliminar?')) { tareas = tareas.filter(t => t.id != id); renderizarTabla(); guardarTareas(); } };
-
-function agregarTarea(texto, manual) {
-  if (!texto.trim()) return;
-  const prioridad = manual === 'auto' ? priorizar(texto) : manual;
-  tareas.unshift({ id: Date.now(), tarea: texto.trim(), prioridad: prioridad, estado: 'Pendiente', progreso: 0, inicio: new Date().toLocaleDateString('es-ES'), entrega: '', notas: '' });
-  renderizarTabla();
-  guardarTareas();
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-  cargarTareas();
-  document.getElementById('agregarTareaBtn').onclick = () => { agregarTarea(document.getElementById('nuevaTareaInput').value, document.getElementById('prioridadManualSelect').value); document.getElementById('nuevaTareaInput').value = ''; };
-  document.getElementById('bulkPrioritizeBtn') && (document.getElementById('bulkPrioritizeBtn').onclick = () => { const ta = document.getElementById('bulkTasksInput'); if(ta && ta.value) { ta.value.split(/\r?\n/).filter(l=>l.trim()).forEach(l=>agregarTarea(l,'auto')); ta.value=''; alert('✅ Tareas añadidas'); } });
-  document.getElementById('limpiarCompletadasBtn').onclick = () => { if(confirm('¿Eliminar completadas?')) { tareas = tareas.filter(t => t.estado !== 'Completada'); renderizarTabla(); guardarTareas(); } };
-  document.getElementById('syncNowBtn').onclick = () => guardarTareas();
-});
-</script>
-  
-</body>
-</html>
+      let prioridad = modo === 'auto' ? await priorizarConDeepseek(texto) : modo;
+      tareas.unshift({ id: Date.now(), tarea: texto.trim(), prioridad, estado: 'Pendiente', progreso: 0, inicio: new Date().toLocaleDateString('es-ES'),
