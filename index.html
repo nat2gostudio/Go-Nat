@@ -164,6 +164,46 @@
       </div>
     </section>
 
+    <!-- CORAZÓN DEL PROYECTO - TABLA DE TAREAS -->
+<div class="card" style="margin-bottom: 1.5rem; background: white; border-radius: 16px; padding: 1.5rem;">
+  <h2 style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+    🧠 Corazón del Proyecto
+    <button id="syncNowBtn" style="background: #4a90e2; color: white; border: none; padding: 6px 12px; border-radius: 20px; cursor: pointer;">🔄 Sincronizar</button>
+  </h2>
+  
+  <!-- Entrada rápida -->
+  <div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;">
+    <input type="text" id="nuevaTareaInput" placeholder="Escribe una nueva tarea..." style="flex: 2; padding: 10px; border: 1px solid #ddd; border-radius: 8px;">
+    <select id="prioridadManualSelect" style="padding: 10px; border-radius: 8px; border: 1px solid #ddd;">
+      <option value="auto">🤖 Priorización automática</option>
+      <option value="A">🔥 Prioridad A</option>
+      <option value="B">📌 Prioridad B</option>
+      <option value="C">⏰ Prioridad C</option>
+    </select>
+    <button id="agregarTareaBtn" style="background: #ff6b6b; color: white; border: none; padding: 0 20px; border-radius: 8px; cursor: pointer;">+ Agregar</button>
+  </div>
+
+  <!-- Tabla -->
+  <div style="overflow-x: auto;">
+    <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
+      <thead>
+        <tr style="background: #2d3748; color: white;">
+          <th style="padding: 10px;">✅</th><th style="padding: 10px;">Tarea</th><th style="padding: 10px;">Prioridad</th><th style="padding: 10px;">Estado</th><th style="padding: 10px;">Progreso</th><th style="padding: 10px;">Inicio</th><th style="padding: 10px;">Entrega</th><th style="padding: 10px;">📝</th><th style="padding: 10px;">🗑️</th>
+        </tr>
+      </thead>
+      <tbody id="tasksTableBody">
+        <tr><td colspan="9" style="text-align:center; padding:40px;">✨ Cargando tareas... ✨</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div style="display: flex; justify-content: space-between; margin-top: 15px;">
+    <button id="limpiarCompletadasBtn" style="background: #f56565; color: white; border: none; padding: 5px 12px; border-radius: 6px; cursor: pointer;">🗑️ Limpiar completadas</button>
+    <span id="contadorPendientes" style="background: #edf2f7; padding: 5px 12px; border-radius: 20px;">0 pendientes</span>
+  </div>
+  <div id="syncStatus" style="font-size: 0.75rem; margin-top: 10px; padding: 8px; border-radius: 8px; background: #f0f9ff;">🔄 Conectando con Google Sheets...</div>
+</div>
+
     <!-- OTRAS PANTALLAS (simplificadas pero funcionales) -->
     <section class="screen" id="screen-clientes"><div class="screen-header"><h1>Clientes</h1></div><div id="clientsGrid"></div></section>
     <section class="screen" id="screen-contenido"><div class="screen-header"><h1>Contenido</h1></div><div id="kanbanBoard"></div></section>
@@ -286,5 +326,103 @@
       document.getElementById('syncNowBtn').onclick = () => guardarTareas();
     });
   </script>
+
+  <script>
+// ==========================================
+// NAT2GO - CONEXIÓN CON GOOGLE SHEETS
+// ==========================================
+
+const URL_API = 'https://script.google.com/macros/s/AKfycbxLp71Lvy70bjSFrn0tLWI7CSey8tkeKqKe46x6CnSOQCxY96iQgiT17dBW4UmUSY794A/exec';
+
+let tareas = [];
+
+function setSyncStatus(text, isError) {
+  const el = document.getElementById('syncStatus');
+  if (el) { el.innerHTML = text; el.style.background = isError ? '#fee' : '#f0f9ff'; }
+}
+
+function priorizar(texto) {
+  const t = texto.toLowerCase();
+  if (t.includes('urgente') || t.includes('hoy') || t.includes('cliente') || t.includes('entrega') || t.includes('cobrar')) return 'A';
+  if (t.includes('preparar') || t.includes('revisar') || t.includes('enviar')) return 'B';
+  return 'C';
+}
+
+async function guardarTareas() {
+  try {
+    const tareasJSON = encodeURIComponent(JSON.stringify(tareas));
+    await fetch(`${URL_API}?tareas=${tareasJSON}`);
+    setSyncStatus(`✅ ${tareas.length} tareas guardadas`);
+    localStorage.setItem('nat_tareas', JSON.stringify(tareas));
+  } catch(e) {
+    setSyncStatus(`⚠️ Guardado local`, true);
+    localStorage.setItem('nat_tareas', JSON.stringify(tareas));
+  }
+}
+
+async function cargarTareas() {
+  try {
+    setSyncStatus('🔄 Cargando...');
+    const res = await fetch(`${URL_API}?accion=tareas`);
+    const data = await res.json();
+    if (data.tareas && data.tareas.length) tareas = data.tareas;
+    else cargarLocal();
+    renderizarTabla();
+    setSyncStatus(`✅ ${tareas.length} tareas cargadas`);
+  } catch(e) { cargarLocal(); renderizarTabla(); setSyncStatus(`📦 Modo local`, true); }
+}
+
+function cargarLocal() { 
+  const local = localStorage.getItem('nat_tareas'); 
+  tareas = local ? JSON.parse(local) : []; 
+}
+
+function renderizarTabla() {
+  const tbody = document.getElementById('tasksTableBody');
+  if (!tbody) return;
+  if (!tareas.length) { tbody.innerHTML = '<tr><td colspan="9">🎉 No hay tareas</td></tr>'; return; }
+  tbody.innerHTML = tareas.map(t => `
+    <tr style="${t.estado === 'Completada' ? 'opacity:0.6' : ''}">
+      <td style="padding:10px"><input type="checkbox" ${t.estado === 'Completada' ? 'checked' : ''} onchange="toggleTarea(${t.id})"></td>
+      <td style="padding:10px"><strong>${escapeHtml(t.tarea)}</strong>${t.notas ? `<br><small>📌 ${escapeHtml(t.notas)}</small>` : ''}</td>
+      <td style="padding:10px"><span style="background:${t.prioridad==='A'?'#fed7d7':t.prioridad==='B'?'#feebc8':'#e6fffa'}; padding:4px 8px; border-radius:12px;">${t.prioridad}</span></td>
+      <td style="padding:10px">${t.estado || 'Pendiente'}</td>
+      <td style="padding:10px"><div style="display:flex; align-items:center; gap:5px;"><span>${t.progreso||0}%</span><div style="width:60px; height:6px; background:#ddd; border-radius:3px;"><div style="width:${t.progreso||0}%; height:100%; background:#48bb78; border-radius:3px;"></div></div><button class="btn-small" onclick="cambiarProgreso(${t.id},${(t.progreso||0)+10})" style="background:#edf2f7; border:none; border-radius:4px; padding:2px 6px;">+10%</button></div></td>
+      <td style="padding:10px">${t.inicio || ''}</td>
+      <td style="padding:10px"><input type="date" value="${t.entrega || ''}" onchange="cambiarEntrega(${t.id}, this.value)" style="padding:4px; border:1px solid #ddd; border-radius:4px;"></td>
+      <td style="padding:10px"><button onclick="editarNotas(${t.id})" style="background:none; border:none; cursor:pointer;">📝</button></td>
+      <td style="padding:10px"><button onclick="eliminarTarea(${t.id})" style="background:#f56565; color:white; border:none; border-radius:4px; padding:4px 8px; cursor:pointer;">🗑️</button></td>
+    </tr>
+  `).join('');
+  const pendientes = tareas.filter(t => t.estado !== 'Completada').length;
+  const cont = document.getElementById('contadorPendientes');
+  if (cont) cont.innerText = `${pendientes} pendientes`;
+}
+
+function escapeHtml(text) { const d = document.createElement('div'); d.textContent = text; return d.innerHTML; }
+
+window.toggleTarea = (id) => { const t = tareas.find(t => t.id == id); if(t) { t.estado = t.estado === 'Completada' ? 'Pendiente' : 'Completada'; t.progreso = t.estado === 'Completada' ? 100 : (t.progreso||0); renderizarTabla(); guardarTareas(); } };
+window.cambiarProgreso = (id, p) => { const t = tareas.find(t => t.id == id); if(t) { t.progreso = Math.min(100, Math.max(0, p)); if(t.progreso===100) t.estado='Completada'; else if(t.progreso>0 && t.estado!=='Completada') t.estado='En curso'; renderizarTabla(); guardarTareas(); } };
+window.cambiarEntrega = (id, f) => { const t = tareas.find(t => t.id == id); if(t) { t.entrega = f; guardarTareas(); } };
+window.editarNotas = (id) => { const t = tareas.find(t => t.id == id); if(t) { const n = prompt('Notas:', t.notas||''); if(n!==null) { t.notas=n; renderizarTabla(); guardarTareas(); } } };
+window.eliminarTarea = (id) => { if(confirm('¿Eliminar?')) { tareas = tareas.filter(t => t.id != id); renderizarTabla(); guardarTareas(); } };
+
+function agregarTarea(texto, manual) {
+  if (!texto.trim()) return;
+  const prioridad = manual === 'auto' ? priorizar(texto) : manual;
+  tareas.unshift({ id: Date.now(), tarea: texto.trim(), prioridad: prioridad, estado: 'Pendiente', progreso: 0, inicio: new Date().toLocaleDateString('es-ES'), entrega: '', notas: '' });
+  renderizarTabla();
+  guardarTareas();
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  cargarTareas();
+  document.getElementById('agregarTareaBtn').onclick = () => { agregarTarea(document.getElementById('nuevaTareaInput').value, document.getElementById('prioridadManualSelect').value); document.getElementById('nuevaTareaInput').value = ''; };
+  document.getElementById('bulkPrioritizeBtn') && (document.getElementById('bulkPrioritizeBtn').onclick = () => { const ta = document.getElementById('bulkTasksInput'); if(ta && ta.value) { ta.value.split(/\r?\n/).filter(l=>l.trim()).forEach(l=>agregarTarea(l,'auto')); ta.value=''; alert('✅ Tareas añadidas'); } });
+  document.getElementById('limpiarCompletadasBtn').onclick = () => { if(confirm('¿Eliminar completadas?')) { tareas = tareas.filter(t => t.estado !== 'Completada'); renderizarTabla(); guardarTareas(); } };
+  document.getElementById('syncNowBtn').onclick = () => guardarTareas();
+});
+</script>
+  
 </body>
 </html>
