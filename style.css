@@ -557,6 +557,91 @@ body.dark .btn-close-day {
   background: var(--danger-light);
 }
 
+/* ---------- Priority dates ---------- */
+.priority-due-chip {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1px 7px;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.priority-due-chip--overdue {
+  color: var(--danger);
+  background: var(--danger-light);
+  border-color: var(--danger);
+}
+
+.priority-item-dates-btn {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  border-radius: 4px;
+  flex-shrink: 0;
+  opacity: 0;
+  transition: opacity var(--transition), color var(--transition), background var(--transition);
+}
+
+.priority-item:hover .priority-item-dates-btn {
+  opacity: 1;
+}
+
+.priority-item-dates-btn:hover {
+  color: var(--primary);
+  background: var(--primary-light);
+}
+
+.priority-dates-panel {
+  display: none;
+  width: 100%;
+  flex-basis: 100%;
+  flex-direction: row;
+  gap: 12px;
+  margin-left: 22px;
+  margin-top: 4px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.priority-dates-panel--open {
+  display: flex;
+}
+
+.priority-date-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.priority-date-input {
+  padding: 3px 8px;
+  font-size: 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text);
+  outline: none;
+  font-family: var(--font);
+  cursor: pointer;
+  transition: border-color var(--transition);
+}
+
+.priority-date-input:focus {
+  border-color: var(--primary);
+}
+
 /* Decision highlight */
 .decision-highlight {
   background: var(--primary-light);
@@ -1064,6 +1149,167 @@ body.dark .btn-close-day {
 .input:focus {
   border-color: var(--primary);
   box-shadow: 0 0 0 3px rgba(59, 75, 219, 0.12);
+}
+
+/* ---------- GAS Setup Guide ---------- */
+.gas-setup-guide {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  margin-bottom: 16px;
+  overflow: hidden;
+}
+
+.gas-setup-summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--primary);
+  cursor: pointer;
+  background: var(--primary-light);
+  list-style: none;
+  user-select: none;
+  transition: background var(--transition);
+}
+
+.gas-setup-summary::-webkit-details-marker { display: none; }
+
+.gas-setup-summary:hover {
+  background: #e4e8fc;
+}
+
+body.dark .gas-setup-summary:hover {
+  background: #252a50;
+}
+
+.gas-steps {
+  padding: 16px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  list-style: none;
+}
+
+.gas-step {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.gas-step-num {
+  width: 24px;
+  height: 24px;
+  background: var(--primary);
+  color: #fff;
+  border-radius: 50%;
+  font-size: 12px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.gas-step-body {
+  flex: 1;
+  font-size: 13px;
+  color: var(--text);
+  line-height: 1.5;
+}
+
+.gas-step-body strong {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.gas-step-body p {
+  color: var(--text-muted);
+  margin-bottom: 6px;
+}
+
+.gas-step-body a {
+  color: var(--primary);
+}
+
+.gas-step-body code {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-size: 12px;
+  font-family: 'Courier New', monospace;
+}
+
+.gas-substeps {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin: 6px 0;
+  padding-left: 10px;
+  border-left: 2px solid var(--primary-light);
+}
+
+.gas-substeps li {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.gas-code-block {
+  margin-top: 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.gas-copy-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--primary);
+  background: var(--primary-light);
+  border: none;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  font-family: var(--font);
+  transition: background var(--transition);
+  text-align: left;
+}
+
+.gas-copy-btn:hover {
+  background: #dde2fb;
+}
+
+.gas-copy-btn--copied {
+  color: var(--success);
+  background: var(--success-light);
+}
+
+.gas-code-textarea {
+  width: 100%;
+  height: 160px;
+  padding: 10px 12px;
+  font-size: 11px;
+  font-family: 'Courier New', monospace;
+  line-height: 1.5;
+  color: var(--text-muted);
+  background: var(--bg);
+  border: none;
+  resize: vertical;
+  outline: none;
+  display: block;
+}
+
+body.dark .gas-code-textarea {
+  color: var(--text-muted);
 }
 
 /* ---------- GAS / Connection ---------- */
