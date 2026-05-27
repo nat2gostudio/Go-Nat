@@ -1,5 +1,5 @@
 // ==========================================
-// GO NAT - CON IA Y GOOGLE SHEETS
+// GO NAT - CON IA Y GOOGLE SHEETS (CORREGIDO)
 // ==========================================
 
 const URL_API = 'https://script.google.com/macros/s/AKfycbwnBN3A5YYfLZaDuyh9Glw2hR5hiX0gKRelT8p2ZKT45B7Bp6c0u8YfeyDGY6YTJGr9Ng/exec';
@@ -39,25 +39,37 @@ async function cargarTareasSheets() {
     const data = await res.json();
     if (data.tareas && data.tareas.length > 0) {
       misTareas = data.tareas;
-      console.log(`✅ ${misTareas.length} tareas cargadas`);
-      renderizarTabla();
-      return true;
+      console.log(`✅ ${misTareas.length} tareas cargadas desde Sheets`);
+    } else {
+      console.log('📭 No hay tareas en Sheets');
     }
-  } catch(e) { console.log('Sin conexión a Sheets'); }
-  return false;
+    renderizarTabla();
+    return true;
+  } catch(e) {
+    console.log('📡 Sin conexión a Sheets');
+    renderizarTabla();
+    return false;
+  }
 }
 
 async function guardarTareasSheets() {
   try {
     await fetch(`${URL_API}?tareas=${encodeURIComponent(JSON.stringify(misTareas))}`);
-    console.log(`💾 ${misTareas.length} tareas guardadas`);
-  } catch(e) { console.log('No se pudo guardar'); }
+    console.log(`💾 ${misTareas.length} tareas guardadas en Sheets`);
+    return true;
+  } catch(e) {
+    console.log('⚠️ No se pudo guardar en Sheets');
+    return false;
+  }
 }
 
 // ========== RENDERIZAR TABLA ==========
 function renderizarTabla() {
   const tbody = document.getElementById('tasksTableBody');
-  if (!tbody) return;
+  if (!tbody) {
+    console.log('❌ No se encontró tasksTableBody');
+    return;
+  }
   
   if (misTareas.length === 0) {
     tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; padding:40px;">🎉 No hay tareas. ¡Añade una arriba! 🎉</td></tr>';
@@ -86,6 +98,8 @@ function renderizarTabla() {
   const pendientes = misTareas.filter(t => t.estado !== 'Completada').length;
   const cont = document.getElementById('contadorPendientes');
   if (cont) cont.innerText = `${pendientes} pendiente${pendientes !== 1 ? 's' : ''}`;
+  
+  console.log(`✅ Tabla renderizada con ${misTareas.length} tareas`);
 }
 
 function escapeHtml(t) { const d = document.createElement('div'); d.textContent = t; return d.innerHTML; }
@@ -126,7 +140,7 @@ async function agregarTarea(texto, modo) {
     prioridad = modo;
   }
   
-  misTareas.unshift({
+  const nuevaTarea = {
     id: Date.now(),
     tarea: texto.trim(),
     prioridad: prioridad,
@@ -135,10 +149,12 @@ async function agregarTarea(texto, modo) {
     inicio: new Date().toLocaleDateString('es-ES'),
     entrega: '',
     notas: ''
-  });
+  };
   
+  misTareas.unshift(nuevaTarea);
   renderizarTabla();
-  guardarTareasSheets();
+  await guardarTareasSheets();
+  console.log(`➕ Tarea añadida: "${texto}" (Prioridad ${prioridad})`);
 }
 
 // ========== CAPTURA MASIVA ==========
@@ -218,6 +234,8 @@ function initPomodoro() {
 
 // ========== INICIALIZACIÓN ==========
 document.addEventListener('DOMContentLoaded', async () => {
+  console.log('🚀 Iniciando panel...');
+  
   initNavegacion();
   setSaludoYFecha();
   initPomodoro();
