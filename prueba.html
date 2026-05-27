@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>GO Nat - Prueba Sheets</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: #f5f5f5; }
+    .card { background: white; border-radius: 24px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+    button { background: #002fa7; color: white; border: none; padding: 12px 24px; border-radius: 40px; font-size: 16px; cursor: pointer; }
+    input, select { width: 100%; padding: 12px; margin: 8px 0; border-radius: 40px; border: 1px solid #ddd; }
+    .priority-A { background: #ffe2e2; color: #b91c1c; padding: 4px 12px; border-radius: 40px; display: inline-block; }
+    .priority-B { background: #fff0db; color: #b45309; padding: 4px 12px; border-radius: 40px; display: inline-block; }
+    .priority-C { background: #e0f2fe; color: #0f3b5c; padding: 4px 12px; border-radius: 40px; display: inline-block; }
+    .tarea-item { border-bottom: 1px solid #eee; padding: 12px 0; display: flex; justify-content: space-between; align-items: center; }
+    .estado { font-size: 12px; color: #666; }
+  </style>
+</head>
+<body>
+
+<div class="card">
+  <h1>🧠 Mis Tareas</h1>
+  <p>Conectado a Google Sheets</p>
+  
+  <div>
+    <input type="text" id="tareaInput" placeholder="Ej: Vacunar a Ula">
+    <select id="prioridadSelect">
+      <option value="auto">🤖 Nate prioriza</option>
+      <option value="A">🔥 Prioridad A</option>
+      <option value="B">📌 Prioridad B</option>
+      <option value="C">⏰ Prioridad C</option>
+    </select>
+    <button id="agregarBtn">+ Agregar</button>
+  </div>
+  
+  <div id="listaTareas" style="margin-top: 20px;">
+    <p>Cargando tareas...</p>
+  </div>
+  
+  <div id="mensaje" style="margin-top: 16px; font-size: 14px; color: #666;"></div>
+</div>
+
+<script>
+// ==========================================
+// PRUEBA - CONEXIÓN DIRECTA A GOOGLE SHEETS
+// ==========================================
+
+const URL_API = 'https://script.google.com/macros/s/AKfycbwnBN3A5YYfLZaDuyh9Glw2hR5hiX0gKRelT8p2ZKT45B7Bp6c0u8YfeyDGY6YTJGr9Ng/exec';
+const DEEPSEEK_KEY = 'sk-f0d93900b799462bb6229872d8084939';
+
+let tareas = [];
+
+// Priorizar con IA
+async function priorizarConIA(texto) {
+  try {
+    const res = await fetch('https://api.deepseek.com/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${DEEPSEEK_KEY}` },
+      body: JSON.stringify({
+        model: 'deepseek-chat',
+        messages: [{ role: 'user', content: `Responde solo A, B o C: "${texto}"` }],
+        temperature: 0.3,
+        max_tokens: 5
+      })
+    });
+    const data = await res.json();
+    let p = data.choices[0].message.content.trim().toUpperCase();
+    return ['A','B','C'].includes(p) ? p : 'B';
+  } catch(e) {
+    const t = texto.toLowerCase();
+    if (t.includes('urgente')||t.includes('hoy')||t.includes('cliente')||t.includes('vacunar')||t.includes('ula')||t.includes('kai')) return 'A';
+    return 'B';
+  }
+}
+
+// Guardar en Sheets
+async function guardarEnSheets() {
+  try {
+    const tareasJSON = encodeURIComponent(JSON.stringify(tareas));
+    await fetch(`${URL_API}?tareas=${tareasJSON}`);
+    document.getElementById('mensaje').innerHTML = '✅ Guardado en Google Sheets';
+    setTimeout(() => document.getElementById('mensaje').innerHTML = '', 2000);
+  } catch(e) {
+    document.getElementById('mensaje').innerHTML = '❌ Error al guardar';
+  }
+}
+
+// Cargar desde Sheets
+async function cargarDesdeSheets() {
+  try {
+    const res = await fetch(`${URL_API}?accion=tareas`);
+    const data = await res.json();
+    if (data.tareas && data.tareas.length) {
+      tareas = data.tareas;
+    } else {
+      tareas = JSON.parse(localStorage.getItem('tareas_prueba') || '[]');
+    }
+    renderizarTareas();
+  } catch(e) {
+    tareas = JSON.parse(localStorage.getItem('tareas_prueba') || '[]');
+    renderizarTareas();
+    document.getElementById('mensaje').innerHTML = '⚠️ Usando datos locales';
+  }
+}
+
+// Mostrar tareas
+function renderizarTareas() {
+  const contenedor = document.getElementById('listaTareas');
+  if (tareas.length === 0) {
+    contenedor.innerHTML = '<p>🎉 No hay tareas. ¡Añade una!</p>';
+    return;
+  }
+  
+  contenedor.innerHTML = tareas.map((t, i) => `
+    <div class="tarea-item">
+      <div>
+        <strong>${escapeHtml(t.tarea)}</strong>
+        <div class="estado">Prioridad: <span class="priority-${t.prioridad}">${t.prioridad}</span> | ${t.estado || 'Pendiente'}</div>
+      </div>
+      <div>
+        <input type="checkbox" ${t.completada ? 'checked' : ''} onchange="toggleTarea(${i})">
+        <button onclick="eliminarTarea(${i})" style="background:#f56565; color:white; border:none; border-radius:20px; padding:4px 12px; margin-left:8px;">×</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function escapeHtml(t) { const d = document.createElement('div'); d.textContent = t; return d.innerHTML; }
+
+window.toggleTarea = (i) => {
+  tareas[i].completada = !tareas[i].completada;
+  tareas[i].estado = tareas[i].completada ? 'Completada' : 'Pendiente';
+  renderizarTareas();
+  guardarEnSheets();
+  localStorage.setItem('tareas_prueba', JSON.stringify(tareas));
+};
+
+window.eliminarTarea = (i) => {
+  tareas.splice(i, 1);
+  renderizarTareas();
+  guardarEnSheets();
+  localStorage.setItem('tareas_prueba', JSON.stringify(tareas));
+};
+
+// Agregar tarea
+async function agregarTarea() {
+  const input = document.getElementById('tareaInput');
+  const select = document.getElementById('prioridadSelect');
+  const texto = input.value.trim();
+  if (!texto) return;
+  
+  let prioridad;
+  if (select.value === 'auto') {
+    document.getElementById('mensaje').innerHTML = '🤖 Nate está pensando...';
+    prioridad = await priorizarConIA(texto);
+    document.getElementById('mensaje').innerHTML = '';
+  } else {
+    prioridad = select.value;
+  }
+  
+  tareas.unshift({
+    id: Date.now(),
+    tarea: texto,
+    prioridad: prioridad,
+    completada: false,
+    estado: 'Pendiente',
+    fecha: new Date().toLocaleDateString()
+  });
+  
+  input.value = '';
+  renderizarTareas();
+  guardarEnSheets();
+  localStorage.setItem('tareas_prueba', JSON.stringify(tareas));
+}
+
+// Iniciar
+document.getElementById('agregarBtn').onclick = agregarTarea;
+document.getElementById('tareaInput').addEventListener('keypress', (e) => {
+  if (e.key === 'Enter') agregarTarea();
+});
+
+cargarDesdeSheets();
+</script>
+
+</body>
+</html>
