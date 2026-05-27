@@ -1,87 +1,51 @@
-// GO NAT - app.js (versión limpia, solo pantallas y pomodoro)
+// GO NAT - app.js MÍNIMO (solo navegación y pomodoro)
+console.log("App cargada");
 
-// ==================== NAVEGACIÓN ====================
-function initNavigation() {
-  const navItems = document.querySelectorAll('.nav-item, .bottom-nav-item');
-  const screens = document.querySelectorAll('.screen');
-  
-  function setActiveScreen(screenId) {
-    screens.forEach(screen => screen.classList.remove('active'));
-    const activeScreen = document.getElementById(`screen-${screenId}`);
-    if (activeScreen) activeScreen.classList.add('active');
-    
-    navItems.forEach(item => item.classList.remove('active'));
-    const activeNav = document.querySelector(`[data-screen="${screenId}"]`);
-    if (activeNav) activeNav.classList.add('active');
-  }
-  
-  navItems.forEach(item => {
-    item.addEventListener('click', () => {
-      const screenId = item.getAttribute('data-screen');
-      if (screenId) setActiveScreen(screenId);
-    });
+// Navegación
+document.querySelectorAll('.nav-item, .bottom-nav-item').forEach(item => {
+  item.addEventListener('click', () => {
+    const screen = item.dataset.screen;
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(`screen-${screen}`).classList.add('active');
+    document.querySelectorAll('.nav-item, .bottom-nav-item').forEach(i => i.classList.remove('active'));
+    item.classList.add('active');
   });
-}
-
-// ==================== SALUDO Y FECHA ====================
-function setGreetingAndDate() {
-  const greetingEl = document.getElementById('greetingText');
-  const dateEl = document.getElementById('dateText');
-  
-  if (greetingEl) {
-    const hour = new Date().getHours();
-    const greeting = hour < 12 ? 'Buenos días' : (hour < 20 ? 'Buenas tardes' : 'Buenas noches');
-    greetingEl.textContent = `${greeting}, Nati`;
-  }
-  
-  if (dateEl) {
-    const today = new Date();
-    const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-    dateEl.textContent = today.toLocaleDateString('es-ES', options);
-  }
-}
-
-// ==================== POMODORO ====================
-function initPomodoro() {
-  const timerEl = document.getElementById('pomodoroTimer');
-  const toggleEl = document.getElementById('pomodoroToggle');
-  if (!timerEl || !toggleEl) return;
-  
-  let timeLeft = 25 * 60;
-  let interval = null;
-  
-  function updateDisplay() {
-    const minutes = Math.floor(timeLeft / 60);
-    const seconds = timeLeft % 60;
-    timerEl.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-  }
-  
-  toggleEl.addEventListener('change', (e) => {
-    if (e.target.checked) {
-      interval = setInterval(() => {
-        if (timeLeft > 0) {
-          timeLeft--;
-          updateDisplay();
-        } else {
-          clearInterval(interval);
-          toggleEl.checked = false;
-          alert('¡Pomodoro completado! Tiempo de descanso.');
-          timeLeft = 25 * 60;
-          updateDisplay();
-        }
-      }, 1000);
-    } else {
-      if (interval) clearInterval(interval);
-    }
-  });
-  
-  updateDisplay();
-}
-
-// ==================== INICIALIZAR TODO ====================
-document.addEventListener('DOMContentLoaded', () => {
-  initNavigation();
-  setGreetingAndDate();
-  initPomodoro();
-  console.log('✅ Panel inicializado correctamente');
 });
+
+// Fecha y saludo
+const fecha = new Date();
+document.getElementById('dateText').innerHTML = fecha.toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+const hora = fecha.getHours();
+const saludo = hora < 12 ? 'Buenos días' : (hora < 20 ? 'Buenas tardes' : 'Buenas noches');
+document.getElementById('greetingText').innerHTML = `${saludo}, Nati`;
+
+// Pomodoro básico
+let tiempo = 25 * 60;
+let activo = false;
+let intervalo;
+
+function actualizarTimer() {
+  const minutos = Math.floor(tiempo / 60);
+  const segundos = tiempo % 60;
+  document.getElementById('pomodoroTimer').innerHTML = `${minutos.toString().padStart(2, '0')}:${segundos.toString().padStart(2, '0')}`;
+}
+
+document.getElementById('pomodoroToggle')?.addEventListener('change', (e) => {
+  if (e.target.checked) {
+    activo = true;
+    intervalo = setInterval(() => {
+      if (tiempo > 0 && activo) {
+        tiempo--;
+        actualizarTimer();
+      } else if (tiempo === 0) {
+        clearInterval(intervalo);
+        alert('¡Pomodoro completado!');
+      }
+    }, 1000);
+  } else {
+    activo = false;
+    clearInterval(intervalo);
+  }
+});
+
+actualizarTimer();
