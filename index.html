@@ -8,502 +8,283 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="./style.css" />
+  <style>
+    .tasks-table-container {
+      background: white;
+      border-radius: 16px;
+      padding: 1rem;
+      margin-top: 1rem;
+      overflow-x: auto;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    .tasks-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+    }
+    .tasks-table th, .tasks-table td {
+      padding: 12px 8px;
+      text-align: left;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .tasks-table th { background: #2d3748; color: white; font-weight: 600; }
+    .priority-badge { display: inline-block; padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; }
+    .priority-A { background: #fed7d7; color: #c53030; }
+    .priority-B { background: #feebc8; color: #c05621; }
+    .priority-C { background: #e6fffa; color: #234e52; }
+    .estado-badge { display: inline-block; padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 500; }
+    .estado-pendiente { background: #e2e8f0; color: #4a5568; }
+    .estado-curso { background: #bee3f8; color: #2c5282; }
+    .estado-completada { background: #c6f6d5; color: #276749; }
+    .progress-bar { width: 80px; height: 6px; background: #e2e8f0; border-radius: 3px; overflow: hidden; }
+    .progress-fill { height: 100%; background: #48bb78; transition: width 0.3s; }
+    .btn-small { padding: 4px 8px; font-size: 0.75rem; border-radius: 6px; border: none; cursor: pointer; background: #edf2f7; margin: 0 2px; }
+    .btn-danger { background: #f56565; color: white; }
+    .task-row.completada { opacity: 0.6; background: #f7fafc; }
+    .sync-status { font-size: 0.75rem; margin-top: 10px; padding: 8px; border-radius: 8px; background: #f0f9ff; }
+  </style>
 </head>
 <body>
 
-  <!-- ===================== SIDEBAR (desktop) ===================== -->
+  <!-- SIDEBAR -->
   <nav class="sidebar" id="sidebar">
-    <div class="sidebar-logo">
-      <span class="logo-mark">GN</span>
-    </div>
+    <div class="sidebar-logo"><span class="logo-mark">GN</span></div>
     <ul class="nav-list">
-      <li class="nav-item active" data-screen="dashboard">
-        <button class="nav-btn" aria-label="Dashboard">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z"/>
-            <path d="M9 21V12h6v9"/>
-          </svg>
-          <span class="nav-dot"></span>
-        </button>
-      </li>
-      <li class="nav-item" data-screen="clientes">
-        <button class="nav-btn" aria-label="Clientes">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="9" cy="7" r="3"/>
-            <path d="M3 21v-2a4 4 0 014-4h4a4 4 0 014 4v2"/>
-            <path d="M16 3.13a4 4 0 010 7.75"/>
-            <path d="M21 21v-2a4 4 0 00-3-3.85"/>
-          </svg>
-          <span class="nav-dot"></span>
-        </button>
-      </li>
-      <li class="nav-item" data-screen="contenido">
-        <button class="nav-btn" aria-label="Contenido">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 20h9"/>
-            <path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/>
-          </svg>
-          <span class="nav-dot"></span>
-        </button>
-      </li>
-      <li class="nav-item" data-screen="bienestar">
-        <button class="nav-btn" aria-label="Bienestar">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/>
-          </svg>
-          <span class="nav-dot"></span>
-        </button>
-      </li>
-      <li class="nav-item" data-screen="perfil">
-        <button class="nav-btn" aria-label="Perfil">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="8" r="4"/>
-            <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
-          </svg>
-          <span class="nav-dot"></span>
-        </button>
-      </li>
+      <li class="nav-item active" data-screen="dashboard"><button class="nav-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z"/><path d="M9 21V12h6v9"/></svg><span class="nav-dot"></span></button></li>
+      <li class="nav-item" data-screen="clientes"><button class="nav-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="7" r="3"/><path d="M3 21v-2a4 4 0 014-4h4a4 4 0 014 4v2"/><path d="M16 3.13a4 4 0 010 7.75"/><path d="M21 21v-2a4 4 0 00-3-3.85"/></svg><span class="nav-dot"></span></button></li>
+      <li class="nav-item" data-screen="contenido"><button class="nav-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg><span class="nav-dot"></span></button></li>
+      <li class="nav-item" data-screen="bienestar"><button class="nav-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg><span class="nav-dot"></span></button></li>
+      <li class="nav-item" data-screen="perfil"><button class="nav-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg><span class="nav-dot"></span></button></li>
     </ul>
   </nav>
 
-  <!-- ===================== BOTTOM NAV (mobile) ===================== -->
+  <!-- BOTTOM NAV -->
   <nav class="bottom-nav" id="bottomNav">
     <ul class="bottom-nav-list">
-      <li class="bottom-nav-item active" data-screen="dashboard">
-        <button class="bottom-nav-btn" aria-label="Dashboard">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z"/>
-            <path d="M9 21V12h6v9"/>
-          </svg>
-        </button>
-      </li>
-      <li class="bottom-nav-item" data-screen="clientes">
-        <button class="bottom-nav-btn" aria-label="Clientes">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="9" cy="7" r="3"/>
-            <path d="M3 21v-2a4 4 0 014-4h4a4 4 0 014 4v2"/>
-            <path d="M16 3.13a4 4 0 010 7.75"/>
-            <path d="M21 21v-2a4 4 0 00-3-3.85"/>
-          </svg>
-        </button>
-      </li>
-      <li class="bottom-nav-item" data-screen="contenido">
-        <button class="bottom-nav-btn" aria-label="Contenido">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 20h9"/>
-            <path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/>
-          </svg>
-        </button>
-      </li>
-      <li class="bottom-nav-item" data-screen="bienestar">
-        <button class="bottom-nav-btn" aria-label="Bienestar">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/>
-          </svg>
-        </button>
-      </li>
-      <li class="bottom-nav-item" data-screen="perfil">
-        <button class="bottom-nav-btn" aria-label="Perfil">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="8" r="4"/>
-            <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
-          </svg>
-        </button>
-      </li>
+      <li class="bottom-nav-item active" data-screen="dashboard"><button class="bottom-nav-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z"/><path d="M9 21V12h6v9"/></svg></button></li>
+      <li class="bottom-nav-item" data-screen="clientes"><button class="bottom-nav-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="7" r="3"/><path d="M3 21v-2a4 4 0 014-4h4a4 4 0 014 4v2"/><path d="M16 3.13a4 4 0 010 7.75"/><path d="M21 21v-2a4 4 0 00-3-3.85"/></svg></button></li>
+      <li class="bottom-nav-item" data-screen="contenido"><button class="bottom-nav-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></button></li>
+      <li class="bottom-nav-item" data-screen="bienestar"><button class="bottom-nav-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg></button></li>
+      <li class="bottom-nav-item" data-screen="perfil"><button class="bottom-nav-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg></button></li>
     </ul>
   </nav>
 
-  <!-- ===================== MAIN CONTENT ===================== -->
+  <!-- MAIN CONTENT -->
   <main class="main-content" id="mainContent">
 
-    <!-- ==================== SCREEN: DASHBOARD ==================== -->
+    <!-- DASHBOARD -->
     <section class="screen active" id="screen-dashboard">
       <div class="screen-header">
         <div class="header-text">
           <h1 class="greeting" id="greetingText">Buenos días, Nati</h1>
           <p class="date-text" id="dateText"></p>
         </div>
-        <img src="images/nati-writing.png" alt="Nati escribiendo" class="header-illustration" id="natiWritingImg" />
+        <img src="images/nati-writing.png" alt="Nati escribiendo" class="header-illustration" />
       </div>
 
-      <!-- Seguimiento de tareas -->
+      <!-- Seguimiento -->
       <div class="seguimiento-banner" id="seguimientoBanner">
         <div class="seguimiento-header">
           <div class="seguimiento-title-row">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="17" height="17" class="seguimiento-icon"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="17" height="17"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
             <span class="seguimiento-title">En seguimiento</span>
             <span class="seguimiento-count" id="seguimientoCount">0</span>
           </div>
           <button class="seguimiento-add-btn" id="seguimientoAddBtn">+ Añadir</button>
         </div>
         <div class="seguimiento-list" id="seguimientoList">
-          <p class="seguimiento-empty" id="seguimientoEmpty">Sin tareas en espera. Añade una cuando inicies algo y estés esperando respuesta.</p>
+          <p class="seguimiento-empty">Sin tareas en espera.</p>
         </div>
       </div>
 
-      <!-- 3-col top grid: Arranque | Accesos Rápidos | Spotify + Pomodoro -->
-      <div class="dashboard-top-grid">
-
-        <!-- Col 1: Arranque del día -->
-        <div class="card card--accordion" id="arranqueCard">
-          <div class="card-header" data-toggle="arranqueCard">
-            <div class="card-header-content">
-              <h2 class="card-title--accordion">Arranque del día</h2>
-            </div>
-            <div class="card-toggle-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><polyline points="6 9 12 15 18 9"></polyline></svg>
-            </div>
-          </div>
-          <div class="card-content">
-            <ul class="check-list" id="morningChecks">
-            <li class="check-item">
-              <label class="check-label">
-                <input type="checkbox" class="morning-check" data-key="t4" />
-                <span class="check-text">Tomar T4</span>
-              </label>
-            </li>
-            <li class="check-item">
-              <label class="check-label">
-                <input type="checkbox" class="morning-check" data-key="elvanse" />
-                <span class="check-text">Tomar Elvanse + Desayuno (30 min)</span>
-              </label>
-            </li>
-            <li class="check-item">
-              <label class="check-label">
-                <input type="checkbox" class="morning-check" data-key="estiramientos" />
-                <span class="check-text">Estiramientos (08:30h)</span>
-              </label>
-            </li>
-          </ul>
-          </div>
+      <!-- CORAZÓN DEL PROYECTO -->
+      <div class="card" style="margin-bottom: 1.5rem;">
+        <h2 style="display: flex; justify-content: space-between;">
+          🧠 Corazón del Proyecto
+          <button id="syncNowBtn" style="background:#4a90e2; color:white; border:none; padding:5px 12px; border-radius:20px;">🔄 Sincronizar</button>
+        </h2>
+        
+        <div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;">
+          <input type="text" id="nuevaTareaInput" placeholder="Escribe una nueva tarea..." style="flex:2; padding:10px; border:2px solid #e2e8f0; border-radius:12px;">
+          <select id="prioridadManualSelect" style="padding:10px; border-radius:12px;">
+            <option value="auto">🤖 Priorización automática</option>
+            <option value="A">🔥 Prioridad A</option>
+            <option value="B">📌 Prioridad B</option>
+            <option value="C">⏰ Prioridad C</option>
+          </select>
+          <button id="agregarTareaBtn" style="background:#ff6b6b; color:white; border:none; padding:0 20px; border-radius:12px;">+ Agregar</button>
         </div>
 
-        <!-- Col 2: Accesos Rápidos -->
-        <div class="quick-access-card">
-          <h2 class="quick-access-title">Accesos Rápidos</h2>
-          <div class="quick-access-grid">
-            <a class="quick-access-item" href="https://mail.google.com" target="_blank" rel="noopener noreferrer" aria-label="Gmail">
-              <div class="quick-access-circle">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="26" height="26"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 7l10 7 10-7"/></svg>
-              </div>
-              <span class="quick-access-label">Gmail</span>
-            </a>
-            <a class="quick-access-item" href="https://drive.google.com" target="_blank" rel="noopener noreferrer" aria-label="Google Drive">
-              <div class="quick-access-circle">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="26" height="26"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0018 9h-1.26A8 8 0 103 16.3"/></svg>
-              </div>
-              <span class="quick-access-label">Drive</span>
-            </a>
-            <a class="quick-access-item" href="https://business.facebook.com" target="_blank" rel="noopener noreferrer" aria-label="Meta Business">
-              <div class="quick-access-circle">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="26" height="26"><path d="M12 12c-2-2.5-4-4-6-4a4 4 0 000 8c2 0 4-1.5 6-4z"/><path d="M12 12c2-2.5 4-4 6-4a4 4 0 010 8c-2 0-4-1.5-6-4z"/></svg>
-              </div>
-              <span class="quick-access-label">Meta</span>
-            </a>
-            <a class="quick-access-item" href="https://www.facturadirecta.com/" target="_blank" rel="noopener noreferrer" aria-label="Factura Directa">
-              <div class="quick-access-circle">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="26" height="26"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="12" y2="17"/></svg>
-              </div>
-              <span class="quick-access-label">Facturas</span>
-            </a>
-            <a class="quick-access-item" href="https://admin.cdmon.com/es/inicio" target="_blank" rel="noopener noreferrer" aria-label="CDMON">
-              <div class="quick-access-circle">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="26" height="26"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 010 20M12 2a15.3 15.3 0 000 20"/></svg>
-              </div>
-              <span class="quick-access-label">CDMON</span>
-            </a>
-            <a class="quick-access-item" href="https://canva.com" target="_blank" rel="noopener noreferrer" aria-label="Canva">
-              <div class="quick-access-circle">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="26" height="26"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125A1.64 1.64 0 0115.28 17h1.996c3.051 0 5.555-2.503 5.555-5.554C22.83 6.012 17.961 2 12 2z"/><circle cx="7" cy="12" r="1.1" fill="currentColor" stroke="none"/><circle cx="9.5" cy="8" r="1.1" fill="currentColor" stroke="none"/><circle cx="14.5" cy="7" r="1.1" fill="currentColor" stroke="none"/><circle cx="18" cy="11" r="1.1" fill="currentColor" stroke="none"/></svg>
-              </div>
-              <span class="quick-access-label">Canva</span>
-            </a>
-          </div>
+        <div class="tasks-table-container">
+          <table class="tasks-table">
+            <thead><tr><th>✅</th><th>Tarea</th><th>Prioridad</th><th>Sub</th><th>Estado</th><th>Progreso</th><th>Inicio</th><th>Entrega</th><th>📝</th><th>🗑️</th></tr></thead>
+            <tbody id="tasksTableBody"><tr><td colspan="10" style="text-align:center; padding:40px;">✨ Cargando... ✨</td></tr></tbody>
+          </table>
         </div>
 
-        <!-- Col 3: Spotify + Pomodoro -->
-        <div class="right-sidebar-col">
-
-          <!-- Spotify widget -->
-          <div class="card spotify-widget">
-            <iframe src="https://open.spotify.com/embed/playlist/3py7MK3ipW2LVd0ryRlwzw?utm_source=generator" width="100%" height="152" frameborder="0" allowfullscreen="" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
-          </div>
-
-          <!-- Pomodoro widget -->
-          <div class="card pomodoro-widget">
-            <div class="pomodoro-timer" id="pomodoroTimer">25:00</div>
-            <div class="pomodoro-phase-label" id="pomodoroPhase"></div>
-            <div class="pomodoro-toggle-row">
-              <label class="toggle-switch">
-                <input type="checkbox" id="pomodoroToggle" />
-                <span class="toggle-slider"></span>
-              </label>
-              <span class="pomodoro-label">Activar Pomodoro 25/5</span>
-            </div>
-          </div>
-
+        <div style="display: flex; justify-content: space-between; margin-top: 15px;">
+          <div><button id="ordenarPrioridadBtn" class="btn-small">⬇️ Ordenar</button><button id="limpiarCompletadasBtn" class="btn-small btn-danger">🗑️ Limpiar completadas</button></div>
+          <div><span id="contadorPendientes" style="background:#edf2f7; padding:5px 12px; border-radius:20px;">0 pendientes</span></div>
         </div>
-
-        <!-- Eventos del Calendar -->
-        <div class="card card--accordion calendar-widget" id="calendarCard">
-          <div class="card-header" data-toggle="calendarCard">
-            <div class="card-header-content">
-              <h2 class="card-title--accordion">Eventos de hoy</h2>
-            </div>
-            <div class="card-toggle-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><polyline points="6 9 12 15 18 9"></polyline></svg>
-            </div>
-          </div>
-          <div class="card-content">
-            <div id="calendarEventsList" class="calendar-events-list">
-              <p class="calendar-empty">Cargando eventos...</p>
-            </div>
-          </div>
-        </div>
-      </div><!-- end dashboard-top-grid -->
-
-      <!-- Prioridades del día -->
-      <div class="priorities-header">
-        <h2 class="section-title">Prioridades del día</h2>
-        <button class="btn btn-ghost btn-sm" id="decisionBtn">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><rect x="2" y="2" width="20" height="20" rx="3"/><circle cx="8" cy="8" r="1.5" fill="currentColor" stroke="none"/><circle cx="16" cy="8" r="1.5" fill="currentColor" stroke="none"/><circle cx="8" cy="16" r="1.5" fill="currentColor" stroke="none"/><circle cx="16" cy="16" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/></svg>
-          Decisiones
-        </button>
+        <div class="sync-status" id="syncStatus">🔄 Conectando con Google Sheets...</div>
       </div>
-      <div class="decision-highlight" id="decisionHighlight" style="display:none;"></div>
 
-      <div class="priorities-grid">
-        <div class="card priority-card" id="prio-dinero">
-          <h3 class="priority-title">Prioridad A</h3>
-          <ul class="priority-list" id="list-dinero"></ul>
-          <button class="btn btn-ghost btn-xs add-prio-btn" data-cat="dinero">+ Añadir</button>
-        </div>
-        <div class="card priority-card" id="prio-clientes">
-          <h3 class="priority-title">Prioridad B</h3>
-          <ul class="priority-list" id="list-clientes-prio"></ul>
-          <button class="btn btn-ghost btn-xs add-prio-btn" data-cat="clientes">+ Añadir</button>
-        </div>
-        <div class="card priority-card" id="prio-marca">
-          <h3 class="priority-title">Prioridad C</h3>
-          <ul class="priority-list" id="list-marca"></ul>
-          <button class="btn btn-ghost btn-xs add-prio-btn" data-cat="marca">+ Añadir</button>
+      <!-- ACCESOS RÁPIDOS -->
+      <div class="quick-access-card">
+        <h2 class="quick-access-title">Accesos Rápidos</h2>
+        <div class="quick-access-grid">
+          <a class="quick-access-item" href="https://mail.google.com" target="_blank"><div class="quick-access-circle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="26" height="26"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 7l10 7 10-7"/></svg></div><span>Gmail</span></a>
+          <a class="quick-access-item" href="https://drive.google.com" target="_blank"><div class="quick-access-circle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="26" height="26"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0018 9h-1.26A8 8 0 103 16.3"/></svg></div><span>Drive</span></a>
+          <a class="quick-access-item" href="https://business.facebook.com" target="_blank"><div class="quick-access-circle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="26" height="26"><path d="M12 12c-2-2.5-4-4-6-4a4 4 0 000 8c2 0 4-1.5 6-4z"/><path d="M12 12c2-2.5 4-4 6-4a4 4 0 010 8c-2 0-4-1.5-6-4z"/></svg></div><span>Meta</span></a>
+          <a class="quick-access-item" href="https://canva.com" target="_blank"><div class="quick-access-circle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="26" height="26"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125A1.64 1.64 0 0115.28 17h1.996c3.051 0 5.555-2.503 5.555-5.554C22.83 6.012 17.961 2 12 2z"/><circle cx="7" cy="12" r="1.1" fill="currentColor" stroke="none"/><circle cx="9.5" cy="8" r="1.1" fill="currentColor" stroke="none"/><circle cx="14.5" cy="7" r="1.1" fill="currentColor" stroke="none"/><circle cx="18" cy="11" r="1.1" fill="currentColor" stroke="none"/></svg></div><span>Canva</span></a>
         </div>
       </div>
 
-      <!-- Captura masiva de tareas -->
-      <div class="card card--accordion bulk-capture-card" id="bulkCaptureCard">
+      <!-- SPOTIFY + POMODORO -->
+      <div class="right-sidebar-col">
+        <div class="card spotify-widget">
+          <iframe src="https://open.spotify.com/embed/playlist/3py7MK3ipW2LVd0ryRlwzw?utm_source=generator" width="100%" height="152" frameborder="0" allowfullscreen="" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
+        </div>
+        <div class="card pomodoro-widget">
+          <div class="pomodoro-timer" id="pomodoroTimer">25:00</div>
+          <div class="pomodoro-toggle-row"><label class="toggle-switch"><input type="checkbox" id="pomodoroToggle" /><span class="toggle-slider"></span></label><span>Activar Pomodoro 25/5</span></div>
+        </div>
+      </div>
+
+      <!-- CAPTURA MASIVA -->
+      <div class="card card--accordion" id="bulkCaptureCard">
         <div class="card-header" data-toggle="bulkCaptureCard">
-          <div class="card-header-content">
-            <h2 class="card-title--accordion">Captura masiva de tareas</h2>
-          </div>
-          <div class="card-toggle-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><polyline points="6 9 12 15 18 9"></polyline></svg>
-          </div>
+          <div class="card-header-content"><h2 class="card-title--accordion">Captura masiva de tareas</h2></div>
+          <div class="card-toggle-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><polyline points="6 9 12 15 18 9"></polyline></svg></div>
         </div>
         <div class="card-content">
-          <p class="card-desc">Escribe todas tus tareas (una por línea). Las clasificamos en A, B o C según su tipo.</p>
-          <textarea class="bulk-textarea" id="bulkTasksInput" placeholder="Cobrar factura a cliente&#10;Escribir newsletter de Casa Bella&#10;Publicar en Instagram&#10;Revisar propuesta..." rows="4"></textarea>
-          <button class="btn btn-primary btn-sm" id="bulkPrioritizeBtn">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
-            Priorizar automáticamente
-          </button>
+          <textarea class="bulk-textarea" id="bulkTasksInput" placeholder="Cobrar factura a cliente&#10;Escribir newsletter&#10;Publicar en Instagram" rows="4"></textarea>
+          <button class="btn btn-primary btn-sm" id="bulkPrioritizeBtn">📥 Priorizar automáticamente</button>
         </div>
-      </div>
-
-    </section>
-
-    <!-- ==================== SCREEN: CLIENTES ==================== -->
-    <section class="screen" id="screen-clientes">
-      <div class="screen-header">
-        <div class="header-text">
-          <h1 class="screen-title">Base de Clientes</h1>
-          <p class="screen-subtitle">Gestiona tus proyectos activos</p>
-        </div>
-        <img src="images/nati-coffee.png" alt="Nati con café" class="header-illustration header-illustration--sm" id="natiCoffeeImg" />
-      </div>
-
-      <div class="clients-grid" id="clientsGrid"></div>
-
-      <button class="fab" id="addClientBtn" aria-label="Añadir cliente nuevo">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="24" height="24">
-          <line x1="12" y1="5" x2="12" y2="19"/>
-          <line x1="5" y1="12" x2="19" y2="12"/>
-        </svg>
-      </button>
-    </section>
-
-    <!-- ==================== SCREEN: CONTENIDO ==================== -->
-    <section class="screen" id="screen-contenido">
-      <div class="screen-header">
-        <div class="header-text">
-          <h1 class="screen-title">Contenido</h1>
-          <p class="screen-subtitle">Gestiona tus ideas y publicaciones</p>
-        </div>
-        <img src="images/nati-writing.png" alt="Nati escribiendo" class="header-illustration" id="natiWritingImg2" />
-      </div>
-
-      <div class="kanban-board" id="kanbanBoard">
-        <!-- Columns rendered by JS -->
       </div>
     </section>
 
-    <!-- ==================== SCREEN: BIENESTAR ==================== -->
-    <section class="screen" id="screen-bienestar">
-      <div class="screen-header">
-        <div class="header-text">
-          <h1 class="screen-title">Bienestar</h1>
-          <p class="screen-subtitle">Cuídate, Nati</p>
-        </div>
-        <img src="images/nati-cats.png" alt="Nati con Ula y Kai" class="header-illustration" id="natiCatsImg" />
-      </div>
-
-      <div class="card" id="bienestarCard">
-        <h2 class="card-title">Rutinas de hoy</h2>
-        <ul class="check-list" id="bienestarChecks">
-          <li class="check-item">
-            <label class="check-label">
-              <input type="checkbox" class="bienestar-check" data-key="mandalas" />
-              <span class="check-text">Mandalas (libro nuevo)</span>
-            </label>
-          </li>
-          <li class="check-item">
-            <label class="check-label">
-              <input type="checkbox" class="bienestar-check" data-key="sol" />
-              <span class="check-text">Salir al sol (10 min)</span>
-            </label>
-          </li>
-          <li class="check-item">
-            <label class="check-label">
-              <input type="checkbox" class="bienestar-check" data-key="coreano" />
-              <span class="check-text">Coreano</span>
-            </label>
-          </li>
-          <li class="check-item">
-            <label class="check-label">
-              <input type="checkbox" class="bienestar-check" data-key="kickboxing" />
-              <span class="check-text">Kickboxing</span>
-            </label>
-          </li>
-        </ul>
-      </div>
-
-      <!-- Racha de hábitos -->
-      <div class="card habit-streak-card">
-        <h2 class="card-title">Tu racha 🔥</h2>
-        <div class="habit-streak-grid">
-          <div class="habit-streak-item">
-            <div class="habit-streak-number" id="mandalasStreak">0</div>
-            <div class="habit-streak-label">Mandalas</div>
-          </div>
-          <div class="habit-streak-item">
-            <div class="habit-streak-number" id="solStreak">0</div>
-            <div class="habit-streak-label">Sol</div>
-          </div>
-          <div class="habit-streak-item">
-            <div class="habit-streak-number" id="coreanoStreak">0</div>
-            <div class="habit-streak-label">Coreano</div>
-          </div>
-          <div class="habit-streak-item">
-            <div class="habit-streak-number" id="kickboxingStreak">0</div>
-            <div class="habit-streak-label">Kickboxing</div>
-          </div>
-        </div>
-      </div>
-
-      <div class="bienestar-close-section">
-        <button class="btn btn-close-day" id="closeDayBtn">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
-          Hora de cerrar
-        </button>
-      </div>
-    </section>
-
-    <!-- ==================== SCREEN: PERFIL ==================== -->
-    <section class="screen" id="screen-perfil">
-      <div class="screen-header">
-        <div class="header-text">
-          <h1 class="screen-title">Perfil</h1>
-        </div>
-        <img src="images/nati-cats-aviso.png" alt="Nati con Ula y Kai" class="header-illustration" id="natiCatsAvisoImg" />
-      </div>
-
-      <div class="card profile-card">
-        <div class="profile-avatar">N</div>
-        <div class="profile-info">
-          <h2 class="profile-name">Nati Pérez</h2>
-          <p class="profile-handle">@nat2gostudio</p>
-        </div>
-      </div>
-
-      <div class="card">
-        <h2 class="card-title">Sincronización con Google Sheets</h2>
-        <div class="connection-status" id="connectionStatus" style="margin-bottom:16px;">
-          <span class="status-dot status-dot--grey"></span>
-          <span class="status-text" id="statusText">Sin conexión (modo local)</span>
-        </div>
-        <details class="gas-setup-guide" id="gasSetupGuide">
-          <summary class="gas-setup-summary">Cómo conectar por primera vez</summary>
-          <!-- contenido omitido por brevedad -->
-        </details>
-        <div class="gas-form">
-          <input type="url" id="gasUrlInput" class="input" placeholder="https://script.google.com/macros/s/..." />
-          <button class="btn btn-primary" id="saveGasBtn">Guardar</button>
-        </div>
-      </div>
-
-      <div class="card">
-        <h2 class="card-title">Apariencia</h2>
-        <div class="theme-toggle-row">
-          <span class="theme-label">Tema</span>
-          <div class="theme-toggle-group">
-            <button class="theme-btn active" id="themeLightBtn" data-theme="light">☀️ Claro</button>
-            <button class="theme-btn" id="themeDarkBtn" data-theme="dark">🌙 Oscuro</button>
-          </div>
-        </div>
-      </div>
-
-      <div class="card">
-        <h2 class="card-title">Estadísticas de hoy</h2>
-        <div class="stats-grid">
-          <div class="stat-item">
-            <span class="stat-value" id="statMorningDone">0</span>
-            <span class="stat-label">Arranque</span>
-          </div>
-          <div class="stat-item">
-            <span class="stat-value" id="statBienestarDone">0</span>
-            <span class="stat-label">Bienestar</span>
-          </div>
-          <div class="stat-item">
-            <span class="stat-value" id="statTotalDone">0</span>
-            <span class="stat-label">Total checks</span>
-          </div>
-        </div>
-      </div>
-
-      <div class="card">
-        <h2 class="card-title">Reinicio del día</h2>
-        <p class="card-desc">Limpia los checks diarios (Arranque y Bienestar) para empezar de nuevo.</p>
-        <button class="btn btn-danger" id="resetDayBtn">Restablecer datos del día</button>
-      </div>
-    </section>
-
+    <!-- OTRAS PANTALLAS (simplificadas pero funcionales) -->
+    <section class="screen" id="screen-clientes"><div class="screen-header"><h1>Clientes</h1></div><div id="clientsGrid"></div></section>
+    <section class="screen" id="screen-contenido"><div class="screen-header"><h1>Contenido</h1></div><div id="kanbanBoard"></div></section>
+    <section class="screen" id="screen-bienestar"><div class="screen-header"><h1>Bienestar</h1></div><ul class="check-list" id="bienestarChecks"><li><label><input type="checkbox" data-key="mandalas"/> Mandalas</label></li><li><label><input type="checkbox" data-key="sol"/> Sol</label></li><li><label><input type="checkbox" data-key="coreano"/> Coreano</label></li><li><label><input type="checkbox" data-key="kickboxing"/> Kickboxing</label></li></ul></section>
+    <section class="screen" id="screen-perfil"><div class="screen-header"><h1>Perfil</h1></div><div class="card"><h2>Nati Pérez</h2><p>@nat2gostudio</p></div></section>
   </main>
 
-  <!-- MODALES Y OVERLAYS -->
-  <div class="modal-overlay" id="capturaModal" style="display:none;">
-    <div class="modal">
-      <div class="modal-header">
-        <h2 class="modal-title">Captura Completo</h2>
-        <button class="modal-close" id="capturaModalClose">×</button>
-      </div>
-      <textarea class="modal-textarea" id="capturaTextarea" placeholder="Escribe tu idea aquí..." rows="5"></textarea>
-      <div class="modal-footer">
-        <button class="btn btn-ghost" id="capturaCancel">Cancelar</button>
-        <button class="btn btn-primary" id="capturaGuardar">Guardar en IDEAS</button>
-      </div>
-    </div>
-  </div>
-
-  <div class="lock-overlay" id="lockOverlay" style="display:none;">
-    <div class="lock-content">
-      <img src="images
+  <script>
+    // ==========================================
+    // NAT2GO - CON GOOGLE SHEETS (SIN CORS)
+    // ==========================================
+    
+    // 👇 ACTUALIZA ESTA URL CON LA DE TU APPS SCRIPT
+    const URL_API = 'https://script.google.com/macros/s/AKfycbyKdaTOYVacorUJvW_4VrSbTW1z-jP5PaJy0Wv18c0Qv9qVd7-7w1GlVtb-1KXHp6NbNQ/exec';
+    
+    let tareas = [];
+    
+    function setSyncStatus(text, isError) {
+      const el = document.getElementById('syncStatus');
+      if (el) { el.innerHTML = text; el.style.background = isError ? '#fee' : '#f0f9ff'; el.style.color = isError ? '#c00' : '#0066cc'; }
+    }
+    
+    function priorizar(texto) {
+      const t = texto.toLowerCase();
+      if (t.includes('urgente') || t.includes('hoy') || t.includes('cliente') || t.includes('entrega') || t.includes('cobrar')) return 'A';
+      if (t.includes('preparar') || t.includes('revisar') || t.includes('enviar') || t.includes('crear')) return 'B';
+      return 'C';
+    }
+    
+    function subPrioridad(texto) {
+      const t = texto.toLowerCase();
+      if (t.includes('cliente')) return 'Cliente';
+      if (t.includes('factura') || t.includes('cobrar')) return 'Dinero';
+      if (t.includes('newsletter') || t.includes('blog')) return 'Contenido';
+      return 'General';
+    }
+    
+    async function guardarTareas() {
+      try {
+        const tareasJSON = encodeURIComponent(JSON.stringify(tareas));
+        const res = await fetch(`${URL_API}?tareas=${tareasJSON}`);
+        const data = await res.json();
+        if (data.success) setSyncStatus(`✅ ${tareas.length} tareas guardadas`);
+        else setSyncStatus(`⚠️ ${data.error || 'Error'}`, true);
+        localStorage.setItem('nat_tareas', JSON.stringify(tareas));
+      } catch(e) {
+        setSyncStatus(`⚠️ Guardado local: ${e.message}`, true);
+        localStorage.setItem('nat_tareas', JSON.stringify(tareas));
+      }
+    }
+    
+    async function cargarTareas() {
+      try {
+        setSyncStatus('🔄 Cargando...');
+        const res = await fetch(`${URL_API}?accion=tareas`);
+        const data = await res.json();
+        if (data.tareas && data.tareas.length) tareas = data.tareas;
+        else cargarLocal();
+        renderizarTabla();
+        setSyncStatus(`✅ ${tareas.length} tareas cargadas`);
+      } catch(e) { cargarLocal(); renderizarTabla(); setSyncStatus(`📦 Modo local: ${tareas.length} tareas`, true); }
+    }
+    
+    function cargarLocal() { const local = localStorage.getItem('nat_tareas'); if (local) tareas = JSON.parse(local); else tareas = []; }
+    
+    function renderizarTabla() {
+      const tbody = document.getElementById('tasksTableBody');
+      if (!tbody) return;
+      const orden = { 'A':1, 'B':2, 'C':3 };
+      const ordenadas = [...tareas].sort((a,b) => (orden[a.prioridad]||3) - (orden[b.prioridad]||3));
+      if (!ordenadas.length) { tbody.innerHTML = '<tr><td colspan="10">🎉 No hay tareas</td></tr>'; return; }
+      tbody.innerHTML = ordenadas.map(t => `
+        <tr class="${t.estado === 'Completada' ? 'completada' : ''}">
+          <td><input type="checkbox" ${t.estado === 'Completada' ? 'checked' : ''} onchange="toggleTarea(${t.id})"></td>
+          <td><strong>${escapeHtml(t.tarea)}</strong>${t.notas ? `<br><small>📌 ${escapeHtml(t.notas)}</small>` : ''}</td>
+          <td><span class="priority-badge priority-${t.prioridad}">${t.prioridad}</span></td>
+          <td>${t.subPrioridad || 'General'}</td>
+          <td><span class="estado-badge estado-${t.estado === 'Completada' ? 'completada' : 'pendiente'}">${t.estado || 'Pendiente'}</span></td>
+          <td><div style="display:flex; gap:5px;"><span>${t.progreso||0}%</span><div class="progress-bar"><div class="progress-fill" style="width:${t.progreso||0}%"></div></div><button class="btn-small" onclick="cambiarProgreso(${t.id},${(t.progreso||0)+10})">+10%</button></div></td>
+          <td>${t.inicio || ''}</td>
+          <td><input type="date" value="${t.entrega || ''}" onchange="cambiarEntrega(${t.id}, this.value)" style="padding:4px; font-size:0.7rem;"></td>
+          <td><button class="btn-small" onclick="editarNotas(${t.id})">📝</button></td>
+          <td><button class="btn-small btn-danger" onclick="eliminarTarea(${t.id})">🗑️</button></td>
+        </tr>
+      `).join('');
+      const pendientes = tareas.filter(t => t.estado !== 'Completada').length;
+      document.getElementById('contadorPendientes') && (document.getElementById('contadorPendientes').innerText = `${pendientes} pendientes`);
+    }
+    
+    function escapeHtml(t) { const d = document.createElement('div'); d.textContent = t; return d.innerHTML; }
+    
+    window.toggleTarea = (id) => { const t = tareas.find(t => t.id == id); if(t) { t.estado = t.estado === 'Completada' ? 'Pendiente' : 'Completada'; t.progreso = t.estado === 'Completada' ? 100 : (t.progreso||0); renderizarTabla(); guardarTareas(); } };
+    window.cambiarProgreso = (id, p) => { const t = tareas.find(t => t.id == id); if(t) { t.progreso = Math.min(100, Math.max(0, p)); if(t.progreso===100) t.estado='Completada'; else if(t.progreso>0 && t.estado!=='Completada') t.estado='En curso'; renderizarTabla(); guardarTareas(); } };
+    window.cambiarEntrega = (id, f) => { const t = tareas.find(t => t.id == id); if(t) { t.entrega = f; guardarTareas(); } };
+    window.editarNotas = (id) => { const t = tareas.find(t => t.id == id); if(t) { const n = prompt('Notas:', t.notas||''); if(n!==null) { t.notas=n; renderizarTabla(); guardarTareas(); } } };
+    window.eliminarTarea = (id) => { if(confirm('¿Eliminar?')) { tareas = tareas.filter(t => t.id != id); renderizarTabla(); guardarTareas(); } };
+    
+    function agregarTarea(texto, manual) {
+      if (!texto.trim()) return;
+      const prioridad = manual === 'auto' ? priorizar(texto) : manual;
+      tareas.unshift({ id: Date.now(), tarea: texto.trim(), prioridad: prioridad, subPrioridad: subPrioridad(texto), estado: 'Pendiente', progreso: 0, inicio: new Date().toLocaleDateString('es-ES'), entrega: '', notas: '' });
+      renderizarTabla();
+      guardarTareas();
+    }
+    
+    function procesarCaptura() {
+      const ta = document.getElementById('bulkTasksInput');
+      if (!ta || !ta.value.trim()) { alert('Escribe tareas (una por línea)'); return; }
+      ta.value.split(/\r?\n/).filter(l => l.trim()).forEach(l => agregarTarea(l, 'auto'));
+      ta.value = '';
+      alert('✅ Tareas añadidas');
+    }
+    
+    document.addEventListener('DOMContentLoaded', () => {
+      cargarTareas();
+      document.getElementById('agregarTareaBtn').onclick = () => { agregarTarea(document.getElementById('nuevaTareaInput').value, document.getElementById('prioridadManualSelect').value); document.getElementById('nuevaTareaInput').value = ''; };
+      document.getElementById('bulkPrioritizeBtn').onclick = procesarCaptura;
+      document.getElementById('limpiarCompletadasBtn').onclick = () => { if(confirm('¿Eliminar completadas?')) { tareas = tareas.filter(t => t.estado !== 'Completada'); renderizarTabla(); guardarTareas(); } };
+      document.getElementById('ordenarPrioridadBtn').onclick = () => renderizarTabla();
+      document.getElementById('syncNowBtn').onclick = () => guardarTareas();
+    });
+  </script>
+</body>
+</html>
