@@ -1131,6 +1131,26 @@ function initPerfil() {
     setTheme('dark');
   });
 
+  // Copy GAS script button
+  const copyBtn = document.getElementById('copyGasScriptBtn');
+  if (copyBtn) {
+    copyBtn.addEventListener('click', () => {
+      const ta = document.getElementById('gasScriptContent');
+      if (!ta) return;
+      navigator.clipboard.writeText(ta.value).then(() => {
+        copyBtn.textContent = '✓ Copiado';
+        copyBtn.classList.add('gas-copy-btn--copied');
+        setTimeout(() => {
+          copyBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg> Copiar script`;
+          copyBtn.classList.remove('gas-copy-btn--copied');
+        }, 2000);
+      }).catch(() => {
+        ta.select();
+        document.execCommand('copy');
+      });
+    });
+  }
+
   // Reset day
   document.getElementById('resetDayBtn').addEventListener('click', () => {
     if (confirm('¿Restablecer todos los checks diarios? Se borrarán los checks de Arranque y Bienestar de hoy.')) {

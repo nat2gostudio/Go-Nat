@@ -463,11 +463,185 @@
               <span class="gas-step-num">2</span>
               <div class="gas-step-body">
                 <strong>Crea un proyecto nuevo</strong>
-                <p>Haz clic en <em>Nuevo proyecto</em>. Borra todo el contenido del editor y pega el script que está en el archivo <code>gas-sync.gs</code> del repositorio.</p>
-                <a class="gas-copy-btn" href="https://github.com/nat2gostudio/Go-Nat/blob/main/gas-sync.gs" target="_blank" rel="noopener">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-                  Ver gas-sync.gs en GitHub
-                </a>
+                <p>Haz clic en <em>Nuevo proyecto</em>. Borra todo el contenido del editor y pega este script:</p>
+                <div class="gas-code-block">
+                  <button class="gas-copy-btn" id="copyGasScriptBtn">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+                    Copiar script
+                  </button>
+                  <textarea id="gasScriptContent" class="gas-code-textarea" readonly>// ============================================================
+// GO Nat — Google Apps Script
+// ============================================================
+
+const AUTH_TOKEN   = '!n!g5G@86JnWouqDX6LLuP';
+const SH_PRIO      = 'Prioridades';
+const SH_SEGUIM    = 'Seguimiento';
+const SH_CLIENTES  = 'Clientes';
+const SH_CHECKS    = 'Checks';
+
+function doGet(e) {
+  if (!authOk_(e)) return deny_();
+  const action = param_(e, 'action') || 'all';
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  try {
+    if (action === 'calendar')    return ok_({ events: getCalendar_() });
+    if (action === 'habitStreak') return ok_({ success: true, streaks: getStreaks_(ss) });
+    const result = { success: true };
+    if (action === 'all' || action === 'prioridades') result.gonat_prioridades = readPrio_(ss);
+    if (action === 'all' || action === 'seguimiento') result.gonat_seguimiento = readSeguim_(ss);
+    if (action === 'all' || action === 'clientes')    result.gonat_clientes    = readClientes_(ss);
+    return ok_(result);
+  } catch (err) { return ok_({ error: err.message }); }
+}
+
+function doPost(e) {
+  if (!authOk_(e)) return deny_();
+  try {
+    const body = JSON.parse(e.postData.contents);
+    const ss   = SpreadsheetApp.getActiveSpreadsheet();
+    if (body.gonat_prioridades) writePrio_(ss, body.gonat_prioridades);
+    if (body.gonat_seguimiento) writeSeguim_(ss, body.gonat_seguimiento);
+    if (body.gonat_clientes)    writeClientes_(ss, body.gonat_clientes);
+    if (body.gonat_checks || body.habits) writeChecks_(ss, body.gonat_checks || body.habits);
+    return ok_({ success: true });
+  } catch (err) { return ok_({ error: err.message }); }
+}
+
+function readPrio_(ss) {
+  const sh = sheet_(ss, SH_PRIO, ['ID','Categoría','Texto','Inicio','Entrega','Hecho','Subtareas']);
+  const rows = sh.getDataRange().getValues();
+  const out = { dinero: [], clientes: [], marca: [] };
+  for (let i = 1; i < rows.length; i++) {
+    const [id, cat, text, start, due, done, stJson] = rows[i];
+    if (!text) continue;
+    const catKey = String(cat).toLowerCase();
+    if (!out[catKey]) continue;
+    const item = { id: String(id || uid_()), text: String(text), startDate: dateStr_(start), dueDate: dateStr_(due), done: done === true || done === 'TRUE', subtasks: [] };
+    try { item.subtasks = JSON.parse(stJson || '[]'); } catch (_) {}
+    out[catKey].push(item);
+  }
+  return out;
+}
+
+function writePrio_(ss, prio) {
+  const sh = sheet_(ss, SH_PRIO, ['ID','Categoría','Texto','Inicio','Entrega','Hecho','Subtareas']);
+  const rows = [['ID','Categoría','Texto','Inicio','Entrega','Hecho','Subtareas']];
+  ['dinero','clientes','marca'].forEach(cat => {
+    (prio[cat] || []).forEach(item => rows.push([item.id || uid_(), cat, item.text, item.startDate || '', item.dueDate || '', item.done ? 'TRUE' : 'FALSE', JSON.stringify(item.subtasks || [])]));
+  });
+  sh.clearContents();
+  sh.getRange(1,1,rows.length,7).setValues(rows);
+  sh.getRange(1,1,1,7).setFontWeight('bold');
+}
+
+function readSeguim_(ss) {
+  const sh = sheet_(ss, SH_SEGUIM, ['ID','Texto','Añadida','Hecho']);
+  return sh.getDataRange().getValues().slice(1).filter(r => r[1]).map(r => ({ id: String(r[0] || uid_()), text: String(r[1]), addedAt: dateStr_(r[2]) || '', done: r[3] === true || r[3] === 'TRUE' }));
+}
+
+function writeSeguim_(ss, items) {
+  const sh = sheet_(ss, SH_SEGUIM, ['ID','Texto','Añadida','Hecho']);
+  const rows = [['ID','Texto','Añadida','Hecho'], ...(items || []).map(i => [i.id, i.text, i.addedAt || '', i.done ? 'TRUE' : 'FALSE'])];
+  sh.clearContents();
+  sh.getRange(1,1,rows.length,4).setValues(rows);
+  sh.getRange(1,1,1,4).setFontWeight('bold');
+}
+
+function readClientes_(ss) {
+  const sh = sheet_(ss, SH_CLIENTES, ['ID_Cliente','Nombre','ID_Tarea','Tarea','Hecho','ID_Enlace','Enlace_Label','Enlace_URL']);
+  const rows = sh.getDataRange().getValues();
+  const map = {};
+  for (let i = 1; i < rows.length; i++) {
+    const [cId, name, tId, tText, tDone, lId, lLabel, lUrl] = rows[i];
+    if (!cId) continue;
+    if (!map[cId]) map[cId] = { id: String(cId), name: String(name), tasks: [], links: [] };
+    if (tId && tText) map[cId].tasks.push({ id: String(tId), text: String(tText), done: tDone === true || tDone === 'TRUE' });
+    if (lId && lLabel && lUrl && !map[cId].links.find(l => l.id === String(lId))) map[cId].links.push({ id: String(lId), label: String(lLabel), url: String(lUrl) });
+  }
+  return Object.values(map);
+}
+
+function writeClientes_(ss, clientes) {
+  const sh = sheet_(ss, SH_CLIENTES, ['ID_Cliente','Nombre','ID_Tarea','Tarea','Hecho','ID_Enlace','Enlace_Label','Enlace_URL']);
+  const rows = [['ID_Cliente','Nombre','ID_Tarea','Tarea','Hecho','ID_Enlace','Enlace_Label','Enlace_URL']];
+  (clientes || []).forEach(c => {
+    const tasks = c.tasks || [], links = c.links || [];
+    const max = Math.max(tasks.length, links.length, 1);
+    for (let i = 0; i < max; i++) {
+      const t = tasks[i] || {}, l = links[i] || {};
+      rows.push([i===0?c.id:'', i===0?c.name:'', t.id||'', t.text||'', t.done?'TRUE':'', l.id||'', l.label||'', l.url||'']);
+    }
+  });
+  sh.clearContents();
+  sh.getRange(1,1,rows.length,8).setValues(rows);
+  sh.getRange(1,1,1,8).setFontWeight('bold');
+}
+
+function writeChecks_(ss, checks) {
+  const cols = ['Fecha','t4','elvanse','estiramientos','mandalas','sol','coreano','kickboxing'];
+  const sh = sheet_(ss, SH_CHECKS, cols);
+  const tz = Session.getScriptTimeZone();
+  const today = Utilities.formatDate(new Date(), tz, 'yyyy-MM-dd');
+  const data = sh.getDataRange().getValues();
+  const row = [today, ...cols.slice(1).map(k => checks[k] ? 'TRUE' : 'FALSE')];
+  for (let i = 1; i < data.length; i++) {
+    const d = data[i][0] ? Utilities.formatDate(new Date(data[i][0]), 'GMT', 'yyyy-MM-dd') : '';
+    if (d === today) { sh.getRange(i+1,1,1,row.length).setValues([row]); return; }
+  }
+  sh.appendRow(row);
+}
+
+function getStreaks_(ss) {
+  const cols = ['mandalas','sol','coreano','kickboxing'];
+  const sh = sheet_(ss, SH_CHECKS, ['Fecha','t4','elvanse','estiramientos','mandalas','sol','coreano','kickboxing']);
+  const data = sh.getDataRange().getValues();
+  if (data.length <= 1) return { mandalas:0, sol:0, coreano:0, kickboxing:0 };
+  const hdrs = data[0];
+  const colIdx = {};
+  cols.forEach(c => { colIdx[c] = hdrs.indexOf(c); });
+  const today = new Date(); today.setHours(0,0,0,0);
+  const sorted = data.slice(1).filter(r => r[0]).map(r => ({ d: new Date(r[0]), r })).sort((a,b) => b.d - a.d);
+  const streaks = {};
+  cols.forEach(habit => {
+    let streak = 0, check = new Date(today);
+    for (const { d, r } of sorted) {
+      const day = new Date(d); day.setHours(0,0,0,0);
+      const diff = Math.round((check - day) / 86400000);
+      if (diff > 1) break;
+      if (diff < 0) continue;
+      if (r[colIdx[habit]] === true || r[colIdx[habit]] === 'TRUE') { streak++; check = new Date(day); check.setDate(check.getDate()-1); } else break;
+    }
+    streaks[habit] = streak;
+  });
+  return streaks;
+}
+
+function getCalendar_() {
+  try {
+    const tz = Session.getScriptTimeZone();
+    const t0 = new Date(); t0.setHours(0,0,0,0);
+    const t1 = new Date(t0); t1.setDate(t1.getDate()+1);
+    const evs = [];
+    CalendarApp.getAllCalendars().forEach(cal => {
+      cal.getEvents(t0, t1).forEach(ev => { evs.push({ title: ev.getTitle(), startTime: ev.isAllDayEvent() ? 'Todo el día' : Utilities.formatDate(ev.getStartTime(), tz, 'HH:mm'), allDay: ev.isAllDayEvent() }); });
+    });
+    evs.sort((a,b) => a.startTime.localeCompare(b.startTime));
+    return evs;
+  } catch (_) { return []; }
+}
+
+function sheet_(ss, name, headers) {
+  let sh = ss.getSheetByName(name);
+  if (!sh) { sh = ss.insertSheet(name); sh.getRange(1,1,1,headers.length).setValues([headers]).setFontWeight('bold'); sh.setFrozenRows(1); }
+  return sh;
+}
+function dateStr_(val) { if (!val) return null; try { return Utilities.formatDate(new Date(val), 'GMT', 'yyyy-MM-dd'); } catch (_) { return null; } }
+function uid_() { return Utilities.getUuid().substring(0, 8); }
+function param_(e, key) { return e && e.parameter && e.parameter[key] ? e.parameter[key] : null; }
+function authOk_(e) { return param_(e, 'token') === AUTH_TOKEN; }
+function deny_() { return ContentService.createTextOutput(JSON.stringify({ error: 'Unauthorized' })).setMimeType(ContentService.MimeType.JSON); }
+function ok_(data) { return ContentService.createTextOutput(JSON.stringify(data)).setMimeType(ContentService.MimeType.JSON); }</textarea>
+                </div>
               </div>
             </li>
             <li class="gas-step">
