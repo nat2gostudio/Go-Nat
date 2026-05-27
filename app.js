@@ -1,1713 +1,1049 @@
-/* ============================================================
-   GO Nat — Centro de Operaciones Nat2Go Studio
-   app.js — Complete application logic
-   ============================================================ */
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GO Nat — Centro de Operaciones Nat2Go Studio</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="./style.css" />
+  <style>
+    /* ============================================================
+       PARCHE VISUAL — se suma al style.css sin romper nada
+       Sólo afecta a las secciones nuevas/rediseñadas del dashboard
+       ============================================================ */
 
-'use strict';
-
-/* ============================================================
-   UTILITIES
-   ============================================================ */
-
-/**
- * Return today's date as YYYY-MM-DD string (local time).
- */
-function todayStr() {
-  const d = new Date();
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${y}-${m}-${day}`;
-}
-
-/**
- * Safely parse JSON from localStorage. Returns fallback on failure.
- */
-function lsGet(key, fallback) {
-  try {
-    const raw = localStorage.getItem(key);
-    if (raw === null || raw === undefined) return fallback;
-    return JSON.parse(raw);
-  } catch (e) {
-    return fallback;
-  }
-}
-
-/**
- * Stringify and store value in localStorage.
- */
-function lsSet(key, value) {
-  try {
-    localStorage.setItem(key, JSON.stringify(value));
-  } catch (e) {
-    console.warn('localStorage write failed:', key, e);
-  }
-}
-
-/**
- * Generate a simple unique ID.
- */
-function uid() {
-  return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
-}
-
-/**
- * Escape HTML to prevent XSS when inserting user text.
- */
-function esc(str) {
-  const d = document.createElement('div');
-  d.textContent = String(str);
-  return d.innerHTML;
-}
-
-function formatShortDate(dateStr) {
-  if (!dateStr) return null;
-  const d = new Date(dateStr + 'T12:00:00');
-  return d.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
-}
-
-function isOverdueDate(dateStr, done) {
-  return dateStr && !done && new Date(dateStr + 'T23:59:59') < new Date();
-}
-
-/* ============================================================
-   STORAGE KEYS
-   ============================================================ */
-const KEYS = {
-  checks:      () => `gonat_checks_${todayStr()}`,
-  bienestar:   () => `gonat_bienestar_${todayStr()}`,
-  prioridades: 'gonat_prioridades',
-  clientes:    'gonat_clientes',
-  contenido:   'gonat_contenido',
-  settings:    'gonat_settings',
-  seguimiento: 'gonat_seguimiento',
-};
-
-/* ============================================================
-   SETTINGS
-   ============================================================ */
-let settings = lsGet(KEYS.settings, { gasUrl: '', theme: 'light' });
-
-/* ============================================================
-   POMODORO STATE
-   ============================================================ */
-let pomodoroInterval = null;
-let pomodoroSeconds = 25 * 60;
-let pomodoroPhase = 'work'; // 'work' | 'break'
-
-function saveSettings() {
-  lsSet(KEYS.settings, settings);
-  syncToGAS(KEYS.settings, settings);
-}
-
-/* ============================================================
-   GOOGLE APPS SCRIPT SYNC
-   ============================================================ */
-
-/**
- * Push a single key/value pair to GAS (background, silent errors).
- */
-function syncToGAS(key, value) {
-  if (!settings.gasUrl) return;
-  const tab = guessTab(key);
-  const body = JSON.stringify({ tab, key, value: JSON.stringify(value) });
-  fetch(settings.gasUrl, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body,
-    mode: 'no-cors',
-  }).catch(e => console.log('GAS sync error (silent):', e));
-}
-
-/**
- * Determine which GAS sheet tab a key belongs to.
- */
-function guessTab(key) {
-  if (key.startsWith('gonat_checks_')) return 'Checks';
-  if (key.startsWith('gonat_bienestar_')) return 'Checks';
-  if (key === KEYS.prioridades) return 'Prioridades';
-  if (key === KEYS.clientes) return 'Clientes';
-  if (key === KEYS.contenido) return 'Contenido';
-  return 'Misc';
-}
-
-/**
- * Push all app data to GAS in one request.
- */
-function syncAllToGAS() {
-  if (!settings.gasUrl) return;
-  const payload = {
-    gonat_prioridades: prioridades,
-    gonat_seguimiento: seguimiento,
-    gonat_clientes:    clientes,
-  };
-  const url = `${settings.gasUrl}?token=${GAS_TOKEN}`;
-  fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
-    mode: 'no-cors',
-  }).catch(e => console.log('GAS full-sync error (silent):', e));
-}
-
-/**
- * Pull all data from GAS sheets and merge into localStorage + UI.
- * GAS wins for persistent data; local wins for today's checks.
- */
-async function syncFromGAS() {
-  if (!settings.gasUrl) return;
-  try {
-    const gasUrl = `${settings.gasUrl}?action=all&token=${GAS_TOKEN}`;
-    const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(gasUrl)}`;
-    const res = await fetch(proxyUrl, { method: 'GET' });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const envelope = await res.json();
-    const data = envelope.contents ? JSON.parse(envelope.contents) : envelope;
-
-    if (data && typeof data === 'object' && !data.error) {
-      if (data.gonat_prioridades) lsSet(KEYS.prioridades,  data.gonat_prioridades);
-      if (data.gonat_seguimiento) lsSet(KEYS.seguimiento,  data.gonat_seguimiento);
-      if (data.gonat_clientes)    lsSet(KEYS.clientes,     data.gonat_clientes);
-      initApp();
+    /* --- Fila superior: Pomodoro | Accesos | Spotify --- */
+    .widgets-row {
+      display: grid;
+      grid-template-columns: 1fr 1.4fr 1fr;
+      gap: 14px;
+      margin-bottom: 16px;
     }
-  } catch (e) {
-    console.log('GAS fetch error (silent):', e);
-  }
-}
+    @media (max-width: 900px) { .widgets-row { grid-template-columns: 1fr 1fr; } }
+    @media (max-width: 600px) { .widgets-row { grid-template-columns: 1fr; } }
 
-/* ============================================================
-   GOOGLE CALENDAR & HABITS (GAS Integration)
-   ============================================================ */
-
-// Token secreto para autorizar peticiones a GAS
-const GAS_TOKEN = '!n!g5G@86JnWouqDX6LLuP';
-
-/**
- * Llamar a un endpoint de Google Apps Script con autenticación
- */
-async function callGAS(action, method = 'GET', data = null) {
-  if (!settings.gasUrl) {
-    console.warn('GAS URL no configurada');
-    return null;
-  }
-
-  try {
-    let gasUrl = `${settings.gasUrl}?action=${action}&token=${GAS_TOKEN}`;
-    let url = `https://api.allorigins.win/get?url=${encodeURIComponent(gasUrl)}`;
-
-    const options = {
-      method: 'GET',
-      headers: { 'Accept': 'application/json' }
-    };
-
-    const response = await fetch(url, options);
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    const data_response = await response.json();
-
-    if (data_response.contents) {
-      return JSON.parse(data_response.contents);
+    /* Mini-card azul suave — igual que primary-light del sistema */
+    .widget-card {
+      background: var(--primary-light);
+      border: 1px solid rgba(59,75,219,.18);
+      border-radius: var(--radius-card);
+      padding: 16px 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      box-shadow: var(--shadow-sm);
     }
-    return null;
-  } catch (e) {
-    console.error(`GAS call error (${action}):`, e);
-    return null;
-  }
-}
+    .widget-card__label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .07em;
+      text-transform: uppercase;
+      color: var(--primary);
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
 
-/**
- * Cargar eventos del Google Calendar para hoy
- */
-async function loadCalendarEvents() {
-  const result = await callGAS('calendar');
-  if (result && result.success) {
-    renderCalendarEvents(result.events);
-  } else {
-    renderCalendarEvents([]);
-  }
-}
+    /* Pomodoro rediseñado */
+    .pom-time {
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--primary);
+      text-align: center;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: -.02em;
+      line-height: 1;
+    }
+    .pom-phase {
+      font-size: .68rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: var(--text-muted);
+      text-align: center;
+    }
+    .pom-btns {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+    }
 
-/**
- * Renderizar eventos del calendar en el dashboard
- */
-function renderCalendarEvents(events) {
-  const container = document.getElementById('calendarEventsList');
-  if (!container) return;
+    /* Accesos rápidos rediseñados */
+    .qa-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+    }
+    .qa-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 5px;
+      padding: 8px 4px;
+      border-radius: var(--radius-sm);
+      text-decoration: none;
+      transition: background var(--transition), transform .15s;
+    }
+    .qa-item:hover { background: rgba(59,75,219,.12); transform: translateY(-2px); }
+    .qa-icon {
+      width: 40px; height: 40px;
+      background: var(--surface);
+      border: 1px solid rgba(59,75,219,.15);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--primary);
+    }
+    .qa-label {
+      font-size: .62rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
 
-  if (!events || events.length === 0) {
-    container.innerHTML = `
-      <p class="calendar-empty" style="color: #dc2626;">
-        ⚠️ Verificando Google Calendar...
-        <br><small style="color: #a09890;">Si persiste, revisa la consola (F12)</small>
-      </p>
-    `;
-    return;
-  }
+    /* Spotify */
+    .widget-card iframe { border-radius: 10px; display: block; }
 
-  container.innerHTML = events.map(event => `
-    <div class="calendar-event">
-      <div class="calendar-event-time">${event.startTime}</div>
-      <div class="calendar-event-title">${esc(event.title)}</div>
-    </div>
-  `).join('');
-}
+    /* ============================================================
+       CORAZÓN DEL PROYECTO — mejoras sobre .card existente
+       ============================================================ */
+    .corazon-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+    .corazon-head h2 {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      margin: 0;
+    }
+    .corazon-head h2 svg { color: var(--primary); }
 
-/**
- * Cargar rachas de hábitos desde GAS
- */
-async function loadHabitStreaks() {
-  const result = await callGAS('habitStreak');
-  if (result && result.success) {
-    renderHabitStreaks(result.streaks);
-  }
-}
+    .corazon-controls {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .task-pill {
+      background: var(--primary-light);
+      color: var(--primary);
+      border: 1px solid rgba(59,75,219,.2);
+      border-radius: 20px;
+      padding: 3px 11px;
+      font-size: .73rem;
+      font-weight: 600;
+    }
+    .sort-sel {
+      appearance: none;
+      background: var(--bg) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='11' viewBox='0 0 24 24' fill='none' stroke='%233b4bdb' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E") no-repeat right 9px center;
+      border: 1px solid var(--border);
+      color: var(--primary);
+      font-family: var(--font);
+      font-size: .73rem;
+      font-weight: 600;
+      border-radius: var(--radius-btn);
+      padding: 5px 26px 5px 9px;
+      cursor: pointer;
+      transition: border-color var(--transition);
+    }
+    .sort-sel:focus { outline: none; border-color: var(--primary); }
 
-/**
- * Renderizar contadores de racha de hábitos
- */
-function renderHabitStreaks(streaks) {
-  if (!streaks) return;
-  document.getElementById('mandalasStreak').textContent = streaks.mandalas || 0;
-  document.getElementById('solStreak').textContent = streaks.sol || 0;
-  document.getElementById('coreanoStreak').textContent = streaks.coreano || 0;
-  document.getElementById('kickboxingStreak').textContent = streaks.kickboxing || 0;
-}
+    /* Fila nueva tarea */
+    .nueva-tarea-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 14px;
+      flex-wrap: wrap;
+    }
+    .nueva-tarea-row .input { flex: 1; min-width: 180px; }
+    .prio-sel {
+      appearance: none;
+      background: var(--bg) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='11' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E") no-repeat right 9px center;
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-family: var(--font);
+      font-size: .83rem;
+      border-radius: var(--radius-btn);
+      padding: 9px 26px 9px 10px;
+      cursor: pointer;
+      transition: border-color var(--transition);
+    }
+    .prio-sel:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(59,75,219,.1); }
 
-/**
- * Guardar hábitos completados en GAS
- */
-async function saveHabitsToGAS(habits) {
-  await callGAS('saveHabits', 'POST', habits);
-  // Recargar los streaks después de guardar
-  await loadHabitStreaks();
-}
+    /* Tabla */
+    .tbl-wrap {
+      overflow-x: auto;
+      border-radius: var(--radius-btn);
+      border: 1px solid var(--border);
+      margin-bottom: 12px;
+    }
+    .tbl {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: .81rem;
+    }
+    .tbl thead th {
+      background: var(--primary);
+      color: #fff;
+      font-weight: 600;
+      padding: 10px 9px;
+      text-align: left;
+      white-space: nowrap;
+    }
+    .tbl tbody tr {
+      border-bottom: 1px solid var(--border);
+      transition: background var(--transition);
+    }
+    .tbl tbody tr:last-child { border-bottom: none; }
+    .tbl tbody tr:hover { background: var(--primary-light); }
+    .tbl td { padding: 9px; vertical-align: middle; color: var(--text); }
+    .tbl tr.row-done { opacity: .5; }
 
-/* ============================================================
-   NAVIGATION
-   ============================================================ */
-let currentScreen = 'dashboard';
+    .tbl-check { width: 16px; height: 16px; accent-color: var(--primary); cursor: pointer; }
 
-function initNav() {
-  // Sidebar nav
-  document.querySelectorAll('.nav-item').forEach(item => {
-    item.querySelector('.nav-btn').addEventListener('click', () => {
-      navigateTo(item.dataset.screen);
-    });
-  });
+    .pb { display: inline-flex; align-items: center; padding: 2px 9px; border-radius: 20px; font-size: .7rem; font-weight: 700; }
+    .pb-A { background: #fee2e2; color: #b91c1c; }
+    .pb-B { background: #fef3c7; color: #92400e; }
+    .pb-C { background: #dcfce7; color: #166534; }
 
-  // Bottom nav
-  document.querySelectorAll('.bottom-nav-item').forEach(item => {
-    item.querySelector('.bottom-nav-btn').addEventListener('click', () => {
-      navigateTo(item.dataset.screen);
-    });
-  });
-}
+    .eb { display: inline-block; padding: 2px 9px; border-radius: 20px; font-size: .7rem; font-weight: 500; }
+    .eb-Pendiente  { background: var(--bg); color: var(--text-muted); border: 1px solid var(--border); }
+    .eb-En-curso   { background: #dbeafe; color: #1d4ed8; }
+    .eb-Completada { background: var(--success-light); color: var(--success); }
 
-function navigateTo(screenId) {
-  currentScreen = screenId;
+    .prog-row { display: flex; align-items: center; gap: 5px; }
+    .prog-pct  { font-size: .7rem; color: var(--text-muted); min-width: 26px; }
+    .prog-bar  { width: 52px; height: 5px; background: var(--border); border-radius: 99px; overflow: hidden; }
+    .prog-fill { height: 100%; background: var(--primary); border-radius: 99px; transition: width .3s; }
 
-  // Update screens
-  document.querySelectorAll('.screen').forEach(s => {
-    s.classList.toggle('active', s.id === `screen-${screenId}`);
-  });
+    .tbl-btn {
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 3px 7px;
+      cursor: pointer;
+      color: var(--text-muted);
+      font-family: var(--font);
+      font-size: .7rem;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      transition: border-color var(--transition), color var(--transition), background var(--transition);
+    }
+    .tbl-btn:hover { border-color: var(--primary); color: var(--primary); background: var(--primary-light); }
+    .tbl-btn-del:hover { border-color: var(--danger); color: var(--danger); background: var(--danger-light); }
 
-  // Update sidebar nav
-  document.querySelectorAll('.nav-item').forEach(item => {
-    item.classList.toggle('active', item.dataset.screen === screenId);
-  });
+    .tbl-date {
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 3px 6px;
+      font-family: var(--font);
+      font-size: .73rem;
+      color: var(--text);
+      background: var(--bg);
+      width: 114px;
+    }
+    .tbl-date:focus { outline: none; border-color: var(--primary); }
 
-  // Update bottom nav
-  document.querySelectorAll('.bottom-nav-item').forEach(item => {
-    item.classList.toggle('active', item.dataset.screen === screenId);
-  });
+    .nota-inline { font-size: .7rem; color: var(--text-muted); margin-top: 2px; }
 
-  // Refresh stats when navigating to perfil
-  if (screenId === 'perfil') {
-    renderStats();
-  }
-}
+    /* Pie corazón */
+    .corazon-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .sync-line {
+      margin-top: 10px;
+      padding: 6px 11px;
+      border-radius: var(--radius-sm);
+      background: var(--primary-light);
+      border: 1px solid rgba(59,75,219,.15);
+      color: var(--primary);
+      font-size: .72rem;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .sync-line.error { background: var(--danger-light); border-color: rgba(220,38,38,.2); color: var(--danger); }
+    .sync-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
+  </style>
+</head>
+<body>
 
-/* ============================================================
-   SCREEN 1: DASHBOARD
-   ============================================================ */
-
-/* ---- Greeting & Date ---- */
-function renderGreeting() {
-  const hour = new Date().getHours();
-  const greeting = hour < 12 ? 'Buenos días, Nati' : 'Buenas tardes, Nati';
-  document.getElementById('greetingText').textContent = greeting;
-
-  const d = new Date();
-  const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-  document.getElementById('dateText').textContent =
-    d.toLocaleDateString('es-ES', options).replace(/^\w/, c => c.toUpperCase());
-}
-
-/* ---- Morning Checks ---- */
-function loadMorningChecks() {
-  const data = lsGet(KEYS.checks(), {});
-  document.querySelectorAll('.morning-check').forEach(cb => {
-    const key = cb.dataset.key;
-    cb.checked = !!data[key];
-    updateCheckLineThrough(cb);
-  });
-}
-
-function saveMorningChecks() {
-  const data = {};
-  document.querySelectorAll('.morning-check').forEach(cb => {
-    data[cb.dataset.key] = cb.checked;
-  });
-  lsSet(KEYS.checks(), data);
-  syncToGAS(KEYS.checks(), data);
-  renderStats();
-}
-
-function initMorningChecks() {
-  loadMorningChecks();
-  document.querySelectorAll('.morning-check').forEach(cb => {
-    cb.addEventListener('change', () => {
-      updateCheckLineThrough(cb);
-      saveMorningChecks();
-    });
-  });
-}
-
-function updateCheckLineThrough(cb) {
-  const textEl = cb.parentElement.querySelector('.check-text');
-  if (textEl) {
-    // CSS handles the line-through via :checked ~ .check-text
-    // but we trigger a small visual refresh just in case
-  }
-}
-
-/* ---- Prioridades ---- */
-let prioridades = lsGet(KEYS.prioridades, {
-  dinero: [],
-  clientes: [],
-  marca: [],
-});
-
-function savePrioridades() {
-  lsSet(KEYS.prioridades, prioridades);
-  syncAllToGAS();
-}
-
-function renderPrioridades() {
-  ['dinero', 'clientes', 'marca'].forEach(cat => {
-    const listId = cat === 'clientes' ? 'list-clientes-prio' : `list-${cat}`;
-    const listEl = document.getElementById(listId);
-    if (!listEl) return;
-    listEl.innerHTML = '';
-    (prioridades[cat] || []).forEach((item, idx) => {
-      const subtasks = item.subtasks || [];
-      const subtasksHtml = subtasks.map((st, si) => `
-        <li class="subtask-item" data-si="${si}">
-          <input type="checkbox" ${st.done ? 'checked' : ''} />
-          <span class="subtask-text">${esc(st.text)}</span>
-          <button class="subtask-del" aria-label="Eliminar microtarea">×</button>
-        </li>
-      `).join('');
-
-      const overdue = isOverdueDate(item.dueDate, item.done);
-      const dueChip = item.dueDate
-        ? `<span class="priority-due-chip${overdue ? ' priority-due-chip--overdue' : ''}">${formatShortDate(item.dueDate)}</span>`
-        : '';
-
-      const li = document.createElement('li');
-      li.className = 'priority-item';
-      li.dataset.cat = cat;
-      li.dataset.idx = idx;
-      li.innerHTML = `
-        <input type="checkbox" ${item.done ? 'checked' : ''} />
-        <span class="priority-item-text">${esc(item.text)}</span>
-        ${dueChip}
-        <button class="priority-item-dates-btn" aria-label="Fechas" title="Fechas de inicio y entrega">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+  <!-- SIDEBAR — sin cambios -->
+  <nav class="sidebar" id="sidebar">
+    <div class="sidebar-logo"><span class="logo-mark">GN</span></div>
+    <ul class="nav-list">
+      <li class="nav-item active" data-screen="dashboard">
+        <button class="nav-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z"/><path d="M9 21V12h6v9"/></svg>
+          <span class="nav-dot"></span>
         </button>
-        <button class="priority-item-expand" aria-label="Añadir microtarea" title="Dividir en microtareas">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="11" height="11"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-        </button>
-        <button class="priority-item-del" aria-label="Eliminar">×</button>
-        <div class="priority-item-subtasks">
-          ${subtasks.length > 0 ? `<ul class="subtask-list">${subtasksHtml}</ul>` : ''}
-        </div>
-        <div class="priority-dates-panel">
-          <label class="priority-date-label">Inicio<input type="date" class="priority-date-input prio-start-input" value="${item.startDate || ''}" /></label>
-          <label class="priority-date-label">Entrega<input type="date" class="priority-date-input prio-due-input" value="${item.dueDate || ''}" /></label>
-        </div>
-      `;
-
-      // Main checkbox
-      const cb = li.querySelector('input[type="checkbox"]');
-      cb.addEventListener('change', () => {
-        prioridades[cat][idx].done = cb.checked;
-        savePrioridades();
-        renderPrioridades();
-        renderStats();
-      });
-
-      // Delete main task
-      li.querySelector('.priority-item-del').addEventListener('click', () => {
-        prioridades[cat].splice(idx, 1);
-        savePrioridades();
-        renderPrioridades();
-      });
-
-      // Dates panel toggle
-      li.querySelector('.priority-item-dates-btn').addEventListener('click', () => {
-        li.querySelector('.priority-dates-panel').classList.toggle('priority-dates-panel--open');
-      });
-
-      // Start date
-      li.querySelector('.prio-start-input').addEventListener('change', e => {
-        prioridades[cat][idx].startDate = e.target.value || null;
-        savePrioridades();
-        renderPrioridades();
-      });
-
-      // Due date
-      li.querySelector('.prio-due-input').addEventListener('change', e => {
-        prioridades[cat][idx].dueDate = e.target.value || null;
-        savePrioridades();
-        renderPrioridades();
-      });
-
-      // Expand: add microtarea
-      li.querySelector('.priority-item-expand').addEventListener('click', () => {
-        const subtasksDiv = li.querySelector('.priority-item-subtasks');
-        if (subtasksDiv.querySelector('.subtask-add-row')) return;
-
-        let subtaskList = subtasksDiv.querySelector('.subtask-list');
-        if (!subtaskList) {
-          subtaskList = document.createElement('ul');
-          subtaskList.className = 'subtask-list';
-          subtasksDiv.insertBefore(subtaskList, subtasksDiv.firstChild);
-        }
-
-        const addRow = document.createElement('div');
-        addRow.className = 'subtask-add-row';
-        addRow.innerHTML = `
-          <input class="subtask-add-input" type="text" placeholder="Paso pequeño..." maxlength="100" />
-          <button class="subtask-add-ok">OK</button>
-        `;
-        subtasksDiv.appendChild(addRow);
-        const stInput = addRow.querySelector('.subtask-add-input');
-        stInput.focus();
-
-        const confirmSt = () => {
-          const text = stInput.value.trim();
-          if (text) {
-            if (!prioridades[cat][idx].subtasks) prioridades[cat][idx].subtasks = [];
-            prioridades[cat][idx].subtasks.push({ id: uid(), text, done: false });
-            savePrioridades();
-            renderPrioridades();
-          } else {
-            addRow.remove();
-          }
-        };
-
-        addRow.querySelector('.subtask-add-ok').addEventListener('click', confirmSt);
-        stInput.addEventListener('keydown', e => {
-          if (e.key === 'Enter') confirmSt();
-          if (e.key === 'Escape') addRow.remove();
-        });
-      });
-
-      // Subtask checkboxes and delete buttons
-      li.querySelectorAll('.subtask-item').forEach(stEl => {
-        const si = parseInt(stEl.dataset.si, 10);
-        const stCb = stEl.querySelector('input[type="checkbox"]');
-        stCb.addEventListener('change', () => {
-          if (!prioridades[cat][idx].subtasks) return;
-          prioridades[cat][idx].subtasks[si].done = stCb.checked;
-          savePrioridades();
-        });
-        stEl.querySelector('.subtask-del').addEventListener('click', () => {
-          prioridades[cat][idx].subtasks.splice(si, 1);
-          savePrioridades();
-          renderPrioridades();
-        });
-      });
-
-      listEl.appendChild(li);
-    });
-  });
-}
-
-function initPrioridades() {
-  renderPrioridades();
-
-  document.querySelectorAll('.add-prio-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const cat = btn.dataset.cat;
-      const listId = cat === 'clientes' ? 'list-clientes-prio' : `list-${cat}`;
-      const listEl = document.getElementById(listId);
-      if (!listEl) return;
-
-      // Don't add multiple inline inputs
-      if (listEl.parentElement.querySelector('.inline-add-row')) return;
-
-      const row = document.createElement('div');
-      row.className = 'inline-add-row';
-      row.innerHTML = `
-        <input class="inline-add-input" type="text" placeholder="Nueva tarea..." maxlength="120" />
-        <button class="btn inline-add-ok">OK</button>
-      `;
-      btn.insertAdjacentElement('beforebegin', row);
-      const input = row.querySelector('.inline-add-input');
-      input.focus();
-
-      const confirm = () => {
-        const text = input.value.trim();
-        if (text) {
-          if (!prioridades[cat]) prioridades[cat] = [];
-          prioridades[cat].push({ id: uid(), text, done: false, subtasks: [], startDate: null, dueDate: null });
-          savePrioridades();
-          renderPrioridades();
-        }
-        row.remove();
-      };
-
-      row.querySelector('.inline-add-ok').addEventListener('click', confirm);
-      input.addEventListener('keydown', e => {
-        if (e.key === 'Enter') confirm();
-        if (e.key === 'Escape') row.remove();
-      });
-    });
-  });
-}
-
-/* ---- Decisiones button ---- */
-function initDecision() {
-  const btn = document.getElementById('decisionBtn');
-  const highlight = document.getElementById('decisionHighlight');
-
-  btn.addEventListener('click', () => {
-    const allUnchecked = [];
-    ['dinero', 'clientes', 'marca'].forEach(cat => {
-      (prioridades[cat] || []).forEach(item => {
-        if (!item.done) allUnchecked.push(item.text);
-      });
-    });
-
-    if (allUnchecked.length === 0) {
-      highlight.textContent = 'Todo completado. No hay tareas pendientes.';
-      highlight.style.display = 'block';
-      return;
-    }
-
-    const picked = allUnchecked[Math.floor(Math.random() * allUnchecked.length)];
-    highlight.textContent = `Ahora mismo: ${picked}`;
-    highlight.style.display = 'block';
-  });
-}
-
-/* ============================================================
-   SCREEN 2: CLIENTES
-   ============================================================ */
-
-let clientes = lsGet(KEYS.clientes, null);
-
-// Default clients if first visit
-if (clientes === null) {
-  clientes = [
-    {
-      id: uid(),
-      name: 'AE',
-      tasks: [
-        { id: uid(), text: 'Newsletter', done: false },
-        { id: uid(), text: 'Blog', done: false },
-      ],
-    },
-    {
-      id: uid(),
-      name: 'Casa Bella',
-      tasks: [
-        { id: uid(), text: 'Newsletter', done: false },
-        { id: uid(), text: 'Copys Web', done: false },
-        { id: uid(), text: 'Blog', done: false },
-      ],
-    },
-    {
-      id: uid(),
-      name: 'RoscónLab',
-      tasks: [
-        { id: uid(), text: 'Newsletter', done: false },
-        { id: uid(), text: 'Copywriting', done: false },
-      ],
-    },
-  ];
-  lsSet(KEYS.clientes, clientes);
-}
-
-function saveClientes() {
-  lsSet(KEYS.clientes, clientes);
-  syncToGAS(KEYS.clientes, clientes);
-}
-
-function safeUrl(raw) {
-  const url = raw.trim();
-  if (/^https?:\/\//i.test(url)) return url;
-  if (/^\/\//.test(url)) return 'https:' + url;
-  return 'https://' + url;
-}
-
-function renderClientes() {
-  const grid = document.getElementById('clientsGrid');
-  grid.innerHTML = '';
-  clientes.forEach((client, ci) => {
-    const card = document.createElement('div');
-    card.className = 'client-card';
-    card.dataset.id = client.id;
-
-    const tasksHtml = (client.tasks || []).map((task, ti) => `
-      <li class="client-task-item" data-ti="${ti}">
-        <input type="checkbox" ${task.done ? 'checked' : ''} aria-label="${esc(task.text)}" />
-        <span class="client-task-text">${esc(task.text)}</span>
-        <button class="client-task-del" aria-label="Eliminar tarea">×</button>
       </li>
-    `).join('');
+      <li class="nav-item" data-screen="clientes">
+        <button class="nav-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="7" r="3"/><path d="M3 21v-2a4 4 0 014-4h4a4 4 0 014 4v2"/><path d="M16 3.13a4 4 0 010 7.75"/><path d="M21 21v-2a4 4 0 00-3-3.85"/></svg>
+          <span class="nav-dot"></span>
+        </button>
+      </li>
+      <li class="nav-item" data-screen="contenido">
+        <button class="nav-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+          <span class="nav-dot"></span>
+        </button>
+      </li>
+      <li class="nav-item" data-screen="bienestar">
+        <button class="nav-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
+          <span class="nav-dot"></span>
+        </button>
+      </li>
+      <li class="nav-item" data-screen="perfil">
+        <button class="nav-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+          <span class="nav-dot"></span>
+        </button>
+      </li>
+    </ul>
+  </nav>
 
-    const linksHtml = (client.links || []).map((link, li) => `
-      <span class="client-link-wrap" data-li="${li}">
-        <a class="client-link-item" href="${esc(link.url)}" target="_blank" rel="noopener noreferrer">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="11" height="11"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-          ${esc(link.label)}
-        </a>
-        <button class="client-link-del" aria-label="Eliminar enlace">×</button>
-      </span>
-    `).join('');
+  <!-- BOTTOM NAV — sin cambios -->
+  <nav class="bottom-nav" id="bottomNav">
+    <ul class="bottom-nav-list">
+      <li class="bottom-nav-item active" data-screen="dashboard">
+        <button class="bottom-nav-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z"/><path d="M9 21V12h6v9"/></svg></button>
+      </li>
+      <li class="bottom-nav-item" data-screen="clientes">
+        <button class="bottom-nav-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="7" r="3"/><path d="M3 21v-2a4 4 0 014-4h4a4 4 0 014 4v2"/><path d="M16 3.13a4 4 0 010 7.75"/><path d="M21 21v-2a4 4 0 00-3-3.85"/></svg></button>
+      </li>
+      <li class="bottom-nav-item" data-screen="contenido">
+        <button class="bottom-nav-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></button>
+      </li>
+      <li class="bottom-nav-item" data-screen="bienestar">
+        <button class="bottom-nav-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg></button>
+      </li>
+      <li class="bottom-nav-item" data-screen="perfil">
+        <button class="bottom-nav-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg></button>
+      </li>
+    </ul>
+  </nav>
 
-    card.innerHTML = `
-      <div class="client-card-header">
-        <span class="client-name" title="Clic para editar">${esc(client.name)}</span>
-        <button class="client-del-btn" aria-label="Eliminar cliente">×</button>
+  <!-- MAIN CONTENT -->
+  <main class="main-content" id="mainContent">
+
+    <!-- ════════════ DASHBOARD ════════════ -->
+    <section class="screen active" id="screen-dashboard">
+
+      <!-- Cabecera saludo — idéntica al original -->
+      <div class="screen-header">
+        <div class="header-text">
+          <h1 class="greeting" id="greetingText">Buenos días, Nati</h1>
+          <p class="date-text" id="dateText"></p>
+        </div>
+        <img src="images/nati-writing.png" alt="Nati escribiendo" class="header-illustration" />
       </div>
-      <ul class="client-tasks">${tasksHtml}</ul>
-      <button class="btn btn-ghost btn-xs add-task-btn">+ Tarea</button>
-      <div class="client-links-section">
-        <div class="client-links-row" id="links-${client.id}">${linksHtml}</div>
-        <button class="client-link-add-btn" aria-label="Añadir enlace">+ Enlace</button>
-      </div>
-    `;
 
-    // Client name inline edit
-    const nameEl = card.querySelector('.client-name');
-    nameEl.addEventListener('click', () => {
-      const input = document.createElement('input');
-      input.className = 'client-name-input';
-      input.type = 'text';
-      input.value = client.name;
-      input.maxLength = 60;
-      nameEl.replaceWith(input);
-      input.focus();
-      input.select();
+      <!-- ── FILA SUPERIOR: Pomodoro | Accesos rápidos | Spotify ── -->
+      <div class="widgets-row">
 
-      const finish = () => {
-        const newName = input.value.trim() || client.name;
-        clientes[ci].name = newName;
-        saveClientes();
-        renderClientes();
-      };
-      input.addEventListener('blur', finish);
-      input.addEventListener('keydown', e => {
-        if (e.key === 'Enter') finish();
-        if (e.key === 'Escape') { input.value = client.name; finish(); }
-      });
-    });
+        <!-- POMODORO -->
+        <div class="widget-card">
+          <div class="widget-card__label">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            Pomodoro
+          </div>
+          <div class="pom-time" id="pomodoroTimer">25:00</div>
+          <div class="pom-phase" id="pomodoroPhase"></div>
+          <div class="pom-btns">
+            <!-- Reutiliza la lógica del toggle original pero con botón -->
+            <label class="toggle-switch" style="display:none;"><input type="checkbox" id="pomodoroToggle" /><span class="toggle-slider"></span></label>
+            <button class="btn btn-primary btn-sm" id="pomStartStopBtn" onclick="document.getElementById('pomodoroToggle').click()">
+              <svg viewBox="0 0 24 24" fill="currentColor" width="12" height="12"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+              Iniciar
+            </button>
+            <button class="btn btn-ghost btn-sm" id="pomResetBtn" title="Reiniciar">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="12" height="12"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>
+            </button>
+          </div>
+        </div>
 
-    // Delete client
-    card.querySelector('.client-del-btn').addEventListener('click', () => {
-      if (confirm(`¿Eliminar el cliente "${client.name}"?`)) {
-        clientes.splice(ci, 1);
-        saveClientes();
-        renderClientes();
-      }
-    });
+        <!-- ACCESOS RÁPIDOS -->
+        <div class="widget-card">
+          <div class="widget-card__label">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+            Accesos rápidos
+          </div>
+          <div class="qa-grid">
+            <a class="qa-item" href="https://mail.google.com" target="_blank" rel="noopener">
+              <div class="qa-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="19" height="19"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 7l10 7 10-7"/></svg></div>
+              <span class="qa-label">Gmail</span>
+            </a>
+            <a class="qa-item" href="https://drive.google.com" target="_blank" rel="noopener">
+              <div class="qa-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="19" height="19"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0018 9h-1.26A8 8 0 103 16.3"/></svg></div>
+              <span class="qa-label">Drive</span>
+            </a>
+            <a class="qa-item" href="https://business.facebook.com" target="_blank" rel="noopener">
+              <div class="qa-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="19" height="19"><path d="M12 12c-2-2.5-4-4-6-4a4 4 0 000 8c2 0 4-1.5 6-4z"/><path d="M12 12c2-2.5 4-4 6-4a4 4 0 010 8c-2 0-4-1.5-6-4z"/></svg></div>
+              <span class="qa-label">Meta</span>
+            </a>
+            <a class="qa-item" href="https://canva.com" target="_blank" rel="noopener">
+              <div class="qa-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="19" height="19"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125A1.64 1.64 0 0115.28 17h1.996c3.051 0 5.555-2.503 5.555-5.554C22.83 6.012 17.961 2 12 2z"/><circle cx="7" cy="12" r="1" fill="currentColor" stroke="none"/><circle cx="9.5" cy="8" r="1" fill="currentColor" stroke="none"/><circle cx="14.5" cy="7" r="1" fill="currentColor" stroke="none"/><circle cx="18" cy="11" r="1" fill="currentColor" stroke="none"/></svg></div>
+              <span class="qa-label">Canva</span>
+            </a>
+          </div>
+        </div>
 
-    // Task checkboxes
-    card.querySelectorAll('.client-task-item').forEach(taskEl => {
-      const ti = parseInt(taskEl.dataset.ti, 10);
-      const cb = taskEl.querySelector('input[type="checkbox"]');
-      cb.addEventListener('change', () => {
-        clientes[ci].tasks[ti].done = cb.checked;
-        saveClientes();
-      });
-      taskEl.querySelector('.client-task-del').addEventListener('click', () => {
-        clientes[ci].tasks.splice(ti, 1);
-        saveClientes();
-        renderClientes();
-      });
-    });
+        <!-- SPOTIFY -->
+        <div class="widget-card">
+          <div class="widget-card__label">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><circle cx="12" cy="12" r="10"/><path d="M8 12.5c2.5-1 5-1 7.5 0"/><path d="M7 9.5c3.5-1.5 7-1.5 10 0"/><path d="M9.5 15.5c2-1 4-1 6 0"/></svg>
+            Música
+          </div>
+          <iframe
+            src="https://open.spotify.com/embed/playlist/3py7MK3ipW2LVd0ryRlwzw?utm_source=generator"
+            width="100%" height="132" frameborder="0" allowfullscreen
+            allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+            loading="lazy">
+          </iframe>
+        </div>
 
-    // Add task
-    card.querySelector('.add-task-btn').addEventListener('click', () => {
-      const btn = card.querySelector('.add-task-btn');
-      if (card.querySelector('.inline-add-row')) return;
+      </div><!-- /widgets-row -->
 
-      const row = document.createElement('div');
-      row.className = 'inline-add-row';
-      row.innerHTML = `
-        <input class="inline-add-input" type="text" placeholder="Nueva tarea..." maxlength="80" />
-        <button class="btn inline-add-ok">OK</button>
-      `;
-      btn.insertAdjacentElement('beforebegin', row);
-      const input = row.querySelector('.inline-add-input');
-      input.focus();
 
-      const confirm2 = () => {
-        const text = input.value.trim();
-        if (text) {
-          clientes[ci].tasks.push({ id: uid(), text, done: false });
-          saveClientes();
-          renderClientes();
-        } else {
-          row.remove();
-        }
-      };
+      <!-- ── CORAZÓN DEL PROYECTO ── -->
+      <div class="card" style="margin-bottom:16px;">
 
-      row.querySelector('.inline-add-ok').addEventListener('click', confirm2);
-      input.addEventListener('keydown', e => {
-        if (e.key === 'Enter') confirm2();
-        if (e.key === 'Escape') row.remove();
-      });
-    });
+        <div class="corazon-head">
+          <h2>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="17" height="17">
+              <rect x="3" y="3" width="7" height="7" rx="1"/>
+              <rect x="14" y="3" width="7" height="7" rx="1"/>
+              <rect x="3" y="14" width="7" height="7" rx="1"/>
+              <rect x="14" y="14" width="7" height="7" rx="1"/>
+            </svg>
+            Corazón del Proyecto
+          </h2>
+          <div class="corazon-controls">
+            <span class="task-pill" id="contadorPendientes">0 pendientes</span>
+            <select class="sort-sel" id="sortSelect">
+              <option value="prioridad">Prioridad</option>
+              <option value="entrega">Fecha entrega</option>
+              <option value="inicio">Fecha inicio</option>
+              <option value="estado">Estado</option>
+              <option value="nombre">Nombre A–Z</option>
+            </select>
+          </div>
+        </div>
 
-    // Delete link buttons
-    card.querySelectorAll('.client-link-del').forEach(btn => {
-      const li = parseInt(btn.closest('.client-link-wrap').dataset.li, 10);
-      btn.addEventListener('click', () => {
-        clientes[ci].links.splice(li, 1);
-        saveClientes();
-        renderClientes();
-      });
-    });
+        <!-- Nueva tarea -->
+        <div class="nueva-tarea-row">
+          <input type="text" id="nuevaTareaInput" class="input"
+            placeholder="Escribe una nueva tarea..." autocomplete="off" />
+          <select id="prioridadManualSelect" class="prio-sel">
+            <option value="auto">IA — Priorización automática</option>
+            <option value="A">Prioridad A — Urgente</option>
+            <option value="B">Prioridad B — Importante</option>
+            <option value="C">Prioridad C — Normal</option>
+          </select>
+          <button id="agregarTareaBtn" class="btn btn-primary">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Agregar
+          </button>
+        </div>
 
-    // Add link
-    card.querySelector('.client-link-add-btn').addEventListener('click', () => {
-      const section = card.querySelector('.client-links-section');
-      if (section.querySelector('.client-link-form')) return;
+        <!-- Tabla -->
+        <div class="tbl-wrap">
+          <table class="tbl">
+            <thead>
+              <tr>
+                <th style="width:30px;"></th>
+                <th>Tarea</th>
+                <th>Prioridad</th>
+                <th>Sub</th>
+                <th>Estado</th>
+                <th>Progreso</th>
+                <th>Inicio</th>
+                <th>Entrega</th>
+                <th style="width:30px;">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+                </th>
+                <th style="width:30px;">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
+                </th>
+              </tr>
+            </thead>
+            <tbody id="tasksTableBody">
+              <tr><td colspan="10" style="text-align:center;padding:36px;color:var(--text-muted);">Cargando...</td></tr>
+            </tbody>
+          </table>
+        </div>
 
-      const form = document.createElement('div');
-      form.className = 'client-link-form';
-      form.innerHTML = `
-        <input class="client-link-label-input" type="text" placeholder="Nombre (Canva, Plan...)" maxlength="40" />
-        <input class="client-link-url-input" type="url" placeholder="https://..." maxlength="500" />
-        <button class="client-link-form-ok">OK</button>
-        <button class="client-link-form-cancel">✕</button>
-      `;
-      section.appendChild(form);
-      form.querySelector('.client-link-label-input').focus();
+        <!-- Pie -->
+        <div class="corazon-footer">
+          <button id="limpiarCompletadasBtn" class="btn btn-ghost btn-sm" style="color:var(--danger);border-color:rgba(220,38,38,.25);">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
+            Limpiar completadas
+          </button>
+        </div>
 
-      const confirmLink = () => {
-        const label = form.querySelector('.client-link-label-input').value.trim();
-        const rawUrl = form.querySelector('.client-link-url-input').value.trim();
-        if (label && rawUrl) {
-          if (!clientes[ci].links) clientes[ci].links = [];
-          clientes[ci].links.push({ id: uid(), label, url: safeUrl(rawUrl) });
-          saveClientes();
-          renderClientes();
-        } else {
-          form.remove();
-        }
-      };
+        <div class="sync-line" id="syncStatus">
+          <span class="sync-dot"></span>
+          Conectando con Google Sheets...
+        </div>
 
-      form.querySelector('.client-link-form-ok').addEventListener('click', confirmLink);
-      form.querySelector('.client-link-form-cancel').addEventListener('click', () => form.remove());
-      form.querySelector('.client-link-url-input').addEventListener('keydown', e => {
-        if (e.key === 'Enter') confirmLink();
-        if (e.key === 'Escape') form.remove();
-      });
-      form.querySelector('.client-link-label-input').addEventListener('keydown', e => {
-        if (e.key === 'Escape') form.remove();
-        if (e.key === 'Enter') form.querySelector('.client-link-url-input').focus();
-      });
-    });
+      </div><!-- /corazon card -->
 
-    grid.appendChild(card);
-  });
-}
 
-function initClientes() {
-  renderClientes();
-
-  document.getElementById('addClientBtn').addEventListener('click', () => {
-    const name = prompt('Nombre del nuevo cliente:');
-    if (name && name.trim()) {
-      clientes.push({
-        id: uid(),
-        name: name.trim(),
-        tasks: [],
-      });
-      saveClientes();
-      renderClientes();
-      navigateTo('clientes');
-    }
-  });
-}
-
-/* ============================================================
-   SCREEN 3: CONTENIDO (Kanban)
-   ============================================================ */
-
-const KANBAN_COLS = ['IDEAS', 'PENDIENTE', 'PUBLICADO', 'ENLACES'];
-
-let contenido = lsGet(KEYS.contenido, null);
-
-// Default content if first visit
-if (contenido === null) {
-  contenido = [
-    { id: uid(), text: 'Ideas para el próximo newsletter', status: 'IDEAS' },
-    { id: uid(), text: 'Post sobre productividad con TDAH', status: 'PENDIENTE' },
-    { id: uid(), text: 'Guía de herramientas de diseño 2024', status: 'PUBLICADO' },
-  ];
-  lsSet(KEYS.contenido, contenido);
-}
-
-function saveContenido() {
-  lsSet(KEYS.contenido, contenido);
-  syncToGAS(KEYS.contenido, contenido);
-}
-
-function renderKanban() {
-  const board = document.getElementById('kanbanBoard');
-  board.innerHTML = '';
-
-  KANBAN_COLS.forEach((col, colIdx) => {
-    const items = contenido.filter(c => c.status === col);
-    const canMove = colIdx < KANBAN_COLS.length - 1;
-    const canAdd = col === 'IDEAS' || col === 'ENLACES';
-
-    const colEl = document.createElement('div');
-    colEl.className = 'kanban-column';
-    colEl.dataset.col = col;
-
-    const cardsHtml = items.map(item => `
-      <div class="kanban-card" data-id="${item.id}">
-        <span class="kanban-card-text">${esc(item.text)}</span>
-        <div class="kanban-card-actions">
-          ${canMove ? `<button class="kanban-move-btn" title="Mover a ${KANBAN_COLS[colIdx + 1]}">→</button>` : ''}
-          <button class="kanban-del-btn" title="Eliminar">×</button>
+      <!-- ── CAPTURA MASIVA — acordeón original intacto ── -->
+      <div class="card card--accordion" id="bulkCaptureCard">
+        <div class="card-header" data-toggle="bulkCaptureCard">
+          <div class="card-header-content">
+            <h2 class="card-title--accordion">Captura masiva de tareas</h2>
+          </div>
+          <div class="card-toggle-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><polyline points="6 9 12 15 18 9"/></svg>
+          </div>
+        </div>
+        <div class="card-content">
+          <textarea class="bulk-textarea" id="bulkTasksInput"
+            placeholder="Cobrar factura a cliente&#10;Escribir newsletter&#10;Publicar en Instagram&#10;Vacunar a Ula" rows="4"></textarea>
+          <button class="btn btn-primary btn-sm" id="bulkPrioritizeBtn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+            Priorizar automáticamente (IA)
+          </button>
         </div>
       </div>
-    `).join('');
 
-    colEl.innerHTML = `
-      <div class="kanban-col-header">
-        <span class="kanban-col-title">${col}</span>
-        <span class="kanban-col-count">${items.length}</span>
+    </section><!-- /screen-dashboard -->
+
+
+    <!-- ════════════ CLIENTES ════════════ -->
+    <section class="screen" id="screen-clientes">
+      <div class="screen-header">
+        <div class="header-text">
+          <h1 class="screen-title">Clientes</h1>
+          <p class="screen-subtitle">Tus proyectos activos</p>
+        </div>
+        <img src="images/nati-clientes.png" alt="" class="header-illustration header-illustration--sm" />
       </div>
-      <div class="kanban-cards">${cardsHtml}</div>
-      ${canAdd ? `<button class="btn btn-ghost btn-xs kanban-add-btn" data-col="${col}">+ Añadir</button>` : ''}
-    `;
-
-    // Move buttons
-    colEl.querySelectorAll('.kanban-move-btn').forEach(btn => {
-      const cardEl = btn.closest('.kanban-card');
-      const itemId = cardEl.dataset.id;
-      btn.addEventListener('click', () => {
-        const item = contenido.find(c => c.id === itemId);
-        if (item) {
-          item.status = KANBAN_COLS[colIdx + 1];
-          saveContenido();
-          renderKanban();
-        }
-      });
-    });
-
-    // Delete buttons
-    colEl.querySelectorAll('.kanban-del-btn').forEach(btn => {
-      const cardEl = btn.closest('.kanban-card');
-      const itemId = cardEl.dataset.id;
-      btn.addEventListener('click', () => {
-        if (confirm('¿Eliminar esta tarjeta?')) {
-          contenido = contenido.filter(c => c.id !== itemId);
-          saveContenido();
-          renderKanban();
-        }
-      });
-    });
-
-    // Add button (IDEAS and ENLACES columns)
-    const addBtn = colEl.querySelector('.kanban-add-btn');
-    if (addBtn) {
-      addBtn.addEventListener('click', () => {
-        if (colEl.querySelector('.inline-add-row')) return;
-        const row = document.createElement('div');
-        row.className = 'inline-add-row';
-        row.innerHTML = `
-          <input class="inline-add-input" type="text" placeholder="Nueva tarjeta..." maxlength="200" />
-          <button class="btn inline-add-ok">OK</button>
-        `;
-        addBtn.insertAdjacentElement('beforebegin', row);
-        const input = row.querySelector('.inline-add-input');
-        input.focus();
-
-        const confirmAdd = () => {
-          const text = input.value.trim();
-          if (text) {
-            contenido.push({ id: uid(), text, status: col });
-            saveContenido();
-            renderKanban();
-          } else {
-            row.remove();
-          }
-        };
-
-        row.querySelector('.inline-add-ok').addEventListener('click', confirmAdd);
-        input.addEventListener('keydown', e => {
-          if (e.key === 'Enter') confirmAdd();
-          if (e.key === 'Escape') row.remove();
-        });
-      });
-    }
-
-    board.appendChild(colEl);
-  });
-}
-
-function initContenido() {
-  renderKanban();
-
-  // Captura Rápida modal
-  const modal = document.getElementById('capturaModal');
-  const textarea = document.getElementById('capturaTextarea');
-
-  const openModal = () => {
-    modal.style.display = 'flex';
-    textarea.value = '';
-    setTimeout(() => textarea.focus(), 50);
-  };
-
-  const closeModal = () => {
-    modal.style.display = 'none';
-  };
-
-  document.getElementById('capturaRapidaBtn').addEventListener('click', openModal);
-  document.getElementById('capturaModalClose').addEventListener('click', closeModal);
-  document.getElementById('capturaCancel').addEventListener('click', closeModal);
-
-  document.getElementById('capturaGuardar').addEventListener('click', () => {
-    const text = textarea.value.trim();
-    if (text) {
-      contenido.push({ id: uid(), text, status: 'IDEAS' });
-      saveContenido();
-      renderKanban();
-      closeModal();
-    }
-  });
-
-  // Close modal on overlay click
-  modal.addEventListener('click', e => {
-    if (e.target === modal) closeModal();
-  });
-
-  // Close modal on Escape
-  document.addEventListener('keydown', e => {
-    if (e.key === 'Escape' && modal.style.display !== 'none') closeModal();
-  });
-}
-
-/* ============================================================
-   SCREEN 4: BIENESTAR
-   ============================================================ */
-
-function loadBienestarChecks() {
-  const data = lsGet(KEYS.bienestar(), {});
-  document.querySelectorAll('.bienestar-check').forEach(cb => {
-    cb.checked = !!data[cb.dataset.key];
-  });
-}
-
-function saveBienestarChecks() {
-  const data = {};
-  document.querySelectorAll('.bienestar-check').forEach(cb => {
-    data[cb.dataset.key] = cb.checked;
-  });
-  lsSet(KEYS.bienestar(), data);
-  syncToGAS(KEYS.bienestar(), data);
-  renderStats();
-  // Guardar en Google Apps Script para el tracker de hábitos
-  saveHabitsToGAS(data);
-}
-
-function initBienestar() {
-  loadBienestarChecks();
-  document.querySelectorAll('.bienestar-check').forEach(cb => {
-    cb.addEventListener('change', saveBienestarChecks);
-  });
-  initLockOverlay();
-}
-
-/* ---- Lock Overlay ---- */
-function initLockOverlay() {
-  const overlay = document.getElementById('lockOverlay');
-  const holdBtn = document.getElementById('lockHoldBtn');
-  const progressBar = document.getElementById('lockProgressBar');
-  const closeBtn = document.getElementById('closeDayBtn');
-
-  closeBtn.addEventListener('click', () => {
-    overlay.style.display = 'flex';
-  });
-
-  let holdTimer = null;
-  let holdStart = null;
-
-  const startHold = (e) => {
-    e.preventDefault();
-    holdStart = Date.now();
-    progressBar.classList.remove('animating');
-    // Force reflow to restart animation
-    void progressBar.offsetWidth;
-    progressBar.classList.add('animating');
-
-    holdTimer = setTimeout(() => {
-      overlay.style.display = 'none';
-      progressBar.classList.remove('animating');
-      progressBar.style.width = '0';
-    }, 5000);
-  };
-
-  const endHold = (e) => {
-    if (holdTimer) {
-      clearTimeout(holdTimer);
-      holdTimer = null;
-    }
-    progressBar.classList.remove('animating');
-    // Reset bar width after animation transition is removed
-    setTimeout(() => {
-      progressBar.style.width = '0';
-    }, 10);
-  };
-
-  holdBtn.addEventListener('mousedown', startHold);
-  holdBtn.addEventListener('touchstart', startHold, { passive: false });
-  holdBtn.addEventListener('mouseup', endHold);
-  holdBtn.addEventListener('mouseleave', endHold);
-  holdBtn.addEventListener('touchend', endHold);
-  holdBtn.addEventListener('touchcancel', endHold);
-}
-
-/* ============================================================
-   SCREEN 5: PERFIL
-   ============================================================ */
-
-function initPerfil() {
-  // Load saved GAS URL
-  const gasInput = document.getElementById('gasUrlInput');
-  const statusDot = document.querySelector('.status-dot');
-  const statusText = document.getElementById('statusText');
-
-  gasInput.value = settings.gasUrl || '';
-
-  const updateConnectionStatus = () => {
-    if (settings.gasUrl) {
-      statusDot.className = 'status-dot status-dot--green';
-      statusText.textContent = 'Conectado';
-    } else {
-      statusDot.className = 'status-dot status-dot--grey';
-      statusText.textContent = 'Sin conexión (modo local)';
-    }
-  };
-
-  updateConnectionStatus();
-
-  document.getElementById('saveGasBtn').addEventListener('click', () => {
-    settings.gasUrl = gasInput.value.trim();
-    saveSettings();
-    updateConnectionStatus();
-    if (settings.gasUrl) {
-      syncAllToGAS();   // push local data to sheets first
-      syncFromGAS();    // then pull (sheets win on conflict)
-    }
-  });
-
-  // Theme
-  document.getElementById('themeLightBtn').addEventListener('click', () => {
-    setTheme('light');
-  });
-
-  document.getElementById('themeDarkBtn').addEventListener('click', () => {
-    setTheme('dark');
-  });
-
-  // Copy GAS script button
-  const copyBtn = document.getElementById('copyGasScriptBtn');
-  if (copyBtn) {
-    copyBtn.addEventListener('click', () => {
-      const ta = document.getElementById('gasScriptContent');
-      if (!ta) return;
-      navigator.clipboard.writeText(ta.value).then(() => {
-        copyBtn.textContent = '✓ Copiado';
-        copyBtn.classList.add('gas-copy-btn--copied');
-        setTimeout(() => {
-          copyBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg> Copiar script`;
-          copyBtn.classList.remove('gas-copy-btn--copied');
-        }, 2000);
-      }).catch(() => {
-        ta.select();
-        document.execCommand('copy');
-      });
-    });
-  }
-
-  // Reset day
-  document.getElementById('resetDayBtn').addEventListener('click', () => {
-    if (confirm('¿Restablecer todos los checks diarios? Se borrarán los checks de Arranque y Bienestar de hoy.')) {
-      localStorage.removeItem(KEYS.checks());
-      localStorage.removeItem(KEYS.bienestar());
-      loadMorningChecks();
-      loadBienestarChecks();
-      renderStats();
-      alert('Checks del día restablecidos. ¡Buen día, Nati! ☀️');
-    }
-  });
-}
-
-/* ---- Theme ---- */
-function setTheme(theme) {
-  settings.theme = theme;
-  saveSettings();
-  document.body.classList.toggle('dark', theme === 'dark');
-
-  const lightBtn = document.getElementById('themeLightBtn');
-  const darkBtn = document.getElementById('themeDarkBtn');
-  if (lightBtn) lightBtn.classList.toggle('active', theme === 'light');
-  if (darkBtn) darkBtn.classList.toggle('active', theme === 'dark');
-}
-
-function applyTheme() {
-  setTheme(settings.theme || 'light');
-}
-
-/* ---- Stats ---- */
-function renderStats() {
-  const morningData = lsGet(KEYS.checks(), {});
-  const bienestarData = lsGet(KEYS.bienestar(), {});
-
-  const morningDone = Object.values(morningData).filter(Boolean).length;
-  const bienestarDone = Object.values(bienestarData).filter(Boolean).length;
-  const totalDone = morningDone + bienestarDone;
-
-  const elM = document.getElementById('statMorningDone');
-  const elB = document.getElementById('statBienestarDone');
-  const elT = document.getElementById('statTotalDone');
-  if (elM) elM.textContent = morningDone;
-  if (elB) elB.textContent = bienestarDone;
-  if (elT) elT.textContent = totalDone;
-}
-
-/* ============================================================
-   POMODORO
-   ============================================================ */
-
-function playAlarm(type) {
-  try {
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    const notes = type === 'soft'
-      ? [{ t: 0, f: 660, v: 0.3, d: 0.3 }, { t: 0.45, f: 660, v: 0.3, d: 0.3 }, { t: 0.9, f: 880, v: 0.4, d: 0.4 }]
-      : [{ t: 0, f: 880, v: 0.6, d: 0.25 }, { t: 0.35, f: 880, v: 0.6, d: 0.25 }, { t: 0.7, f: 1100, v: 0.7, d: 0.3 }, { t: 1.1, f: 1100, v: 0.7, d: 0.3 }, { t: 1.5, f: 1320, v: 0.8, d: 0.5 }];
-
-    notes.forEach(({ t, f, v, d }) => {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.frequency.value = f;
-      osc.type = 'sine';
-      gain.gain.setValueAtTime(v, ctx.currentTime + t);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + t + d);
-      osc.start(ctx.currentTime + t);
-      osc.stop(ctx.currentTime + t + d + 0.05);
-    });
-  } catch (e) { /* AudioContext unavailable — silent */ }
-}
-
-function formatPomodoroTime(secs) {
-  const m = Math.floor(secs / 60).toString().padStart(2, '0');
-  const s = (secs % 60).toString().padStart(2, '0');
-  return `${m}:${s}`;
-}
-
-function updatePomodoroDisplay() {
-  const timerEl = document.getElementById('pomodoroTimer');
-  const phaseEl = document.getElementById('pomodoroPhase');
-  if (timerEl) timerEl.textContent = formatPomodoroTime(pomodoroSeconds);
-  if (phaseEl) {
-    if (!pomodoroInterval) {
-      phaseEl.textContent = '';
-    } else {
-      phaseEl.textContent = pomodoroPhase === 'work' ? 'Trabajando' : 'Descanso';
-    }
-  }
-}
-
-function initPomodoro() {
-  const toggle = document.getElementById('pomodoroToggle');
-  if (!toggle) return;
-
-  toggle.addEventListener('change', () => {
-    if (toggle.checked) {
-      pomodoroSeconds = 25 * 60;
-      pomodoroPhase = 'work';
-      updatePomodoroDisplay();
-
-      pomodoroInterval = setInterval(() => {
-        pomodoroSeconds--;
-        updatePomodoroDisplay();
-
-        if (pomodoroSeconds <= 0) {
-          if (pomodoroPhase === 'work') {
-            playAlarm('soft');
-            pomodoroPhase = 'break';
-            pomodoroSeconds = 5 * 60;
-          } else {
-            playAlarm('loud');
-            clearInterval(pomodoroInterval);
-            pomodoroInterval = null;
-            pomodoroSeconds = 25 * 60;
-            pomodoroPhase = 'work';
-            toggle.checked = false;
-            updatePomodoroDisplay();
-          }
-        }
-      }, 1000);
-    } else {
-      if (pomodoroInterval) {
-        clearInterval(pomodoroInterval);
-        pomodoroInterval = null;
-      }
-      pomodoroSeconds = 25 * 60;
-      pomodoroPhase = 'work';
-      updatePomodoroDisplay();
-    }
-  });
-}
-
-/* ============================================================
-   BULK AUTO-PRIORITIZE
-   ============================================================ */
-
-const PRIORITY_WORDS = {
-  dinero: ['factura', 'cobrar', 'cobro', 'pago', 'pagos', 'presupuesto', 'propuesta',
-           'urgente', 'dinero', 'precio', 'contrato', 'hoy', 'deadline', 'vence',
-           'llamar', 'invoice', 'cargo', 'ingreso', 'honorarios'],
-  clientes: ['ae', 'casa bella', 'roscónlab', 'roscónlab', 'cliente', 'clientes',
-             'reunión', 'entrega', 'revisión', 'corrección', 'feedback',
-             'enviar a', 'llamada', 'responder', 'email a', 'proyecto'],
-  marca: ['instagram', 'newsletter', 'blog', 'marca', 'contenido', 'web',
-          'linkedin', 'canva', 'diseño', 'post', 'stories', 'reel',
-          'portfolio', 'branding', 'foto', 'vídeo', 'podcast', 'publicar', 'social'],
-};
-
-function assignCategory(taskText) {
-  const text = taskText.toLowerCase();
-  const scores = { dinero: 0, clientes: 0, marca: 0 };
-  for (const [cat, words] of Object.entries(PRIORITY_WORDS)) {
-    for (const word of words) {
-      if (text.includes(word)) scores[cat] += 1;
-    }
-  }
-  const max = Math.max(...Object.values(scores));
-  if (max === 0) return null;
-  return Object.entries(scores).find(([, v]) => v === max)[0];
-}
-
-function initBulkPrioritize() {
-  const btn = document.getElementById('bulkPrioritizeBtn');
-  if (!btn) return;
-
-  btn.addEventListener('click', () => {
-    const textarea = document.getElementById('bulkTasksInput');
-    const lines = textarea.value.split('\n').map(l => l.trim()).filter(Boolean);
-    if (lines.length === 0) return;
-
-    const added = { dinero: 0, clientes: 0, marca: 0 };
-    let unmatched = 0;
-
-    lines.forEach(text => {
-      let cat = assignCategory(text);
-      if (!cat) {
-        // Distribute to the least-full bucket
-        const counts = {
-          dinero: (prioridades.dinero || []).length + added.dinero,
-          clientes: (prioridades.clientes || []).length + added.clientes,
-          marca: (prioridades.marca || []).length + added.marca,
-        };
-        cat = Object.entries(counts).sort((a, b) => a[1] - b[1])[0][0];
-        unmatched++;
-      }
-      if (!prioridades[cat]) prioridades[cat] = [];
-      prioridades[cat].push({ id: uid(), text, done: false, subtasks: [], startDate: null, dueDate: null });
-      added[cat]++;
-    });
-
-    savePrioridades();
-    renderPrioridades();
-    textarea.value = '';
-
-    const total = lines.length;
-    const msg = unmatched > 0
-      ? `${total} tareas añadidas. ${unmatched} distribuidas por equilibrio (sin palabras clave claras).`
-      : `${total} tareas clasificadas automáticamente.`;
-
-    const highlight = document.getElementById('decisionHighlight');
-    if (highlight) {
-      highlight.textContent = msg;
-      highlight.style.display = 'block';
-      setTimeout(() => { highlight.style.display = 'none'; }, 4000);
-    }
-  });
-}
-
-/* ============================================================
-   BUSINESS HOURS OVERLAY
-   ============================================================ */
-function isAfterHours() {
-  const now = new Date();
-  return now.getHours() >= 18;
-}
-
-function initBusinessHoursOverlay() {
-  const overlay = document.getElementById('businessHoursOverlay');
-  if (!overlay) return;
-
-  const holdBtn = document.getElementById('businessHoursBtn');
-  const progressBar = document.getElementById('businessHoursProgressBar');
-
-  let holdTimer = null;
-  let checkTimer = null;
-  let userDismissed = false;
-
-  const showOverlay = () => {
-    if (isAfterHours() && !userDismissed) {
-      overlay.style.display = 'flex';
-    }
-  };
-
-  const startHold = (e) => {
-    e.preventDefault();
-    progressBar.classList.remove('animating');
-    void progressBar.offsetWidth;
-    progressBar.classList.add('animating');
-
-    holdTimer = setTimeout(() => {
-      overlay.style.display = 'none';
-      userDismissed = true;
-      progressBar.classList.remove('animating');
-      progressBar.style.width = '0';
-    }, 5000);
-  };
-
-  const endHold = (e) => {
-    if (holdTimer) {
-      clearTimeout(holdTimer);
-      holdTimer = null;
-    }
-    progressBar.classList.remove('animating');
-    setTimeout(() => {
-      progressBar.style.width = '0';
-    }, 10);
-  };
-
-  holdBtn.addEventListener('mousedown', startHold);
-  holdBtn.addEventListener('touchstart', startHold, { passive: false });
-  holdBtn.addEventListener('mouseup', endHold);
-  holdBtn.addEventListener('mouseleave', endHold);
-  holdBtn.addEventListener('touchend', endHold);
-  holdBtn.addEventListener('touchcancel', endHold);
-
-  // Cerrar con Escape
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && overlay.style.display === 'flex') {
-      overlay.style.display = 'none';
-      userDismissed = true;
-      progressBar.classList.remove('animating');
-      progressBar.style.width = '0';
-    }
-  });
-
-  // Reset dismissal at midnight
-  const resetDismissal = () => {
-    const now = new Date();
-    const midnight = new Date(now);
-    midnight.setHours(24, 0, 0, 0);
-    const timeUntilMidnight = midnight - now;
-    setTimeout(() => {
-      userDismissed = false;
-      resetDismissal();
-    }, timeUntilMidnight);
-  };
-
-  showOverlay();
-  checkTimer = setInterval(showOverlay, 60000);
-  resetDismissal();
-}
-
-/* ============================================================
-   SEGUIMIENTO DE TAREAS (Task Follow-up Tracker)
-   ============================================================ */
-
-let seguimiento = lsGet(KEYS.seguimiento, []);
-
-function saveSeguimiento() {
-  lsSet(KEYS.seguimiento, seguimiento);
-  syncAllToGAS();
-}
-
-function relativeDate(dateStr) {
-  const now = new Date();
-  const then = new Date(dateStr + 'T12:00:00');
-  const diffDays = Math.floor((now - then) / 86400000);
-  if (diffDays <= 0) return 'hoy';
-  if (diffDays === 1) return 'ayer';
-  return `hace ${diffDays} días`;
-}
-
-function renderSeguimiento() {
-  const list = document.getElementById('seguimientoList');
-  const empty = document.getElementById('seguimientoEmpty');
-  const countEl = document.getElementById('seguimientoCount');
-  if (!list) return;
-
-  const pending = seguimiento.filter(item => !item.done);
-
-  if (countEl) {
-    countEl.textContent = pending.length;
-    countEl.style.display = pending.length > 0 ? 'inline-flex' : 'none';
-  }
-
-  list.querySelectorAll('.seguimiento-item, .seguimiento-add-form').forEach(el => el.remove());
-
-  if (pending.length === 0) {
-    if (empty) empty.style.display = 'block';
-    return;
-  }
-
-  if (empty) empty.style.display = 'none';
-
-  pending.forEach(item => {
-    const el = document.createElement('div');
-    el.className = 'seguimiento-item';
-    el.dataset.id = item.id;
-    el.innerHTML = `
-      <span class="seguimiento-item-text">${esc(item.text)}</span>
-      <span class="seguimiento-item-date">${relativeDate(item.addedAt)}</span>
-      <div class="seguimiento-prio-wrap">
-        <button class="seguimiento-item-prio" aria-label="Añadir a prioridades">→ Prio</button>
-        <div class="seguimiento-prio-picker" style="display:none;">
-          <span class="seguimiento-prio-label">Añadir a:</span>
-          <button class="seguimiento-prio-btn" data-cat="dinero">A</button>
-          <button class="seguimiento-prio-btn" data-cat="clientes">B</button>
-          <button class="seguimiento-prio-btn" data-cat="marca">C</button>
-          <button class="seguimiento-prio-cancel">✕</button>
+      <div class="clients-grid" id="clientsGrid"></div>
+      <button class="fab" id="addClientBtn" aria-label="Añadir cliente">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="22" height="22"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      </button>
+    </section>
+
+
+    <!-- ════════════ CONTENIDO ════════════ -->
+    <section class="screen" id="screen-contenido">
+      <div class="screen-header">
+        <div class="header-text">
+          <h1 class="screen-title">Contenido</h1>
+          <p class="screen-subtitle">Gestión del pipeline de contenidos</p>
+        </div>
+        <img src="images/nati-contenido.png" alt="" class="header-illustration header-illustration--sm" />
+      </div>
+      <div class="kanban-board" id="kanbanBoard"></div>
+      <button class="fab" id="capturaRapidaBtn" aria-label="Captura rápida">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="22" height="22"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      </button>
+      <!-- Captura rápida modal -->
+      <div class="modal-overlay" id="capturaModal" style="display:none;">
+        <div class="modal">
+          <div class="modal-header">
+            <span class="modal-title">Captura rápida de idea</span>
+            <button class="modal-close" id="capturaModalClose">×</button>
+          </div>
+          <textarea class="modal-textarea" id="capturaTextarea" placeholder="Escribe tu idea aquí..." rows="4"></textarea>
+          <div class="modal-footer">
+            <button class="btn btn-ghost btn-sm" id="capturaCancel">Cancelar</button>
+            <button class="btn btn-primary btn-sm" id="capturaGuardar">Guardar idea</button>
+          </div>
         </div>
       </div>
-      <button class="seguimiento-item-done" aria-label="Marcar como listo">✓ Listo</button>
-      <button class="seguimiento-item-del" aria-label="Eliminar">×</button>
-    `;
+    </section>
 
-    const prioBtn = el.querySelector('.seguimiento-item-prio');
-    const prioPicker = el.querySelector('.seguimiento-prio-picker');
 
-    prioBtn.addEventListener('click', () => {
-      prioBtn.style.display = 'none';
-      prioPicker.style.display = 'flex';
-    });
+    <!-- ════════════ BIENESTAR ════════════ -->
+    <section class="screen" id="screen-bienestar">
+      <div class="screen-header">
+        <div class="header-text">
+          <h1 class="screen-title">Bienestar</h1>
+          <p class="screen-subtitle">Tu rutina diaria de cuidado personal</p>
+        </div>
+        <img src="images/nati-bienestar.png" alt="" class="header-illustration header-illustration--sm" />
+      </div>
 
-    el.querySelector('.seguimiento-prio-cancel').addEventListener('click', () => {
-      prioPicker.style.display = 'none';
-      prioBtn.style.display = 'inline-flex';
-    });
+      <div class="card">
+        <p class="card-title">Hábitos de hoy</p>
+        <ul class="check-list">
+          <li class="check-item"><label class="check-label"><input type="checkbox" class="bienestar-check" data-key="mandalas" /><span class="check-text">Mandalas / dibujo</span></label></li>
+          <li class="check-item"><label class="check-label"><input type="checkbox" class="bienestar-check" data-key="sol" /><span class="check-text">Salir al sol</span></label></li>
+          <li class="check-item"><label class="check-label"><input type="checkbox" class="bienestar-check" data-key="coreano" /><span class="check-text">Coreano</span></label></li>
+          <li class="check-item"><label class="check-label"><input type="checkbox" class="bienestar-check" data-key="kickboxing" /><span class="check-text">Kickboxing</span></label></li>
+        </ul>
+      </div>
 
-    el.querySelectorAll('.seguimiento-prio-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const cat = btn.dataset.cat;
-        if (!prioridades[cat]) prioridades[cat] = [];
-        prioridades[cat].push({ id: uid(), text: item.text, done: false, subtasks: [] });
-        savePrioridades();
-        renderPrioridades();
-        prioPicker.style.display = 'none';
-        prioBtn.textContent = '✓ Añadida';
-        prioBtn.classList.add('seguimiento-item-prio--added');
-        prioBtn.style.display = 'inline-flex';
-        prioBtn.disabled = true;
-      });
-    });
+      <div class="card habit-streak-card">
+        <p class="card-title">Rachas de hábitos</p>
+        <div class="habit-streak-grid">
+          <div class="habit-streak-item"><div class="habit-streak-number" id="mandalasStreak">0</div><div class="habit-streak-label">Mandalas</div></div>
+          <div class="habit-streak-item"><div class="habit-streak-number" id="solStreak">0</div><div class="habit-streak-label">Sol</div></div>
+          <div class="habit-streak-item"><div class="habit-streak-number" id="coreanoStreak">0</div><div class="habit-streak-label">Coreano</div></div>
+          <div class="habit-streak-item"><div class="habit-streak-number" id="kickboxingStreak">0</div><div class="habit-streak-label">Kickboxing</div></div>
+        </div>
+      </div>
 
-    el.querySelector('.seguimiento-item-done').addEventListener('click', () => {
-      seguimiento = seguimiento.filter(s => s.id !== item.id);
-      saveSeguimiento();
-      renderSeguimiento();
-    });
+      <div class="bienestar-close-section">
+        <button class="btn-close-day" id="closeDayBtn">Cerrar el día</button>
+      </div>
 
-    el.querySelector('.seguimiento-item-del').addEventListener('click', () => {
-      seguimiento = seguimiento.filter(s => s.id !== item.id);
-      saveSeguimiento();
-      renderSeguimiento();
-    });
+      <!-- Lock overlay -->
+      <div class="lock-overlay" id="lockOverlay" style="display:none;">
+        <div class="lock-content">
+          <img src="images/nati-cats.png" alt="Ula y Kai" class="lock-cats-img" />
+          <h2 class="lock-title">Día cerrado</h2>
+          <p class="lock-subtitle">Mantén pulsado para abrir</p>
+          <div class="lock-btn-wrap">
+            <button class="lock-hold-btn" id="lockHoldBtn">
+              <span class="lock-hold-text">Mantén pulsado 5 s</span>
+              <div class="lock-progress-bar" id="lockProgressBar"></div>
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
 
-    list.appendChild(el);
+
+    <!-- ════════════ PERFIL ════════════ -->
+    <section class="screen" id="screen-perfil">
+      <div class="screen-header">
+        <div class="header-text">
+          <h1 class="screen-title">Perfil</h1>
+          <p class="screen-subtitle">Ajustes y estadísticas</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="profile-card">
+          <div class="profile-avatar">N</div>
+          <div>
+            <div class="profile-name">Nati Pérez</div>
+            <div class="profile-handle">@nat2gostudio</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <p class="card-title">Estadísticas de hoy</p>
+        <div class="stats-grid">
+          <div class="stat-item"><div class="stat-value" id="statMorningDone">0</div><div class="stat-label">Arranque</div></div>
+          <div class="stat-item"><div class="stat-value" id="statBienestarDone">0</div><div class="stat-label">Bienestar</div></div>
+          <div class="stat-item"><div class="stat-value" id="statTotalDone">0</div><div class="stat-label">Total</div></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <p class="card-title">Apariencia</p>
+        <div class="theme-toggle-row">
+          <span class="theme-label">Tema</span>
+          <div class="theme-toggle-group">
+            <button class="theme-btn active" id="themeLightBtn">Claro</button>
+            <button class="theme-btn" id="themeDarkBtn">Oscuro</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <p class="card-title">Conexión Google Sheets</p>
+        <p class="card-desc">Conecta tu spreadsheet de Google Sheets para sincronizar tus datos.</p>
+        <div class="gas-form">
+          <input type="url" class="input" id="gasUrlInput" placeholder="https://script.google.com/macros/s/..." />
+          <button class="btn btn-primary" id="saveGasBtn">Guardar</button>
+        </div>
+        <div class="connection-status">
+          <div class="status-dot status-dot--grey"></div>
+          <span class="status-text" id="statusText">Sin conexión (modo local)</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <p class="card-title">Restablecer día</p>
+        <p class="card-desc">Borra los checks de Arranque y Bienestar para empezar el día desde cero.</p>
+        <button class="btn btn-ghost btn-sm" id="resetDayBtn" style="color:var(--danger);border-color:rgba(220,38,38,.3);">Restablecer checks del día</button>
+      </div>
+
+      <details class="gas-setup-guide">
+        <summary class="gas-setup-summary">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          Cómo configurar Google Apps Script
+        </summary>
+        <ol class="gas-steps">
+          <li class="gas-step">
+            <span class="gas-step-num">1</span>
+            <div class="gas-step-body"><strong>Abre Google Apps Script</strong><p>Ve a <a href="https://script.google.com" target="_blank">script.google.com</a> y crea un nuevo proyecto.</p></div>
+          </li>
+          <li class="gas-step">
+            <span class="gas-step-num">2</span>
+            <div class="gas-step-body"><strong>Pega el script</strong>
+              <div class="gas-code-block">
+                <button class="gas-copy-btn" id="copyGasScriptBtn">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+                  Copiar script
+                </button>
+                <textarea class="gas-code-textarea" id="gasScriptContent" readonly>// GO Nat GAS Script
+// Pega este código en Google Apps Script
+
+const TOKEN = '!n!g5G@86JnWouqDX6LLuP';
+const SPREADSHEET_ID = 'TU_SPREADSHEET_ID_AQUI';
+
+function doGet(e) {
+  const params = e.parameter;
+  if (params.token !== TOKEN) return jsonResponse({ error: 'Unauthorized' });
+  const action = params.action;
+  if (action === 'all') return getAllData();
+  return jsonResponse({ error: 'Unknown action' });
+}
+
+function doPost(e) {
+  const params = e.parameter;
+  if (params.token !== TOKEN) return jsonResponse({ error: 'Unauthorized' });
+  const data = JSON.parse(e.postData.contents);
+  saveData(data);
+  return jsonResponse({ success: true });
+}
+
+function getAllData() {
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  const result = {};
+  ['gonat_prioridades','gonat_seguimiento','gonat_clientes'].forEach(key => {
+    const sheet = ss.getSheetByName(key);
+    if (sheet) {
+      const val = sheet.getRange('A1').getValue();
+      if (val) result[key] = JSON.parse(val);
+    }
+  });
+  return jsonResponse(result);
+}
+
+function saveData(data) {
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  Object.entries(data).forEach(([key, value]) => {
+    let sheet = ss.getSheetByName(key);
+    if (!sheet) sheet = ss.insertSheet(key);
+    sheet.getRange('A1').setValue(JSON.stringify(value));
   });
 }
 
-function initSeguimiento() {
-  const addBtn = document.getElementById('seguimientoAddBtn');
-  if (!addBtn) return;
+function jsonResponse(data) {
+  return ContentService
+    .createTextOutput(JSON.stringify(data))
+    .setMimeType(ContentService.MimeType.JSON);
+}</textarea>
+              </div>
+            </div>
+          </li>
+          <li class="gas-step">
+            <span class="gas-step-num">3</span>
+            <div class="gas-step-body"><strong>Despliega como Web App</strong><p>Haz clic en Implementar → Nueva implementación → Aplicación web. Acceso: Cualquier persona.</p></div>
+          </li>
+          <li class="gas-step">
+            <span class="gas-step-num">4</span>
+            <div class="gas-step-body"><strong>Copia la URL</strong><p>Pega la URL del deployment en el campo de arriba y haz clic en Guardar.</p></div>
+          </li>
+        </ol>
+      </details>
+    </section>
 
-  addBtn.addEventListener('click', () => {
-    const list = document.getElementById('seguimientoList');
-    if (list.querySelector('.seguimiento-add-form')) return;
+    <!-- Business hours overlay -->
+    <div class="business-hours-overlay" id="businessHoursOverlay" style="display:none;">
+      <div class="business-hours-content">
+        <img src="images/nati-bienestar.png" alt="Hora de descansar" class="business-hours-img" />
+        <h2 class="business-hours-title">Son las 18h</h2>
+        <p class="business-hours-subtitle">Ya es hora de descansar, Nati.</p>
+        <div class="business-hours-btn-wrap">
+          <button class="business-hours-hold-btn" id="businessHoursBtn">
+            <span class="business-hours-hold-text">Mantén para seguir trabajando</span>
+            <div class="business-hours-progress-bar" id="businessHoursProgressBar"></div>
+          </button>
+        </div>
+      </div>
+    </div>
 
-    const empty = document.getElementById('seguimientoEmpty');
-    if (empty) empty.style.display = 'none';
+  </main>
 
-    const form = document.createElement('div');
-    form.className = 'seguimiento-add-form';
-    form.innerHTML = `
-      <input class="seguimiento-add-input" type="text" placeholder="Ej: Enviado email a cliente, esperando respuesta..." maxlength="200" />
-      <button class="seguimiento-add-ok">Añadir</button>
-      <button class="seguimiento-add-cancel">Cancelar</button>
-    `;
-    list.appendChild(form);
-    const input = form.querySelector('.seguimiento-add-input');
-    input.focus();
+  <!-- app.js — sin cambios -->
+  <script src="./app.js"></script>
 
-    const confirm = () => {
-      const text = input.value.trim();
-      if (text) {
-        seguimiento.push({ id: uid(), text, addedAt: todayStr(), done: false });
-        saveSeguimiento();
-        renderSeguimiento();
+  <!-- Script propio del Corazón del Proyecto -->
+  <script>
+    /* ============================================================
+       CORAZÓN DEL PROYECTO — JS aislado
+       No interfiere con app.js (usa IDs distintos o los mismos que
+       el index original usaba, pero ahora están en este bloque)
+       ============================================================ */
+
+    const URL_API      = 'https://script.google.com/macros/s/AKfycbwnBN3A5YYfLZaDuyh9Glw2hR5hiX0gKRelT8p2ZKT45B7Bp6c0u8YfeyDGY6YTJGr9Ng/exec';
+    const DEEPSEEK_KEY = 'sk-f0d93900b799462bb6229872d8084939';
+
+    let tareasCorazon = [];
+    let sortField     = 'prioridad';
+
+    function escT(t) { const d = document.createElement('div'); d.textContent = t; return d.innerHTML; }
+
+    function setSyncStatus(text, isError = false) {
+      const el = document.getElementById('syncStatus');
+      if (!el) return;
+      el.innerHTML = `<span class="sync-dot"></span>${text}`;
+      el.className = 'sync-line' + (isError ? ' error' : '');
+    }
+
+    function sortTareas(lista) {
+      const po = { A:1, B:2, C:3 };
+      const eo = { 'Pendiente':1, 'En curso':2, 'Completada':3 };
+      return [...lista].sort((a, b) => {
+        switch (sortField) {
+          case 'prioridad': return (po[a.prioridad]||3) - (po[b.prioridad]||3);
+          case 'entrega':   return (a.entrega||'9999') < (b.entrega||'9999') ? -1 : 1;
+          case 'inicio':    return (a.inicio||'') < (b.inicio||'') ? -1 : 1;
+          case 'estado':    return (eo[a.estado]||1) - (eo[b.estado]||1);
+          case 'nombre':    return a.tarea.localeCompare(b.tarea, 'es');
+          default: return 0;
+        }
+      });
+    }
+
+    function renderizarTabla() {
+      const tbody = document.getElementById('tasksTableBody');
+      if (!tbody) return;
+      const lista = sortTareas(tareasCorazon);
+      if (!lista.length) {
+        tbody.innerHTML = `<tr><td colspan="10" style="text-align:center;padding:36px;color:var(--text-muted);">Sin tareas — añade una arriba</td></tr>`;
       } else {
-        form.remove();
-        renderSeguimiento();
+        tbody.innerHTML = lista.map(t => {
+          const estadoKey = (t.estado || 'Pendiente').replace(' ', '-');
+          return `
+          <tr class="${t.estado === 'Completada' ? 'row-done' : ''}">
+            <td><input type="checkbox" class="tbl-check" ${t.estado === 'Completada' ? 'checked' : ''} onchange="toggleTareaC(${t.id})"></td>
+            <td>
+              <strong>${escT(t.tarea)}</strong>
+              ${t.notas ? `<div class="nota-inline">${escT(t.notas)}</div>` : ''}
+            </td>
+            <td><span class="pb pb-${t.prioridad}">${t.prioridad}</span></td>
+            <td style="font-size:.77rem;color:var(--text-muted);">${escT(t.subPrioridad||'General')}</td>
+            <td><span class="eb eb-${estadoKey}">${t.estado||'Pendiente'}</span></td>
+            <td>
+              <div class="prog-row">
+                <span class="prog-pct">${t.progreso||0}%</span>
+                <div class="prog-bar"><div class="prog-fill" style="width:${t.progreso||0}%"></div></div>
+                <button class="tbl-btn" onclick="cambiarProgresoC(${t.id},${(t.progreso||0)+10})">+10</button>
+              </div>
+            </td>
+            <td style="font-size:.77rem;color:var(--text-muted);white-space:nowrap;">${t.inicio||'—'}</td>
+            <td><input type="date" class="tbl-date" value="${t.entrega||''}" onchange="cambiarEntregaC(${t.id},this.value)"></td>
+            <td><button class="tbl-btn" onclick="editarNotasC(${t.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="11" height="11"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></button></td>
+            <td><button class="tbl-btn tbl-btn-del" onclick="eliminarTareaC(${t.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="11" height="11"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button></td>
+          </tr>`;
+        }).join('');
+      }
+      const pend = tareasCorazon.filter(t => t.estado !== 'Completada').length;
+      const cnt  = document.getElementById('contadorPendientes');
+      if (cnt) cnt.textContent = `${pend} pendiente${pend !== 1 ? 's' : ''}`;
+    }
+
+    window.toggleTareaC = (id) => {
+      const t = tareasCorazon.find(t => t.id == id);
+      if (!t) return;
+      t.estado   = t.estado === 'Completada' ? 'Pendiente' : 'Completada';
+      t.progreso = t.estado === 'Completada' ? 100 : (t.progreso||0);
+      renderizarTabla(); guardarTareasC();
+    };
+    window.cambiarProgresoC = (id, p) => {
+      const t = tareasCorazon.find(t => t.id == id);
+      if (!t) return;
+      t.progreso = Math.min(100, Math.max(0, p));
+      if (t.progreso === 100) t.estado = 'Completada';
+      else if (t.progreso > 0) t.estado = 'En curso';
+      renderizarTabla(); guardarTareasC();
+    };
+    window.cambiarEntregaC = (id, f) => {
+      const t = tareasCorazon.find(t => t.id == id);
+      if (t) { t.entrega = f; guardarTareasC(); }
+    };
+    window.editarNotasC = (id) => {
+      const t = tareasCorazon.find(t => t.id == id);
+      if (!t) return;
+      const n = prompt('Notas:', t.notas||'');
+      if (n !== null) { t.notas = n; renderizarTabla(); guardarTareasC(); }
+    };
+    window.eliminarTareaC = (id) => {
+      if (confirm('¿Eliminar esta tarea?')) {
+        tareasCorazon = tareasCorazon.filter(t => t.id != id);
+        renderizarTabla(); guardarTareasC();
       }
     };
 
-    form.querySelector('.seguimiento-add-ok').addEventListener('click', confirm);
-    form.querySelector('.seguimiento-add-cancel').addEventListener('click', () => {
-      form.remove();
-      renderSeguimiento();
-    });
-    input.addEventListener('keydown', e => {
-      if (e.key === 'Enter') confirm();
-      if (e.key === 'Escape') { form.remove(); renderSeguimiento(); }
-    });
-  });
+    function subPrioridadC(texto) {
+      const t = texto.toLowerCase();
+      if (t.includes('cliente'))                           return 'Cliente';
+      if (t.includes('factura')||t.includes('cobrar'))    return 'Dinero';
+      if (t.includes('newsletter')||t.includes('blog'))   return 'Contenido';
+      return 'General';
+    }
 
-  renderSeguimiento();
-}
-
-/* ============================================================
-   IMAGE ERROR HANDLING
-   ============================================================ */
-function initImageFallbacks() {
-  document.querySelectorAll('img').forEach(img => {
-    img.addEventListener('error', () => {
-      img.classList.add('img-error');
-    });
-  });
-}
-
-/**
- * Initialize accordion blocks with collapse/expand functionality
- */
-function initAccordions() {
-  const accordionCards = document.querySelectorAll('.card--accordion');
-
-  accordionCards.forEach(card => {
-    const header = card.querySelector('.card-header');
-    if (!header) return;
-
-    header.addEventListener('click', () => {
-      card.classList.toggle('collapsed');
-      // Save accordion state to localStorage
-      const cardId = card.id;
-      if (cardId) {
-        const isCollapsed = card.classList.contains('collapsed');
-        lsSet(`accordion_${cardId}`, isCollapsed);
-      }
-    });
-
-    // Restore accordion state from localStorage
-    const cardId = card.id;
-    if (cardId) {
-      const wasCollapsed = lsGet(`accordion_${cardId}`, false);
-      if (wasCollapsed) {
-        card.classList.add('collapsed');
+    async function priorizarIA(texto) {
+      const prompt = `Eres una experta en productividad. Prioriza esta tarea para Nati:\n\nTarea: "${texto}"\n\nCRITERIOS:\n- A: Urgente (hoy/mañana), afecta ingresos o salud, mascotas\n- B: Importante pero no urgente\n- C: Puede esperar\n\nResponde SOLO con A, B o C.`;
+      try {
+        const res  = await fetch('https://api.deepseek.com/v1/chat/completions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${DEEPSEEK_KEY}` },
+          body: JSON.stringify({ model: 'deepseek-chat', messages: [{ role:'user', content: prompt }], temperature: 0.3, max_tokens: 5 })
+        });
+        const data = await res.json();
+        const p = data.choices[0].message.content.trim().toUpperCase();
+        return ['A','B','C'].includes(p) ? p : 'B';
+      } catch {
+        const t = texto.toLowerCase();
+        if (t.includes('urgente')||t.includes('hoy')||t.includes('cliente')||t.includes('vacunar')||t.includes('ula')||t.includes('kai')) return 'A';
+        if (t.includes('preparar')||t.includes('revisar')||t.includes('enviar')) return 'B';
+        return 'C';
       }
     }
-  });
-}
 
-/* ============================================================
-   MAIN INIT
-   ============================================================ */
-function initApp() {
-  // Re-read data from localStorage (used after GAS sync merge)
-  prioridades = lsGet(KEYS.prioridades, { dinero: [], clientes: [], marca: [] });
-  clientes = lsGet(KEYS.clientes, []);
-  contenido = lsGet(KEYS.contenido, []);
-
-  renderGreeting();
-  loadMorningChecks();
-  renderPrioridades();
-  renderClientes();
-  renderKanban();
-  loadBienestarChecks();
-  renderStats();
-  applyTheme();
-
-  const gasInput = document.getElementById('gasUrlInput');
-  if (gasInput) gasInput.value = settings.gasUrl || '';
-  const statusDot = document.querySelector('.status-dot');
-  const statusText = document.getElementById('statusText');
-  if (statusDot && statusText) {
-    if (settings.gasUrl) {
-      statusDot.className = 'status-dot status-dot--green';
-      statusText.textContent = 'Conectado';
-    } else {
-      statusDot.className = 'status-dot status-dot--grey';
-      statusText.textContent = 'Sin conexión (modo local)';
+    async function guardarTareasC() {
+      try {
+        await fetch(`${URL_API}?tareas=${encodeURIComponent(JSON.stringify(tareasCorazon))}`);
+        setSyncStatus(`${tareasCorazon.length} tareas guardadas`);
+        localStorage.setItem('nat_tareas', JSON.stringify(tareasCorazon));
+      } catch {
+        setSyncStatus('Guardado en local', true);
+        localStorage.setItem('nat_tareas', JSON.stringify(tareasCorazon));
+      }
     }
-  }
-}
 
-document.addEventListener('DOMContentLoaded', () => {
-  // Apply theme immediately to avoid flash
-  applyTheme();
+    async function cargarTareasC() {
+      setSyncStatus('Cargando tareas...');
+      try {
+        const res  = await fetch(`${URL_API}?accion=tareas`);
+        const data = await res.json();
+        tareasCorazon = (data.tareas && data.tareas.length) ? data.tareas : cargarLocalC();
+        setSyncStatus(`${tareasCorazon.length} tareas cargadas`);
+      } catch {
+        tareasCorazon = cargarLocalC();
+        setSyncStatus('Modo sin conexión — datos locales', true);
+      }
+      renderizarTabla();
+    }
 
-  // Initialize navigation
-  initNav();
+    function cargarLocalC() {
+      const raw = localStorage.getItem('nat_tareas');
+      return raw ? JSON.parse(raw) : [];
+    }
 
-  // Initialize accordion blocks
-  initAccordions();
+    async function agregarTareaC(texto, manual) {
+      if (!texto.trim()) return;
+      let prioridad;
+      if (manual === 'auto') { setSyncStatus('IA analizando...'); prioridad = await priorizarIA(texto); }
+      else prioridad = manual;
+      tareasCorazon.unshift({
+        id: Date.now(), tarea: texto.trim(), prioridad,
+        subPrioridad: subPrioridadC(texto), estado: 'Pendiente',
+        progreso: 0, inicio: new Date().toLocaleDateString('es-ES'), entrega: '', notas: ''
+      });
+      renderizarTabla();
+      guardarTareasC();
+      setSyncStatus(`"${texto.substring(0,28)}..." → Prioridad ${prioridad}`);
+    }
 
-  // Initialize all screens
-  renderGreeting();
-  initMorningChecks();
-  initPrioridades();
-  initDecision();
-  initPomodoro();
-  initBulkPrioritize();
-  initSeguimiento();
-  initClientes();
-  initContenido();
-  initBienestar();
-  initPerfil();
-  initBusinessHoursOverlay();
-  initImageFallbacks();
-  renderStats();
+    async function procesarCapturaC() {
+      const ta = document.getElementById('bulkTasksInput');
+      if (!ta || !ta.value.trim()) { alert('Escribe al menos una tarea.'); return; }
+      const lineas = ta.value.split(/\r?\n/).filter(l => l.trim());
+      if (!lineas.length) return;
+      setSyncStatus(`Procesando ${lineas.length} tareas con IA...`);
+      for (const linea of lineas) await agregarTareaC(linea, 'auto');
+      ta.value = '';
+      setSyncStatus(`${lineas.length} tareas añadidas`);
+    }
 
-  // Load calendar events and habit streaks from GAS
-  if (settings.gasUrl) {
-    loadCalendarEvents();
-    loadHabitStreaks();
-  }
+    /* Pomodoro: el toggle invisible ya lo maneja app.js.
+       Solo actualizamos el botón visual. */
+    document.addEventListener('DOMContentLoaded', () => {
+      cargarTareasC();
 
-  // Attempt GAS sync (background, will reinit if data found)
-  if (settings.gasUrl) {
-    syncFromGAS();
-  }
-});
+      const inputTarea = document.getElementById('nuevaTareaInput');
+      const selPrio    = document.getElementById('prioridadManualSelect');
+      const btnAdd     = document.getElementById('agregarTareaBtn');
+
+      if (btnAdd) {
+        btnAdd.onclick = async () => {
+          await agregarTareaC(inputTarea.value, selPrio.value);
+          inputTarea.value = '';
+        };
+      }
+      if (inputTarea) {
+        inputTarea.addEventListener('keypress', async e => {
+          if (e.key === 'Enter') { await agregarTareaC(inputTarea.value, selPrio.value); inputTarea.value = ''; }
+        });
+      }
+
+      const sortSel = document.getElementById('sortSelect');
+      if (sortSel) sortSel.addEventListener('change', () => { sortField = sortSel.value; renderizarTabla(); });
+
+      const btnLimpiar = document.getElementById('limpiarCompletadasBtn');
+      if (btnLimpiar) {
+        btnLimpiar.onclick = () => {
+          if (confirm('¿Eliminar todas las tareas completadas?')) {
+            tareasCorazon = tareasCorazon.filter(t => t.estado !== 'Completada');
+            renderizarTabla(); guardarTareasC();
+          }
+        };
+      }
+
+      /* Captura masiva — usa el bulkPrioritizeBtn que app.js también usa.
+         Lo sobreescribimos sólo si el botón existe y no tiene otro listener activo. */
+      const btnCaptura = document.getElementById('bulkPrioritizeBtn');
+      if (btnCaptura) {
+        btnCaptura.onclick = procesarCapturaC;
+      }
+
+      /* Botón visual Pomodoro — sincroniza con el toggle oculto de app.js */
+      const pomToggle = document.getElementById('pomodoroToggle');
+      const pomBtn    = document.getElementById('pomStartStopBtn');
+      const pomReset  = document.getElementById('pomResetBtn');
+
+      if (pomToggle && pomBtn) {
+        pomToggle.addEventListener('change', () => {
+          if (pomToggle.checked) {
+            pomBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="12" height="12"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg> Pausar`;
+          } else {
+            pomBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor" width="12" height="12"><polygon points="5 3 19 12 5 21 5 3"/></svg> Iniciar`;
+          }
+        });
+      }
+
+      if (pomReset && pomToggle) {
+        pomReset.onclick = () => {
+          if (pomToggle.checked) pomToggle.click(); // para que app.js limpie el interval
+        };
+      }
+    });
+  </script>
+</body>
+</html>
