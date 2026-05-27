@@ -767,5 +767,142 @@ function ok_(data) { return ContentService.createTextOutput(JSON.stringify(data)
   </div>
 
   <script src="./app.js"></script>
+
+  <script>
+// ==========================================
+// NAT2GO - CONEXIÓN CON GOOGLE SHEETS
+// ==========================================
+
+// 👇 PEGA AQUÍ TU URL DE APPS SCRIPT
+const URL_SHEETS = 'https://script.google.com/macros/s/TU_ID_AQUI/exec';
+
+let misTareas = [];
+
+// Cargar tareas al iniciar
+async function cargarTareas() {
+    try {
+        const res = await fetch(`${URL_SHEETS}?accion=cargar`);
+        const data = await res.json();
+        if (data.tareas) {
+            misTareas = data.tareas;
+            console.log(`✅ ${misTareas.length} tareas cargadas`);
+            mostrarTareasEnPanel();
+        }
+    } catch(e) {
+        console.log('📡 Modo local por ahora');
+    }
+}
+
+// Guardar tareas en la nube
+async function guardarTareas() {
+    try {
+        await fetch(URL_SHEETS, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({accion: 'guardar', tareas: misTareas})
+        });
+        console.log('💾 Tareas guardadas en Google Sheets');
+    } catch(e) {
+        console.log('⚠️ No se pudo guardar');
+    }
+}
+
+// Procesar captura masiva (integra con tu botón existente)
+function procesarCaptura() {
+    const textarea = document.querySelector('textarea');
+    if (!textarea || !textarea.value.trim()) {
+        alert('Escribe tus tareas (una por línea)');
+        return;
+    }
+    
+    const lineas = textarea.value.split(/\r?\n/).filter(l => l.trim());
+    const nuevas = lineas.map((texto, i) => ({
+        id: Date.now() + i,
+        texto: texto.trim(),
+        prioridad: detectarPrioridad(texto),
+        completada: false,
+        fecha: new Date().toLocaleDateString()
+    }));
+    
+    misTareas = [...misTareas, ...nuevas];
+    guardarTareas();
+    mostrarTareasEnPanel();
+    textarea.value = '';
+    alert(`✨ ${nuevas.length} tareas guardadas`);
+}
+
+function detectarPrioridad(texto) {
+    const t = texto.toLowerCase();
+    if (t.includes('urgente') || t.includes('hoy') || t.includes('cliente')) return 'A';
+    if (t.includes('preparar') || t.includes('revisar')) return 'B';
+    return 'C';
+}
+
+function mostrarTareasEnPanel() {
+    const pendientes = misTareas.filter(t => !t.completada);
+    const a = pendientes.filter(t => t.prioridad === 'A');
+    const b = pendientes.filter(t => t.prioridad === 'B');
+    const c = pendientes.filter(t => t.prioridad === 'C');
+    
+    // Actualizar tus divs (búscalos o créalos)
+    actualizarSeccion('Prioridad A', a);
+    actualizarSeccion('Prioridad B', b);
+    actualizarSeccion('Prioridad C', c);
+    
+    console.log(`📊 A:${a.length} | B:${b.length} | C:${c.length}`);
+}
+
+function actualizarSeccion(titulo, tareas) {
+    // Busca contenedor de prioridades
+    let seccion = document.querySelector(`h3:contains("${titulo}")`)?.parentElement;
+    if (seccion) {
+        const lista = seccion.querySelector('div, p');
+        if (lista) {
+            if (tareas.length === 0) {
+                lista.innerHTML = '✨ Sin tareas';
+            } else {
+                lista.innerHTML = tareas.map(t => `
+                    <div style="margin: 5px 0; display: flex; justify-content: space-between;">
+                        <span>${t.texto}</span>
+                        <button onclick="completarTarea(${t.id})" style="background:#4CAF50; border:none; border-radius:4px; padding:2px 8px;">✓</button>
+                    </div>
+                `).join('');
+            }
+        }
+    }
+}
+
+window.completarTarea = function(id) {
+    const tarea = misTareas.find(t => t.id === id);
+    if (tarea) {
+        tarea.completada = true;
+        guardarTareas();
+        mostrarTareasEnPanel();
+    }
+};
+
+// Conectar con tu botón existente
+document.addEventListener('DOMContentLoaded', () => {
+    cargarTareas();
+    
+    // Buscar tu botón "Clasificamos" y conectarlo
+    const boton = Array.from(document.querySelectorAll('button')).find(b => b.textContent.includes('Clasificamos'));
+    if (boton) {
+        boton.onclick = procesarCaptura;
+    } else {
+        // Si no existe, crea uno
+        const textarea = document.querySelector('textarea');
+        if (textarea && textarea.parentElement) {
+            const btn = document.createElement('button');
+            btn.textContent = '💾 Guardar en Google Sheets';
+            btn.onclick = procesarCaptura;
+            btn.style.marginTop = '10px';
+            textarea.parentElement.appendChild(btn);
+        }
+    }
+});
+</script>
+
 </body>
 </html>
