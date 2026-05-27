@@ -226,12 +226,30 @@
       if (el) { el.innerHTML = text; el.style.background = isError ? '#fee' : '#f0f9ff'; el.style.color = isError ? '#c00' : '#0066cc'; }
     }
     
-    function priorizar(texto) {
-      const t = texto.toLowerCase();
-      if (t.includes('urgente') || t.includes('hoy') || t.includes('cliente') || t.includes('entrega') || t.includes('cobrar')) return 'A';
-      if (t.includes('preparar') || t.includes('revisar') || t.includes('enviar') || t.includes('crear')) return 'B';
-      return 'C';
-    }
+   function priorizar(texto) {
+  const t = texto.toLowerCase();
+  
+  // Prioridad A (Urgente) - Incluye mascotas
+  if (t.includes('urgente') || t.includes('hoy') || t.includes('ahora') || t.includes('inmediato') ||
+      t.includes('cliente') || t.includes('reunión') || t.includes('llamar') || t.includes('entregar') ||
+      t.includes('entrega') || t.includes('deadline') || t.includes('límite') ||
+      t.includes('cobrar') || t.includes('factura') || t.includes('pago') || t.includes('contrato') ||
+      t.includes('vacunar') || t.includes('veterinario') || t.includes('gato') || t.includes('gata') ||
+      t.includes('ula') || t.includes('kai') || t.includes('salud') || t.includes('medicina') ||
+      t.includes('cita médica') || t.includes('revisión')) {
+    return 'A';
+  }
+  
+  // Prioridad B (Importante)
+  if (t.includes('preparar') || t.includes('revisar') || t.includes('enviar') || 
+      t.includes('crear') || t.includes('diseñar') || t.includes('escribir') ||
+      t.includes('newsletter') || t.includes('blog') || t.includes('post')) {
+    return 'B';
+  }
+  
+  // Prioridad C (Normal)
+  return 'C';
+}
     
     function subPrioridad(texto) {
       const t = texto.toLowerCase();
