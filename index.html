@@ -9,7 +9,6 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="./style.css" />
   <style>
-    /* Fix para bottom-nav mobile - distribución horizontal */
     @media (max-width: 768px) {
       .bottom-nav-list {
         display: flex;
@@ -30,8 +29,6 @@
         padding: 12px 0;
       }
     }
-    
-    /* Asegurar que las cards tengan el mismo estilo */
     .card {
       background: var(--surface, white);
       border-radius: 24px;
@@ -39,7 +36,6 @@
       margin-bottom: 1.5rem;
       box-shadow: 0 2px 8px rgba(0,0,0,0.05);
     }
-    
     .priority-badge {
       display: inline-block;
       padding: 4px 12px;
@@ -50,7 +46,6 @@
     .priority-A { background: #ffe2e2; color: #b91c1c; }
     .priority-B { background: #fff0db; color: #b45309; }
     .priority-C { background: #e0f2fe; color: #0f3b5c; }
-    
     .estado-badge {
       display: inline-block;
       padding: 4px 12px;
@@ -61,7 +56,6 @@
     .estado-pendiente { background: #f1f5f9; color: #334155; }
     .estado-curso { background: #dbeafe; color: #1e40af; }
     .estado-completada { background: #dcfce7; color: #166534; }
-    
     .btn-small {
       padding: 4px 12px;
       font-size: 0.7rem;
@@ -74,7 +68,6 @@
     .btn-small:hover { background: #e2e8f0; }
     .btn-danger { background: #fee2e2; color: #b91c1c; }
     .btn-danger:hover { background: #fecaca; }
-    
     .progress-bar {
       width: 70px;
       height: 6px;
@@ -89,7 +82,6 @@
       background: #3b82f6;
       border-radius: 10px;
     }
-    
     table {
       width: 100%;
       border-collapse: collapse;
@@ -104,7 +96,6 @@
       color: #1e293b;
       font-weight: 600;
     }
-    
     .sync-status {
       font-size: 0.75rem;
       margin-top: 12px;
@@ -118,178 +109,68 @@
 </head>
 <body>
 
-  <!-- ===================== SIDEBAR (desktop) ===================== -->
+  <!-- SIDEBAR -->
   <nav class="sidebar" id="sidebar">
-    <div class="sidebar-logo">
-      <span class="logo-mark">GN</span>
-    </div>
+    <div class="sidebar-logo"><span class="logo-mark">GN</span></div>
     <ul class="nav-list">
-      <li class="nav-item active" data-screen="dashboard">
-        <button class="nav-btn" aria-label="Dashboard">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z"/>
-            <path d="M9 21V12h6v9"/>
-          </svg>
-          <span class="nav-dot"></span>
-        </button>
-      </li>
-      <!-- NUEVA PANTALLA TAREAS -->
-      <li class="nav-item" data-screen="tareas">
-        <button class="nav-btn" aria-label="Tareas">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="8" y1="6" x2="21" y2="6"></line>
-            <line x1="8" y1="12" x2="21" y2="12"></line>
-            <line x1="8" y1="18" x2="21" y2="18"></line>
-            <line x1="3" y1="6" x2="3.01" y2="6"></line>
-            <line x1="3" y1="12" x2="3.01" y2="12"></line>
-            <line x1="3" y1="18" x2="3.01" y2="18"></line>
-          </svg>
-          <span class="nav-dot"></span>
-        </button>
-      </li>
-      <li class="nav-item" data-screen="clientes">
-        <button class="nav-btn" aria-label="Clientes">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="9" cy="7" r="3"/>
-            <path d="M3 21v-2a4 4 0 014-4h4a4 4 0 014 4v2"/>
-            <path d="M16 3.13a4 4 0 010 7.75"/>
-            <path d="M21 21v-2a4 4 0 00-3-3.85"/>
-          </svg>
-          <span class="nav-dot"></span>
-        </button>
-      </li>
-      <li class="nav-item" data-screen="contenido">
-        <button class="nav-btn" aria-label="Contenido">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 20h9"/>
-            <path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/>
-          </svg>
-          <span class="nav-dot"></span>
-        </button>
-      </li>
-      <li class="nav-item" data-screen="bienestar">
-        <button class="nav-btn" aria-label="Bienestar">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/>
-          </svg>
-          <span class="nav-dot"></span>
-        </button>
-      </li>
-      <li class="nav-item" data-screen="perfil">
-        <button class="nav-btn" aria-label="Perfil">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="8" r="4"/>
-            <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
-          </svg>
-          <span class="nav-dot"></span>
-        </button>
-      </li>
+      <li class="nav-item active" data-screen="dashboard"><button class="nav-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z"/><path d="M9 21V12h6v9"/></svg><span class="nav-dot"></span></button></li>
+      <li class="nav-item" data-screen="tareas"><button class="nav-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg><span class="nav-dot"></span></button></li>
+      <li class="nav-item" data-screen="clientes"><button class="nav-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="7" r="3"/><path d="M3 21v-2a4 4 0 014-4h4a4 4 0 014 4v2"/><path d="M16 3.13a4 4 0 010 7.75"/><path d="M21 21v-2a4 4 0 00-3-3.85"/></svg><span class="nav-dot"></span></button></li>
+      <li class="nav-item" data-screen="contenido"><button class="nav-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg><span class="nav-dot"></span></button></li>
+      <li class="nav-item" data-screen="bienestar"><button class="nav-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg><span class="nav-dot"></span></button></li>
+      <li class="nav-item" data-screen="perfil"><button class="nav-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg><span class="nav-dot"></span></button></li>
     </ul>
   </nav>
 
-  <!-- ===================== BOTTOM NAV (mobile) ===================== -->
+  <!-- BOTTOM NAV -->
   <nav class="bottom-nav" id="bottomNav">
     <ul class="bottom-nav-list">
-      <li class="bottom-nav-item active" data-screen="dashboard">
-        <button class="bottom-nav-btn" aria-label="Dashboard">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z"/>
-            <path d="M9 21V12h6v9"/>
-          </svg>
-        </button>
-      </li>
-      <li class="bottom-nav-item" data-screen="tareas">
-        <button class="bottom-nav-btn" aria-label="Tareas">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="8" y1="6" x2="21" y2="6"></line>
-            <line x1="8" y1="12" x2="21" y2="12"></line>
-            <line x1="8" y1="18" x2="21" y2="18"></line>
-            <line x1="3" y1="6" x2="3.01" y2="6"></line>
-            <line x1="3" y1="12" x2="3.01" y2="12"></line>
-            <line x1="3" y1="18" x2="3.01" y2="18"></line>
-          </svg>
-        </button>
-      </li>
-      <li class="bottom-nav-item" data-screen="clientes">
-        <button class="bottom-nav-btn" aria-label="Clientes">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="9" cy="7" r="3"/>
-            <path d="M3 21v-2a4 4 0 014-4h4a4 4 0 014 4v2"/>
-            <path d="M16 3.13a4 4 0 010 7.75"/>
-            <path d="M21 21v-2a4 4 0 00-3-3.85"/>
-          </svg>
-        </button>
-      </li>
-      <li class="bottom-nav-item" data-screen="contenido">
-        <button class="bottom-nav-btn" aria-label="Contenido">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 20h9"/>
-            <path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/>
-          </svg>
-        </button>
-      </li>
-      <li class="bottom-nav-item" data-screen="bienestar">
-        <button class="bottom-nav-btn" aria-label="Bienestar">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/>
-          </svg>
-        </button>
-      </li>
-      <li class="bottom-nav-item" data-screen="perfil">
-        <button class="bottom-nav-btn" aria-label="Perfil">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="8" r="4"/>
-            <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
-          </svg>
-        </button>
-      </li>
+      <li class="bottom-nav-item active" data-screen="dashboard"><button class="bottom-nav-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z"/><path d="M9 21V12h6v9"/></svg></button></li>
+      <li class="bottom-nav-item" data-screen="tareas"><button class="bottom-nav-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg></button></li>
+      <li class="bottom-nav-item" data-screen="clientes"><button class="bottom-nav-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="7" r="3"/><path d="M3 21v-2a4 4 0 014-4h4a4 4 0 014 4v2"/><path d="M16 3.13a4 4 0 010 7.75"/><path d="M21 21v-2a4 4 0 00-3-3.85"/></svg></button></li>
+      <li class="bottom-nav-item" data-screen="contenido"><button class="bottom-nav-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></button></li>
+      <li class="bottom-nav-item" data-screen="bienestar"><button class="bottom-nav-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg></button></li>
+      <li class="bottom-nav-item" data-screen="perfil"><button class="bottom-nav-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg></button></li>
     </ul>
   </nav>
 
-  <!-- ===================== MAIN CONTENT ===================== -->
   <main class="main-content" id="mainContent">
 
-    <!-- ==================== SCREEN: DASHBOARD ==================== -->
+    <!-- DASHBOARD -->
     <section class="screen active" id="screen-dashboard">
       <div class="screen-header">
         <div class="header-text">
           <h1 class="greeting" id="greetingText">Buenos días, Nati</h1>
           <p class="date-text" id="dateText"></p>
         </div>
-        <img src="images/nati-writing.png" alt="Nati escribiendo" class="header-illustration" id="natiWritingImg" />
+        <img src="images/nati-writing.png" alt="Nati" class="header-illustration" id="natiWritingImg" />
       </div>
 
-      <!-- Seguimiento de tareas -->
       <div class="seguimiento-banner" id="seguimientoBanner">
         <div class="seguimiento-header">
           <div class="seguimiento-title-row">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="17" height="17" class="seguimiento-icon"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="17" height="17"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
             <span class="seguimiento-title">En seguimiento</span>
             <span class="seguimiento-count" id="seguimientoCount">0</span>
           </div>
           <button class="seguimiento-add-btn" id="seguimientoAddBtn">+ Añadir</button>
         </div>
         <div class="seguimiento-list" id="seguimientoList">
-          <p class="seguimiento-empty" id="seguimientoEmpty">Sin tareas en espera. Añade una cuando inicies algo y estés esperando respuesta.</p>
+          <p class="seguimiento-empty">Sin tareas en espera.</p>
         </div>
       </div>
 
-      <!-- 3-col top grid: Arranque | Accesos Rápidos | Spotify + Pomodoro -->
       <div class="dashboard-top-grid">
         <div class="card card--accordion" id="arranqueCard">
           <div class="card-header" data-toggle="arranqueCard">
-            <div class="card-header-content">
-              <h2 class="card-title--accordion">Arranque del día</h2>
-            </div>
-            <div class="card-toggle-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><polyline points="6 9 12 15 18 9"></polyline></svg>
-            </div>
+            <div class="card-header-content"><h2 class="card-title--accordion">Arranque del día</h2></div>
+            <div class="card-toggle-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><polyline points="6 9 12 15 18 9"></polyline></svg></div>
           </div>
           <div class="card-content">
             <ul class="check-list" id="morningChecks">
-              <li class="check-item"><label class="check-label"><input type="checkbox" class="morning-check" data-key="t4" /><span class="check-text">Tomar T4</span></label></li>
-              <li class="check-item"><label class="check-label"><input type="checkbox" class="morning-check" data-key="elvanse" /><span class="check-text">Tomar Elvanse + Desayuno (30 min)</span></label></li>
-              <li class="check-item"><label class="check-label"><input type="checkbox" class="morning-check" data-key="estiramientos" /><span class="check-text">Estiramientos (08:30h)</span></label></li>
+              <li><label><input type="checkbox" class="morning-check" data-key="t4" /><span>Tomar T4</span></label></li>
+              <li><label><input type="checkbox" class="morning-check" data-key="elvanse" /><span>Tomar Elvanse + Desayuno (30 min)</span></label></li>
+              <li><label><input type="checkbox" class="morning-check" data-key="estiramientos" /><span>Estiramientos (08:30h)</span></label></li>
             </ul>
           </div>
         </div>
@@ -299,22 +180,17 @@
           <div class="quick-access-grid">
             <a class="quick-access-item" href="https://mail.google.com" target="_blank"><div class="quick-access-circle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="26" height="26"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 7l10 7 10-7"/></svg></div><span>Gmail</span></a>
             <a class="quick-access-item" href="https://drive.google.com" target="_blank"><div class="quick-access-circle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="26" height="26"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0018 9h-1.26A8 8 0 103 16.3"/></svg></div><span>Drive</span></a>
-            <a class="quick-access-item" href="https://business.facebook.com" target="_blank"><div class="quick-access-circle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="26" height="26"><path d="M12 12c-2-2.5-4-4-6-4a4 4 0 000 8c2 0 4-1.5 6-4z"/><path d="M12 12c2-2.5 4-4 6-4a4 4 0 010 8c-2 0-4-1.5-6-4z"/></svg></div><span>Meta</span></a>
-            <a class="quick-access-item" href="https://canva.com" target="_blank"><div class="quick-access-circle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="26" height="26"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125A1.64 1.64 0 0115.28 17h1.996c3.051 0 5.555-2.503 5.555-5.554C22.83 6.012 17.961 2 12 2z"/><circle cx="7" cy="12" r="1.1" fill="currentColor" stroke="none"/><circle cx="9.5" cy="8" r="1.1" fill="currentColor" stroke="none"/><circle cx="14.5" cy="7" r="1.1" fill="currentColor" stroke="none"/><circle cx="18" cy="11" r="1.1" fill="currentColor" stroke="none"/></svg></div><span>Canva</span></a>
+            <a class="quick-access-item" href="https://canva.com" target="_blank"><div class="quick-access-circle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="26" height="26"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125A1.64 1.64 0 0115.28 17h1.996c3.051 0 5.555-2.503 5.555-5.554C22.83 6.012 17.961 2 12 2z"/><circle cx="7" cy="12" r="1.1" fill="currentColor"/><circle cx="9.5" cy="8" r="1.1" fill="currentColor"/><circle cx="14.5" cy="7" r="1.1" fill="currentColor"/><circle cx="18" cy="11" r="1.1" fill="currentColor"/></svg></div><span>Canva</span></a>
           </div>
         </div>
 
         <div class="right-sidebar-col">
           <div class="card spotify-widget">
-            <iframe src="https://open.spotify.com/embed/playlist/3py7MK3ipW2LVd0ryRlwzw?utm_source=generator" width="100%" height="152" frameborder="0" allowfullscreen="" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
+            <iframe src="https://open.spotify.com/embed/playlist/3py7MK3ipW2LVd0ryRlwzw?utm_source=generator" width="100%" height="152" frameborder="0" allow="autoplay; clipboard-write; encrypted-media; fullscreen" loading="lazy"></iframe>
           </div>
           <div class="card pomodoro-widget">
             <div class="pomodoro-timer" id="pomodoroTimer">25:00</div>
-            <div class="pomodoro-phase-label" id="pomodoroPhase"></div>
-            <div class="pomodoro-toggle-row">
-              <label class="toggle-switch"><input type="checkbox" id="pomodoroToggle" /><span class="toggle-slider"></span></label>
-              <span class="pomodoro-label">Activar Pomodoro 25/5</span>
-            </div>
+            <div class="pomodoro-toggle-row"><label class="toggle-switch"><input type="checkbox" id="pomodoroToggle" /><span class="toggle-slider"></span></label><span>Activar Pomodoro 25/5</span></div>
           </div>
         </div>
 
@@ -323,43 +199,35 @@
             <div class="card-header-content"><h2 class="card-title--accordion">Eventos de hoy</h2></div>
             <div class="card-toggle-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><polyline points="6 9 12 15 18 9"></polyline></svg></div>
           </div>
-          <div class="card-content">
-            <div id="calendarEventsList" class="calendar-events-list"><p class="calendar-empty">Cargando eventos...</p></div>
-          </div>
+          <div class="card-content"><div id="calendarEventsList"><p>Cargando eventos...</p></div></div>
         </div>
       </div>
 
-      <!-- Prioridades del día -->
       <div class="priorities-header">
         <h2 class="section-title">Prioridades del día</h2>
-        <button class="btn btn-ghost btn-sm" id="decisionBtn">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><rect x="2" y="2" width="20" height="20" rx="3"/><circle cx="8" cy="8" r="1.5" fill="currentColor"/><circle cx="16" cy="8" r="1.5" fill="currentColor"/><circle cx="8" cy="16" r="1.5" fill="currentColor"/><circle cx="16" cy="16" r="1.5" fill="currentColor"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/></svg>
-          Decisiones
-        </button>
+        <button class="btn btn-ghost btn-sm" id="decisionBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><rect x="2" y="2" width="20" height="20" rx="3"/><circle cx="8" cy="8" r="1.5" fill="currentColor"/><circle cx="16" cy="8" r="1.5" fill="currentColor"/><circle cx="8" cy="16" r="1.5" fill="currentColor"/><circle cx="16" cy="16" r="1.5" fill="currentColor"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/></svg> Decisiones</button>
       </div>
       <div class="decision-highlight" id="decisionHighlight" style="display:none;"></div>
 
       <div class="priorities-grid">
-        <div class="card priority-card" id="prio-dinero"><h3 class="priority-title">Prioridad A</h3><ul class="priority-list" id="list-dinero"></ul><button class="btn btn-ghost btn-xs add-prio-btn" data-cat="dinero">+ Añadir</button></div>
-        <div class="card priority-card" id="prio-clientes"><h3 class="priority-title">Prioridad B</h3><ul class="priority-list" id="list-clientes-prio"></ul><button class="btn btn-ghost btn-xs add-prio-btn" data-cat="clientes">+ Añadir</button></div>
-        <div class="card priority-card" id="prio-marca"><h3 class="priority-title">Prioridad C</h3><ul class="priority-list" id="list-marca"></ul><button class="btn btn-ghost btn-xs add-prio-btn" data-cat="marca">+ Añadir</button></div>
+        <div class="card priority-card" id="prio-dinero"><h3>Prioridad A</h3><ul id="list-dinero"></ul><button class="btn add-prio-btn" data-cat="dinero">+ Añadir</button></div>
+        <div class="card priority-card" id="prio-clientes"><h3>Prioridad B</h3><ul id="list-clientes-prio"></ul><button class="btn add-prio-btn" data-cat="clientes">+ Añadir</button></div>
+        <div class="card priority-card" id="prio-marca"><h3>Prioridad C</h3><ul id="list-marca"></ul><button class="btn add-prio-btn" data-cat="marca">+ Añadir</button></div>
       </div>
 
-      <!-- Captura masiva de tareas -->
       <div class="card card--accordion bulk-capture-card" id="bulkCaptureCard">
         <div class="card-header" data-toggle="bulkCaptureCard">
           <div class="card-header-content"><h2 class="card-title--accordion">Captura masiva de tareas</h2></div>
           <div class="card-toggle-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><polyline points="6 9 12 15 18 9"></polyline></svg></div>
         </div>
         <div class="card-content">
-          <p class="card-desc">Escribe todas tus tareas (una por línea). Las clasificamos en A, B o C según su tipo.</p>
-          <textarea class="bulk-textarea" id="bulkTasksInput" placeholder="Cobrar factura a cliente&#10;Escribir newsletter de Casa Bella&#10;Publicar en Instagram&#10;Revisar propuesta..." rows="4"></textarea>
+          <textarea class="bulk-textarea" id="bulkTasksInput" placeholder="Cobrar factura a cliente&#10;Escribir newsletter&#10;Vacunar a Ula" rows="4"></textarea>
           <button class="btn btn-primary btn-sm" id="bulkPrioritizeBtn">Priorizar automáticamente</button>
         </div>
       </div>
     </section>
 
-    <!-- ==================== SCREEN: TAREAS (NUEVA) ==================== -->
+    <!-- TAREAS (nueva pantalla) -->
     <section class="screen" id="screen-tareas">
       <div class="screen-header">
         <div class="header-text">
@@ -368,16 +236,14 @@
         </div>
         <img src="images/nati-writing.png" alt="Nati" class="header-illustration header-illustration--sm" />
       </div>
-
       <div class="card">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-          <h2 style="margin: 0;">📋 Mis tareas</h2>
+          <h2>Mis tareas</h2>
           <button id="syncTareasBtn" style="background: none; border: none; color: #002fa7; cursor: pointer;">🔄 Sincronizar</button>
         </div>
-        
         <div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;">
-          <input type="text" id="nuevaTareaInput" placeholder="Escribe una nueva tarea..." style="flex: 2; padding: 12px; border: 1px solid #e2e8f0; border-radius: 12px;">
-          <select id="prioridadSelect" style="padding: 12px; border-radius: 12px; border: 1px solid #e2e8f0;">
+          <input type="text" id="nuevaTareaInput" placeholder="Nueva tarea..." style="flex: 2; padding: 12px; border: 1px solid #e2e8f0; border-radius: 12px;">
+          <select id="prioridadSelect" style="padding: 12px; border-radius: 12px;">
             <option value="auto">🤖 Nate prioriza</option>
             <option value="A">🔥 Prioridad A</option>
             <option value="B">📌 Prioridad B</option>
@@ -385,49 +251,164 @@
           </select>
           <button id="agregarTareaBtn" style="background: #ff6b6b; color: white; border: none; padding: 0 24px; border-radius: 12px;">+ Agregar</button>
         </div>
-
         <div style="overflow-x: auto;">
           <table>
-            <thead>
-              <tr style="background: #2d3748; color: white;">
-                <th style="padding: 12px;">✅</th><th style="padding: 12px;">Tarea</th><th style="padding: 12px;">Prioridad</th><th style="padding: 12px;">Estado</th><th style="padding: 12px;">Progreso</th><th style="padding: 12px;">Inicio</th><th style="padding: 12px;">Entrega</th><th style="padding: 12px;">📝</th><th style="padding: 12px;">🗑️</th>
-              </tr>
-            </thead>
-            <tbody id="tareasTableBody">
-              <tr><td colspan="9" style="text-align:center; padding:60px;">✨ Cargando tareas... ✨</td></tr>
-            </tbody>
+            <thead><tr style="background: #2d3748; color: white;"><th>✅</th><th>Tarea</th><th>Prioridad</th><th>Estado</th><th>Progreso</th><th>Inicio</th><th>Entrega</th><th>📝</th><th>🗑️</th></tr></thead>
+            <tbody id="tareasTableBody"><tr><td colspan="9" style="text-align:center; padding:40px;">Cargando tareas...</td></tr></tbody>
           </table>
         </div>
-
         <div style="display: flex; justify-content: space-between; margin-top: 20px;">
-          <button id="limpiarCompletadasBtn" style="background: #f56565; color: white; border: none; padding: 6px 14px; border-radius: 6px;">🗑️ Limpiar completadas</button>
+          <button id="limpiarCompletadasBtn" class="btn-small btn-danger">Limpiar completadas</button>
           <span id="contadorPendientes" style="background: #edf2f7; padding: 6px 14px; border-radius: 20px;">0 pendientes</span>
         </div>
-        <div id="syncStatus" class="sync-status">✅ Nate está listo | Todo se guarda en Google Sheets</div>
+        <div id="syncStatus" class="sync-status">Nate está listo | Todo se guarda en Google Sheets</div>
       </div>
     </section>
 
-    <!-- ==================== SCREEN: CLIENTES ==================== -->
+    <!-- CLIENTES -->
     <section class="screen" id="screen-clientes">
-      <div class="screen-header"><div class="header-text"><h1 class="screen-title">Base de Clientes</h1><p class="screen-subtitle">Gestiona tus proyectos activos</p></div><img src="images/nati-coffee.png" alt="Nati con café" class="header-illustration header-illustration--sm" id="natiCoffeeImg" /></div>
+      <div class="screen-header"><div class="header-text"><h1 class="screen-title">Base de Clientes</h1><p class="screen-subtitle">Gestiona tus proyectos activos</p></div><img src="images/nati-coffee.png" alt="Nati" class="header-illustration header-illustration--sm" /></div>
       <div class="clients-grid" id="clientsGrid"></div>
-      <button class="fab" id="addClientBtn" aria-label="Añadir cliente nuevo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="24" height="24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
+      <button class="fab" id="addClientBtn">+</button>
     </section>
 
-    <!-- ==================== SCREEN: CONTENIDO ==================== -->
+    <!-- CONTENIDO -->
     <section class="screen" id="screen-contenido">
-      <div class="screen-header"><div class="header-text"><h1 class="screen-title">Contenido</h1><p class="screen-subtitle">Gestiona tus ideas y publicaciones</p></div><img src="images/nati-writing.png" alt="Nati escribiendo" class="header-illustration" id="natiWritingImg2" /></div>
+      <div class="screen-header"><div class="header-text"><h1 class="screen-title">Contenido</h1><p class="screen-subtitle">Gestiona tus ideas y publicaciones</p></div><img src="images/nati-writing.png" alt="Nati" class="header-illustration" /></div>
       <div class="kanban-board" id="kanbanBoard"></div>
     </section>
 
-    <!-- ==================== SCREEN: BIENESTAR ==================== -->
+    <!-- BIENESTAR -->
     <section class="screen" id="screen-bienestar">
-      <div class="screen-header"><div class="header-text"><h1 class="screen-title">Bienestar</h1><p class="screen-subtitle">Cuídate, Nati</p></div><img src="images/nati-cats.png" alt="Nati con Ula y Kai" class="header-illustration" id="natiCatsImg" /></div>
-      <div class="card" id="bienestarCard"><h2 class="card-title">Rutinas de hoy</h2><ul class="check-list" id="bienestarChecks"><li><label><input type="checkbox" class="bienestar-check" data-key="mandalas" /><span>Mandalas (libro nuevo)</span></label></li><li><label><input type="checkbox" class="bienestar-check" data-key="sol" /><span>Salir al sol (10 min)</span></label></li><li><label><input type="checkbox" class="bienestar-check" data-key="coreano" /><span>Coreano</span></label></li><li><label><input type="checkbox" class="bienestar-check" data-key="kickboxing" /><span>Kickboxing</span></label></li></ul></div>
-      <div class="card habit-streak-card"><h2 class="card-title">Tu racha 🔥</h2><div class="habit-streak-grid"><div class="habit-streak-item"><div class="habit-streak-number" id="mandalasStreak">0</div><div class="habit-streak-label">Mandalas</div></div><div class="habit-streak-item"><div class="habit-streak-number" id="solStreak">0</div><div class="habit-streak-label">Sol</div></div><div class="habit-streak-item"><div class="habit-streak-number" id="coreanoStreak">0</div><div class="habit-streak-label">Coreano</div></div><div class="habit-streak-item"><div class="habit-streak-number" id="kickboxingStreak">0</div><div class="habit-streak-label">Kickboxing</div></div></div></div>
-      <div class="bienestar-close-section"><button class="btn btn-close-day" id="closeDayBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg> Hora de cerrar</button></div>
+      <div class="screen-header"><div class="header-text"><h1 class="screen-title">Bienestar</h1><p class="screen-subtitle">Cuídate, Nati</p></div><img src="images/nati-cats.png" alt="Nati" class="header-illustration" /></div>
+      <div class="card"><h2>Rutinas de hoy</h2><ul class="check-list" id="bienestarChecks"><li><label><input type="checkbox" data-key="mandalas"/> Mandalas</label></li><li><label><input type="checkbox" data-key="sol"/> Sol</label></li><li><label><input type="checkbox" data-key="coreano"/> Coreano</label></li><li><label><input type="checkbox" data-key="kickboxing"/> Kickboxing</label></li></ul></div>
+      <div class="card"><h2>Tu racha 🔥</h2><div class="habit-streak-grid"><div>Mandalas: <span id="mandalasStreak">0</span></div><div>Sol: <span id="solStreak">0</span></div><div>Coreano: <span id="coreanoStreak">0</span></div><div>Kickboxing: <span id="kickboxingStreak">0</span></div></div></div>
+      <div class="bienestar-close-section"><button class="btn btn-close-day" id="closeDayBtn">Hora de cerrar</button></div>
     </section>
 
-    <!-- ==================== SCREEN: PERFIL ==================== -->
+    <!-- PERFIL -->
     <section class="screen" id="screen-perfil">
-      <div class="screen-header"><div class="header-text"><h1 class="screen-title">Perfil</h1></div><img src="images/nati-cats-aviso.png" alt="Nati con Ula y Kai" class="
+      <div class="screen-header"><div class="header-text"><h1 class="screen-title">Perfil</h1></div><img src="images/nati-cats-aviso.png" alt="Nati" class="header-illustration" /></div>
+      <div class="card profile-card"><div class="profile-avatar">N</div><div><h2>Nati Pérez</h2><p>@nat2gostudio</p></div></div>
+      <div class="card"><h2>Apariencia</h2><div class="theme-toggle-row"><button class="theme-btn active" id="themeLightBtn">☀️ Claro</button><button class="theme-btn" id="themeDarkBtn">🌙 Oscuro</button></div></div>
+      <div class="card"><h2>Estadísticas de hoy</h2><div class="stats-grid"><div><span id="statMorningDone">0</span><br>Arranque</div><div><span id="statBienestarDone">0</span><br>Bienestar</div><div><span id="statTotalDone">0</span><br>Total</div></div></div>
+      <div class="card"><button class="btn btn-danger" id="resetDayBtn">Restablecer datos del día</button></div>
+    </section>
+  </main>
+
+  <script src="./app.js"></script>
+  <script>
+    // ==========================================
+    // NAVEgACIÓN SIMPLE
+    // ==========================================
+    document.addEventListener('DOMContentLoaded', function() {
+      function setActiveScreen(screenId) {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        const activeScreen = document.getElementById(`screen-${screenId}`);
+        if (activeScreen) activeScreen.classList.add('active');
+        document.querySelectorAll('.nav-item, .bottom-nav-item').forEach(item => {
+          item.classList.remove('active');
+          if (item.getAttribute('data-screen') === screenId) item.classList.add('active');
+        });
+      }
+      document.querySelectorAll('.nav-item, .bottom-nav-item').forEach(item => {
+        item.addEventListener('click', function(e) {
+          e.preventDefault();
+          const screenId = this.getAttribute('data-screen');
+          if (screenId) setActiveScreen(screenId);
+        });
+      });
+      setActiveScreen('dashboard');
+    });
+
+    // ==========================================
+    // NATE - MIS TAREAS
+    // ==========================================
+    const URL_API = 'https://script.google.com/macros/s/AKfycbwnBN3A5YYfLZaDuyh9Glw2hR5hiX0gKRelT8p2ZKT45B7Bp6c0u8YfeyDGY6YTJGr9Ng/exec';
+    const DEEPSEEK_API_KEY = 'sk-f0d93900b799462bb6229872d8084939';
+    let misTareas = [];
+
+    async function priorizarConNate(texto) {
+      try {
+        const prompt = `Prioriza esta tarea para Nati. Responde solo A, B o C.
+Tarea: "${texto}"
+A=urgente/salud/cliente/mascotas(vacunar,veterinario,ula,kai)
+B=importante planificable
+C=opcional`;
+        const res = await fetch('https://api.deepseek.com/v1/chat/completions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${DEEPSEEK_API_KEY}` },
+          body: JSON.stringify({ model: 'deepseek-chat', messages: [{ role: 'user', content: prompt }], temperature: 0.3, max_tokens: 5 })
+        });
+        const data = await res.json();
+        let p = data.choices[0].message.content.trim().toUpperCase();
+        return ['A', 'B', 'C'].includes(p) ? p : 'B';
+      } catch(e) {
+        const t = texto.toLowerCase();
+        if (t.includes('urgente')||t.includes('hoy')||t.includes('cliente')||t.includes('vacunar')||t.includes('veterinario')||t.includes('ula')||t.includes('kai')) return 'A';
+        if (t.includes('preparar')||t.includes('revisar')||t.includes('enviar')) return 'B';
+        return 'C';
+      }
+    }
+
+    async function guardarTareas() {
+      try { await fetch(`${URL_API}?tareas=${encodeURIComponent(JSON.stringify(misTareas))}`); localStorage.setItem('nat_tareas', JSON.stringify(misTareas)); }
+      catch(e) { localStorage.setItem('nat_tareas', JSON.stringify(misTareas)); }
+    }
+
+    async function cargarTareas() {
+      try { const res = await fetch(`${URL_API}?accion=tareas`); const data = await res.json(); if (data.tareas?.length) misTareas = data.tareas; else misTareas = JSON.parse(localStorage.getItem('nat_tareas') || '[]'); renderizarTareas(); }
+      catch(e) { misTareas = JSON.parse(localStorage.getItem('nat_tareas') || '[]'); renderizarTareas(); }
+    }
+
+    function renderizarTareas() {
+      const tbody = document.getElementById('tareasTableBody');
+      if (!tbody) return;
+      if (misTareas.length === 0) { tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; padding:40px;">No hay tareas. ¡Añade una!</td></tr>'; document.getElementById('contadorPendientes').innerText = '0 pendientes'; return; }
+      const orden = { 'A':1, 'B':2, 'C':3 };
+      const ordenadas = [...misTareas].sort((a,b) => (orden[a.prioridad]||3) - (orden[b.prioridad]||3));
+      tbody.innerHTML = ordenadas.map(t => `
+        <tr>
+          <td><input type="checkbox" ${t.estado === 'Completada' ? 'checked' : ''} onchange="toggleTarea(${t.id})"></td>
+          <td><strong>${escapeHtml(t.tarea)}</strong>${t.notas ? `<br><small>📌 ${escapeHtml(t.notas)}</small>` : ''}</td>
+          <td><span class="priority-badge priority-${t.prioridad}">Prioridad ${t.prioridad}</span></td>
+          <td><span class="estado-badge estado-${t.estado === 'Completada' ? 'completada' : (t.progreso > 0 ? 'curso' : 'pendiente')}">${t.estado || 'Pendiente'}</span></td>
+          <td><div style="display:flex; gap:5px;"><span>${t.progreso||0}%</span><button class="btn-small" onclick="cambiarProgreso(${t.id},${(t.progreso||0)+10})">+10%</button></div></td>
+          <td>${t.inicio || ''}</td>
+          <td><input type="date" value="${t.entrega || ''}" onchange="cambiarEntrega(${t.id}, this.value)" style="padding:4px; border-radius:20px;"></td>
+          <td><button class="btn-small" onclick="editarNotas(${t.id})">📝</button></td>
+          <td><button class="btn-small btn-danger" onclick="eliminarTarea(${t.id})">🗑️</button></td>
+        </tr>
+      `).join('');
+      const pendientes = misTareas.filter(t => t.estado !== 'Completada').length;
+      document.getElementById('contadorPendientes').innerText = `${pendientes} pendientes`;
+    }
+
+    function escapeHtml(t) { const d = document.createElement('div'); d.textContent = t; return d.innerHTML; }
+
+    window.toggleTarea = (id) => { const t = misTareas.find(t => t.id == id); if(t) { t.estado = t.estado === 'Completada' ? 'Pendiente' : 'Completada'; t.progreso = t.estado === 'Completada' ? 100 : (t.progreso||0); renderizarTareas(); guardarTareas(); } };
+    window.cambiarProgreso = (id, p) => { const t = misTareas.find(t => t.id == id); if(t) { t.progreso = Math.min(100, Math.max(0, p)); if(t.progreso===100) t.estado='Completada'; else if(t.progreso>0 && t.estado!=='Completada') t.estado='En curso'; renderizarTareas(); guardarTareas(); } };
+    window.cambiarEntrega = (id, f) => { const t = misTareas.find(t => t.id == id); if(t) { t.entrega = f; guardarTareas(); } };
+    window.editarNotas = (id) => { const t = misTareas.find(t => t.id == id); if(t) { const n = prompt('Notas:', t.notas||''); if(n!==null) { t.notas=n; renderizarTareas(); guardarTareas(); } } };
+    window.eliminarTarea = (id) => { if(confirm('¿Eliminar tarea?')) { misTareas = misTareas.filter(t => t.id != id); renderizarTareas(); guardarTareas(); } };
+
+    async function agregarTarea(texto, modo) {
+      if (!texto.trim()) return;
+      let prioridad;
+      const statusEl = document.getElementById('syncStatus');
+      if (modo === 'auto') { if(statusEl) statusEl.innerHTML = '🤖 Nate pensando...'; prioridad = await priorizarConNate(texto); if(statusEl) statusEl.innerHTML = '✅ Nate priorizó'; }
+      else { prioridad = modo; }
+      misTareas.unshift({ id: Date.now(), tarea: texto.trim(), prioridad: prioridad, estado: 'Pendiente', progreso: 0, inicio: new Date().toLocaleDateString('es-ES'), entrega: '', notas: '' });
+      renderizarTareas();
+      guardarTareas();
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      cargarTareas();
+      document.getElementById('agregarTareaBtn').onclick = () => { agregarTarea(document.getElementById('nuevaTareaInput').value, document.getElementById('prioridadSelect').value); document.getElementById('nuevaTareaInput').value = ''; };
+      document.getElementById('limpiarCompletadasBtn').onclick = () => { if(confirm('¿Eliminar completadas?')) { misTareas = misTareas.filter(t => t.estado !== 'Completada'); renderizarTareas(); guardarTareas(); } };
+      document.getElementById('syncTareasBtn').onclick = () => { cargarTareas(); alert('✅ Tareas sincronizadas'); };
+    });
+  </script>
+</body>
+</html>
