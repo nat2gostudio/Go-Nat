@@ -557,6 +557,91 @@ body.dark .btn-close-day {
   background: var(--danger-light);
 }
 
+/* ---------- Priority dates ---------- */
+.priority-due-chip {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1px 7px;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.priority-due-chip--overdue {
+  color: var(--danger);
+  background: var(--danger-light);
+  border-color: var(--danger);
+}
+
+.priority-item-dates-btn {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  border-radius: 4px;
+  flex-shrink: 0;
+  opacity: 0;
+  transition: opacity var(--transition), color var(--transition), background var(--transition);
+}
+
+.priority-item:hover .priority-item-dates-btn {
+  opacity: 1;
+}
+
+.priority-item-dates-btn:hover {
+  color: var(--primary);
+  background: var(--primary-light);
+}
+
+.priority-dates-panel {
+  display: none;
+  width: 100%;
+  flex-basis: 100%;
+  flex-direction: row;
+  gap: 12px;
+  margin-left: 22px;
+  margin-top: 4px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.priority-dates-panel--open {
+  display: flex;
+}
+
+.priority-date-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.priority-date-input {
+  padding: 3px 8px;
+  font-size: 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text);
+  outline: none;
+  font-family: var(--font);
+  cursor: pointer;
+  transition: border-color var(--transition);
+}
+
+.priority-date-input:focus {
+  border-color: var(--primary);
+}
+
 /* Decision highlight */
 .decision-highlight {
   background: var(--primary-light);

@@ -60,6 +60,16 @@ function esc(str) {
   return d.innerHTML;
 }
 
+function formatShortDate(dateStr) {
+  if (!dateStr) return null;
+  const d = new Date(dateStr + 'T12:00:00');
+  return d.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
+}
+
+function isOverdueDate(dateStr, done) {
+  return dateStr && !done && new Date(dateStr + 'T23:59:59') < new Date();
+}
+
 /* ============================================================
    STORAGE KEYS
    ============================================================ */
@@ -122,25 +132,42 @@ function guessTab(key) {
 }
 
 /**
- * On load, attempt to fetch all data from GAS and merge.
- * Sheet data takes priority for clientes, contenido, prioridades.
- * localStorage takes priority for daily checks.
+ * Push all app data to GAS in one request.
+ */
+function syncAllToGAS() {
+  if (!settings.gasUrl) return;
+  const payload = {
+    gonat_prioridades: prioridades,
+    gonat_seguimiento: seguimiento,
+    gonat_clientes:    clientes,
+  };
+  const url = `${settings.gasUrl}?token=${GAS_TOKEN}`;
+  fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+    mode: 'no-cors',
+  }).catch(e => console.log('GAS full-sync error (silent):', e));
+}
+
+/**
+ * Pull all data from GAS sheets and merge into localStorage + UI.
+ * GAS wins for persistent data; local wins for today's checks.
  */
 async function syncFromGAS() {
   if (!settings.gasUrl) return;
   try {
-    const res = await fetch(settings.gasUrl, { mode: 'cors' });
+    const gasUrl = `${settings.gasUrl}?action=all&token=${GAS_TOKEN}`;
+    const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(gasUrl)}`;
+    const res = await fetch(proxyUrl, { method: 'GET' });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();
-    if (data && typeof data === 'object') {
-      // Merge remote data into localStorage (remote wins for persistent data)
-      const priorityKeys = [KEYS.prioridades, KEYS.clientes, KEYS.contenido];
-      priorityKeys.forEach(k => {
-        if (data[k] !== undefined) {
-          lsSet(k, data[k]);
-        }
-      });
-      // Reinitialize app with merged data
+    const envelope = await res.json();
+    const data = envelope.contents ? JSON.parse(envelope.contents) : envelope;
+
+    if (data && typeof data === 'object' && !data.error) {
+      if (data.gonat_prioridades) lsSet(KEYS.prioridades,  data.gonat_prioridades);
+      if (data.gonat_seguimiento) lsSet(KEYS.seguimiento,  data.gonat_seguimiento);
+      if (data.gonat_clientes)    lsSet(KEYS.clientes,     data.gonat_clientes);
       initApp();
     }
   } catch (e) {
@@ -362,7 +389,7 @@ let prioridades = lsGet(KEYS.prioridades, {
 
 function savePrioridades() {
   lsSet(KEYS.prioridades, prioridades);
-  syncToGAS(KEYS.prioridades, prioridades);
+  syncAllToGAS();
 }
 
 function renderPrioridades() {
@@ -381,6 +408,11 @@ function renderPrioridades() {
         </li>
       `).join('');
 
+      const overdue = isOverdueDate(item.dueDate, item.done);
+      const dueChip = item.dueDate
+        ? `<span class="priority-due-chip${overdue ? ' priority-due-chip--overdue' : ''}">${formatShortDate(item.dueDate)}</span>`
+        : '';
+
       const li = document.createElement('li');
       li.className = 'priority-item';
       li.dataset.cat = cat;
@@ -388,12 +420,20 @@ function renderPrioridades() {
       li.innerHTML = `
         <input type="checkbox" ${item.done ? 'checked' : ''} />
         <span class="priority-item-text">${esc(item.text)}</span>
+        ${dueChip}
+        <button class="priority-item-dates-btn" aria-label="Fechas" title="Fechas de inicio y entrega">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        </button>
         <button class="priority-item-expand" aria-label="Añadir microtarea" title="Dividir en microtareas">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="11" height="11"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
         </button>
         <button class="priority-item-del" aria-label="Eliminar">×</button>
         <div class="priority-item-subtasks">
           ${subtasks.length > 0 ? `<ul class="subtask-list">${subtasksHtml}</ul>` : ''}
+        </div>
+        <div class="priority-dates-panel">
+          <label class="priority-date-label">Inicio<input type="date" class="priority-date-input prio-start-input" value="${item.startDate || ''}" /></label>
+          <label class="priority-date-label">Entrega<input type="date" class="priority-date-input prio-due-input" value="${item.dueDate || ''}" /></label>
         </div>
       `;
 
@@ -409,6 +449,25 @@ function renderPrioridades() {
       // Delete main task
       li.querySelector('.priority-item-del').addEventListener('click', () => {
         prioridades[cat].splice(idx, 1);
+        savePrioridades();
+        renderPrioridades();
+      });
+
+      // Dates panel toggle
+      li.querySelector('.priority-item-dates-btn').addEventListener('click', () => {
+        li.querySelector('.priority-dates-panel').classList.toggle('priority-dates-panel--open');
+      });
+
+      // Start date
+      li.querySelector('.prio-start-input').addEventListener('change', e => {
+        prioridades[cat][idx].startDate = e.target.value || null;
+        savePrioridades();
+        renderPrioridades();
+      });
+
+      // Due date
+      li.querySelector('.prio-due-input').addEventListener('change', e => {
+        prioridades[cat][idx].dueDate = e.target.value || null;
         savePrioridades();
         renderPrioridades();
       });
@@ -502,7 +561,7 @@ function initPrioridades() {
         const text = input.value.trim();
         if (text) {
           if (!prioridades[cat]) prioridades[cat] = [];
-          prioridades[cat].push({ id: uid(), text, done: false });
+          prioridades[cat].push({ id: uid(), text, done: false, subtasks: [], startDate: null, dueDate: null });
           savePrioridades();
           renderPrioridades();
         }
@@ -1058,7 +1117,8 @@ function initPerfil() {
     saveSettings();
     updateConnectionStatus();
     if (settings.gasUrl) {
-      syncFromGAS();
+      syncAllToGAS();   // push local data to sheets first
+      syncFromGAS();    // then pull (sheets win on conflict)
     }
   });
 
@@ -1258,7 +1318,7 @@ function initBulkPrioritize() {
         unmatched++;
       }
       if (!prioridades[cat]) prioridades[cat] = [];
-      prioridades[cat].push({ id: uid(), text, done: false, subtasks: [] });
+      prioridades[cat].push({ id: uid(), text, done: false, subtasks: [], startDate: null, dueDate: null });
       added[cat]++;
     });
 
@@ -1372,6 +1432,7 @@ let seguimiento = lsGet(KEYS.seguimiento, []);
 
 function saveSeguimiento() {
   lsSet(KEYS.seguimiento, seguimiento);
+  syncAllToGAS();
 }
 
 function relativeDate(dateStr) {
