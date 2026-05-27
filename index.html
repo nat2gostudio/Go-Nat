@@ -462,23 +462,28 @@
     };
     
     function agregarTarea(texto, prioridadManual = null) {
-      if (!texto.trim()) return;
-      const prioridad = prioridadManual === 'auto' || !prioridadManual ? priorizarAutomaticamente(texto) : prioridadManual;
-      const nueva = {
-        id: Date.now(),
-        tarea: texto.trim(),
-        prioridad: prioridad,
-        subPrioridad: detectarSubPrioridad(texto),
-        estado: 'Pendiente',
-        progreso: 0,
-        inicio: new Date().toLocaleDateString('es-ES'),
-        entrega: '',
-        notas: ''
-      };
-      tareas.unshift(nueva);
-      renderizarTabla();
-      guardarTareas();
-    }
+  if (!texto.trim()) return;
+  
+  const prioridad = prioridadManual === 'auto' || !prioridadManual ? priorizarAutomaticamente(texto) : prioridadManual;
+  
+  const nueva = {
+    id: Date.now(),
+    tarea: texto.trim(),
+    prioridad: prioridad,
+    subPrioridad: detectarSubPrioridad(texto),
+    estado: 'Pendiente',
+    progreso: 0,
+    inicio: new Date().toLocaleDateString('es-ES'),
+    entrega: '',
+    notas: ''
+  };
+  
+  tareas.unshift(nueva);
+  renderizarTabla();
+  
+  // Guardar inmediatamente después de añadir
+  guardarTareas();
+}
     
     function procesarCapturaMasiva() {
   const textarea = document.getElementById('bulkTasksInput');
