@@ -393,15 +393,59 @@ C=opcional`;
     window.eliminarTarea = (id) => { if(confirm('¿Eliminar tarea?')) { misTareas = misTareas.filter(t => t.id != id); renderizarTareas(); guardarTareas(); } };
 
     async function agregarTarea(texto, modo) {
-      if (!texto.trim()) return;
-      let prioridad;
-      const statusEl = document.getElementById('syncStatus');
-      if (modo === 'auto') { if(statusEl) statusEl.innerHTML = '🤖 Nate pensando...'; prioridad = await priorizarConNate(texto); if(statusEl) statusEl.innerHTML = '✅ Nate priorizó'; }
-      else { prioridad = modo; }
-      misTareas.unshift({ id: Date.now(), tarea: texto.trim(), prioridad: prioridad, estado: 'Pendiente', progreso: 0, inicio: new Date().toLocaleDateString('es-ES'), entrega: '', notas: '' });
-      renderizarTareas();
-      guardarTareas();
-    }
+  if (!texto.trim()) return;
+  
+  let prioridad;
+  const statusEl = document.getElementById('syncStatus');
+  
+  if (modo === 'auto') { 
+    if(statusEl) statusEl.innerHTML = '🤖 Nate pensando...'; 
+    prioridad = await priorizarConNate(texto); 
+    if(statusEl) statusEl.innerHTML = '✅ Nate priorizó'; 
+  } else { 
+    prioridad = modo; 
+  }
+  
+  // Determinar la categoría según prioridad (A=dinero, B=clientes, C=marca)
+  let categoria = 'dinero';
+  if (prioridad === 'B') categoria = 'clientes';
+  if (prioridad === 'C') categoria = 'marca';
+  
+  // Guardar en el sistema de prioridades de app.js
+  if (typeof prioridades !== 'undefined' && window.savePrioridades) {
+    if (!prioridades[categoria]) prioridades[categoria] = [];
+    prioridades[categoria].push({ 
+      id: uid ? uid() : Date.now().toString(), 
+      text: texto.trim(), 
+      done: false, 
+      subtasks: [], 
+      startDate: null, 
+      dueDate: null 
+    });
+    savePrioridades();
+    if (typeof renderPrioridades === 'function') renderPrioridades();
+  }
+  
+  // También guardar en misTareas para la pantalla Tareas
+  misTareas.unshift({ 
+    id: Date.now(), 
+    tarea: texto.trim(), 
+    prioridad: prioridad, 
+    estado: 'Pendiente', 
+    progreso: 0, 
+    inicio: new Date().toLocaleDateString('es-ES'), 
+    entrega: '', 
+    notas: '' 
+  });
+  
+  renderizarTareas();
+  guardarTareas();
+  
+  // Refrescar el Dashboard si está visible
+  if (currentScreen === 'dashboard' && typeof renderPrioridades === 'function') {
+    renderPrioridades();
+  }
+}
 
     document.addEventListener('DOMContentLoaded', () => {
       cargarTareas();
