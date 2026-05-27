@@ -121,7 +121,6 @@
         </div>
       </div>
 
-      <!-- Prioridades del Dashboard (alimentadas por el mismo sistema) -->
       <div class="priorities-header"><h2 class="section-title">Prioridades del día</h2><button class="btn btn-ghost btn-sm" id="decisionBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><rect x="2" y="2" width="20" height="20" rx="3"/><circle cx="8" cy="8" r="1.5" fill="currentColor"/><circle cx="16" cy="8" r="1.5" fill="currentColor"/><circle cx="8" cy="16" r="1.5" fill="currentColor"/><circle cx="16" cy="16" r="1.5" fill="currentColor"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/></svg> Decisiones</button></div>
       <div class="decision-highlight" id="decisionHighlight" style="display:none;"></div>
 
@@ -137,23 +136,12 @@
       </div>
     </section>
 
-    <!-- TAREAS - Pantalla completa con filtros -->
+    <!-- TAREAS -->
     <section class="screen" id="screen-tareas">
       <div class="screen-header"><div class="header-text"><h1 class="screen-title">Tareas</h1><p class="screen-subtitle">Gestiona todas tus tareas</p></div><img src="images/nati-writing.png" alt="Nati" class="header-illustration header-illustration--sm" /></div>
       <div class="card">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;"><h2>Mis tareas</h2><button id="syncTareasBtn" style="background: none; border: none; color: #002fa7; cursor: pointer;">🔄 Sincronizar</button></div>
         
-        <!-- Filtros de categoría -->
-        <div style="margin-bottom: 16px;">
-          <span style="font-size:0.7rem; margin-right:8px;">Filtrar por:</span>
-          <button class="filter-btn active" data-filter="todas">Todas</button>
-          <button class="filter-btn" data-filter="personal">👤 Personal</button>
-          <button class="filter-btn" data-filter="trabajo">💼 Trabajo</button>
-          <button class="filter-btn" data-filter="administrativo">📋 Admin</button>
-          <button class="filter-btn" data-filter="mascotas">🐾 Mascotas</button>
-          <button class="filter-btn" data-filter="clientes">🤝 Clientes</button>
-        </div>
-
         <div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;">
           <input type="text" id="nuevaTareaInput" placeholder="Nueva tarea..." style="flex:2; padding:12px; border:1px solid #e2e8f0; border-radius:12px;">
           <select id="prioridadSelect" style="padding:12px; border-radius:12px;">
@@ -162,34 +150,13 @@
             <option value="B">📌 Prioridad B</option>
             <option value="C">⏰ Prioridad C</option>
           </select>
-          <select id="categoriaSelect" style="padding:12px; border-radius:12px;">
-            <option value="auto">🏷️ Categoría automática</option>
-            <option value="personal">👤 Personal</option>
-            <option value="trabajo">💼 Trabajo</option>
-            <option value="administrativo">📋 Administrativo</option>
-            <option value="mascotas">🐾 Mascotas</option>
-            <option value="clientes">🤝 Clientes</option>
-          </select>
           <button id="agregarTareaBtn" style="background:#ff6b6b; color:white; border:none; padding:0 24px; border-radius:12px;">+ Agregar</button>
         </div>
 
         <div style="overflow-x: auto;">
-          <table id="tablaTareas">
-            <thead>
-              <tr style="background:#2d3748; color:white;">
-                <th data-sort="completada" style="cursor:pointer;">✅</th>
-                <th data-sort="tarea" style="cursor:pointer;">Tarea</th>
-                <th data-sort="prioridad" style="cursor:pointer;">Prioridad</th>
-                <th data-sort="categoria" style="cursor:pointer;">Categoría</th>
-                <th data-sort="estado" style="cursor:pointer;">Estado</th>
-                <th data-sort="progreso" style="cursor:pointer;">Progreso</th>
-                <th data-sort="inicio" style="cursor:pointer;">Inicio</th>
-                <th data-sort="entrega" style="cursor:pointer;">Entrega</th>
-                <th>📝</th>
-                <th>🗑️</th>
-              </tr>
-            </thead>
-            <tbody id="tareasTableBody"><tr><td colspan="10" style="text-align:center; padding:40px;">Cargando tareas...</td></tr></tbody>
+          <table>
+            <thead><tr style="background:#2d3748; color:white;"><th>✅</th><th>Tarea</th><th>Prioridad</th><th>Estado</th><th>Progreso</th><th>Inicio</th><th>Entrega</th><th>📝</th><th>🗑️</th></tr></thead>
+            <tbody id="tareasTableBody"><tr><td colspan="9" style="text-align:center; padding:40px;">Cargando tareas...</td></tr></tbody>
           </table>
         </div>
 
@@ -197,15 +164,21 @@
           <button id="limpiarCompletadasBtn" class="btn-small btn-danger">Limpiar completadas</button>
           <span id="contadorPendientes" style="background:#edf2f7; padding:6px 14px; border-radius:20px;">0 pendientes</span>
         </div>
-        <div id="syncStatus" class="sync-status">Nate está listo | Todo se guarda en Google Sheets</div>
+        <div id="syncStatus" class="sync-status">Nate está listo</div>
       </div>
     </section>
 
-    <!-- CLIENTES, CONTENIDO, BIENESTAR, PERFIL (simplificados) -->
-    <section class="screen" id="screen-clientes"><div class="screen-header"><div class="header-text"><h1 class="screen-title">Base de Clientes</h1><p class="screen-subtitle">Gestiona tus proyectos activos</p></div><img src="images/nati-coffee.png" alt="Nati" class="header-illustration header-illustration--sm" /></div><div class="clients-grid" id="clientsGrid"></div><button class="fab" id="addClientBtn">+</button></section>
-    <section class="screen" id="screen-contenido"><div class="screen-header"><div class="header-text"><h1 class="screen-title">Contenido</h1><p class="screen-subtitle">Gestiona tus ideas y publicaciones</p></div><img src="images/nati-writing.png" alt="Nati" class="header-illustration" /></div><div class="kanban-board" id="kanbanBoard"></div></section>
-    <section class="screen" id="screen-bienestar"><div class="screen-header"><div class="header-text"><h1 class="screen-title">Bienestar</h1><p class="screen-subtitle">Cuídate, Nati</p></div><img src="images/nati-cats.png" alt="Nati" class="header-illustration" /></div><div class="card"><h2>Rutinas de hoy</h2><ul class="check-list" id="bienestarChecks"><li><label><input type="checkbox" data-key="mandalas"/> Mandalas</label></li><li><label><input type="checkbox" data-key="sol"/> Sol</label></li><li><label><input type="checkbox" data-key="coreano"/> Coreano</label></li><li><label><input type="checkbox" data-key="kickboxing"/> Kickboxing</label></li></ul></div><div class="card"><h2>Tu racha 🔥</h2><div class="habit-streak-grid"><div>Mandalas: <span id="mandalasStreak">0</span></div><div>Sol: <span id="solStreak">0</span></div><div>Coreano: <span id="coreanoStreak">0</span></div><div>Kickboxing: <span id="kickboxingStreak">0</span></div></div></div><div class="bienestar-close-section"><button class="btn btn-close-day" id="closeDayBtn">Hora de cerrar</button></div></section>
-    <section class="screen" id="screen-perfil"><div class="screen-header"><div class="header-text"><h1 class="screen-title">Perfil</h1></div><img src="images/nati-cats-aviso.png" alt="Nati" class="header-illustration" /></div><div class="card profile-card"><div class="profile-avatar">N</div><div><h2>Nati Pérez</h2><p>@nat2gostudio</p></div></div><div class="card"><h2>Apariencia</h2><div class="theme-toggle-row"><button class="theme-btn active" id="themeLightBtn">☀️ Claro</button><button class="theme-btn" id="themeDarkBtn">🌙 Oscuro</button></div></div><div class="card"><h2>Estadísticas de hoy</h2><div class="stats-grid"><div><span id="statMorningDone">0</span><br>Arranque</div><div><span id="statBienestarDone">0</span><br>Bienestar</div><div><span id="statTotalDone">0</span><br>Total</div></div></div><div class="card"><button class="btn btn-danger" id="resetDayBtn">Restablecer datos del día</button></div></section>
+    <!-- CLIENTES -->
+    <section class="screen" id="screen-clientes"><div class="screen-header"><div class="header-text"><h1>Clientes</h1><p>Gestiona tus proyectos activos</p></div><img src="images/nati-coffee.png" alt="Nati" class="header-illustration header-illustration--sm" /></div><div id="clientsGrid"></div><button class="fab" id="addClientBtn">+</button></section>
+
+    <!-- CONTENIDO -->
+    <section class="screen" id="screen-contenido"><div class="screen-header"><div class="header-text"><h1>Contenido</h1><p>Gestiona tus ideas y publicaciones</p></div><img src="images/nati-writing.png" alt="Nati" class="header-illustration" /></div><div id="kanbanBoard"></div></section>
+
+    <!-- BIENESTAR -->
+    <section class="screen" id="screen-bienestar"><div class="screen-header"><div class="header-text"><h1>Bienestar</h1><p>Cuídate, Nati</p></div><img src="images/nati-cats.png" alt="Nati" class="header-illustration" /></div><div class="card"><h2>Rutinas de hoy</h2><ul id="bienestarChecks"><li><label><input type="checkbox" data-key="mandalas"/> Mandalas</label></li><li><label><input type="checkbox" data-key="sol"/> Sol</label></li><li><label><input type="checkbox" data-key="coreano"/> Coreano</label></li><li><label><input type="checkbox" data-key="kickboxing"/> Kickboxing</label></li></ul></div></section>
+
+    <!-- PERFIL -->
+    <section class="screen" id="screen-perfil"><div class="screen-header"><div class="header-text"><h1>Perfil</h1></div><img src="images/nati-cats-aviso.png" alt="Nati" class="header-illustration" /></div><div class="card profile-card"><div class="profile-avatar">N</div><div><h2>Nati Pérez</h2><p>@nat2gostudio</p></div></div><div class="card"><h2>Apariencia</h2><div><button class="theme-btn active" id="themeLightBtn">Claro</button><button class="theme-btn" id="themeDarkBtn">Oscuro</button></div></div></section>
   </main>
 
   <script src="./app.js"></script>
@@ -234,41 +207,73 @@
     });
 
     // ==========================================
-    // SISTEMA UNIFICADO DE TAREAS
+    // NATE - TAREAS SIMPLE
     // ==========================================
     const URL_API = 'https://script.google.com/macros/s/AKfycbwnBN3A5YYfLZaDuyh9Glw2hR5hiX0gKRelT8p2ZKT45B7Bp6c0u8YfeyDGY6YTJGr9Ng/exec';
-    const DEEPSEEK_API_KEY = 'sk-f0d93900b799462bb6229872d8084939';
-    
-    let tareasGlobales = [];
-    let filtroActual = 'todas';
-    let sortField = 'prioridad';
-    let sortDirection = 'asc';
-
-    // Mapeo de categorías a prioridades para el Dashboard
-    const prioridadPorCategoria = { 'personal': 'C', 'trabajo': 'B', 'administrativo': 'C', 'mascotas': 'A', 'clientes': 'A' };
-    const categoriaPorPrioridad = { 'A': 'clientes', 'B': 'trabajo', 'C': 'personal' };
+    const DEEPSEEK_KEY = 'sk-f0d93900b799462bb6229872d8084939';
+    let misTareas = [];
 
     async function priorizarConNate(texto) {
       try {
-        const prompt = `Prioriza y categoriza esta tarea para Nati. Responde en formato "A-Personal" o "B-Trabajo" o "C-Admin" o "A-Mascotas" o "A-Clientes".
-Tarea: "${texto}"
-Posibles prioridades: A (urgente/salud/mascotas/clientes), B (importante planificable), C (normal)
-Categorías: Personal, Trabajo, Administrativo, Mascotas, Clientes`;
         const res = await fetch('https://api.deepseek.com/v1/chat/completions', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${DEEPSEEK_API_KEY}` },
-          body: JSON.stringify({ model: 'deepseek-chat', messages: [{ role: 'user', content: prompt }], temperature: 0.3, max_tokens: 10 })
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${DEEPSEEK_KEY}` },
+          body: JSON.stringify({ model: 'deepseek-chat', messages: [{ role: 'user', content: `Prioriza solo A, B o C: "${texto}"` }], temperature: 0.3, max_tokens: 5 })
         });
         const data = await res.json();
-        let resultado = data.choices[0].message.content.trim().toUpperCase();
-        let prioridad = resultado.charAt(0);
-        let categoria = resultado.includes('-') ? resultado.split('-')[1].toLowerCase() : 'personal';
-        if (!['A','B','C'].includes(prioridad)) prioridad = 'B';
-        const categoriasValidas = ['personal','trabajo','administrativo','mascotas','clientes'];
-        if (!categoriasValidas.includes(categoria)) categoria = 'personal';
-        return { prioridad, categoria };
+        let p = data.choices[0].message.content.trim().toUpperCase();
+        return ['A','B','C'].includes(p) ? p : 'B';
       } catch(e) {
         const t = texto.toLowerCase();
-        let prioridad = 'B', categoria = 'personal';
-        if (t.includes('urgente')||t.includes('hoy')||t.includes('cliente')) prioridad = 'A';
-        if (t.includes('vacunar')||t.includes('veterinario')||t
+        if (t.includes('urgente')||t.includes('hoy')||t.includes('cliente')||t.includes('vacunar')||t.includes('veterinario')||t.includes('ula')||t.includes('kai')) return 'A';
+        return 'B';
+      }
+    }
+
+    async function guardarTareas() {
+      try { await fetch(`${URL_API}?tareas=${encodeURIComponent(JSON.stringify(misTareas))}`); localStorage.setItem('nat_tareas', JSON.stringify(misTareas)); }
+      catch(e) { localStorage.setItem('nat_tareas', JSON.stringify(misTareas)); }
+    }
+
+    async function cargarTareas() {
+      try { const res = await fetch(`${URL_API}?accion=tareas`); const data = await res.json(); if (data.tareas?.length) misTareas = data.tareas; else misTareas = JSON.parse(localStorage.getItem('nat_tareas') || '[]'); renderizarTareas(); }
+      catch(e) { misTareas = JSON.parse(localStorage.getItem('nat_tareas') || '[]'); renderizarTareas(); }
+    }
+
+    function renderizarTareas() {
+      const tbody = document.getElementById('tareasTableBody');
+      if (!tbody) return;
+      if (misTareas.length === 0) { tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; padding:40px;">No hay tareas. ¡Añade una!</td></tr>'; document.getElementById('contadorPendientes').innerText = '0'; return; }
+      const orden = { 'A':1, 'B':2, 'C':3 };
+      const ordenadas = [...misTareas].sort((a,b) => (orden[a.prioridad]||3) - (orden[b.prioridad]||3));
+      tbody.innerHTML = ordenadas.map(t => `<tr><td><input type="checkbox" ${t.estado === 'Completada' ? 'checked' : ''} onchange="toggleTarea(${t.id})"></td><td><strong>${escapeHtml(t.tarea)}</strong>${t.notas ? `<br><small>📌 ${escapeHtml(t.notas)}</small>` : ''}</td><td><span class="priority-badge priority-${t.prioridad}">${t.prioridad}</span></td><td>${t.estado || 'Pendiente'}</td><td><span>${t.progreso||0}%</span><button class="btn-small" onclick="cambiarProgreso(${t.id},${(t.progreso||0)+10})">+10%</button></td><td>${t.inicio || ''}</td><td><input type="date" value="${t.entrega || ''}" onchange="cambiarEntrega(${t.id}, this.value)"></td><td><button class="btn-small" onclick="editarNotas(${t.id})">📝</button></td><td><button class="btn-small btn-danger" onclick="eliminarTarea(${t.id})">🗑️</button></td></tr>`).join('');
+      const pendientes = misTareas.filter(t => t.estado !== 'Completada').length;
+      document.getElementById('contadorPendientes').innerText = pendientes;
+    }
+
+    function escapeHtml(t) { const d = document.createElement('div'); d.textContent = t; return d.innerHTML; }
+
+    window.toggleTarea = (id) => { const t = misTareas.find(t => t.id == id); if(t) { t.estado = t.estado === 'Completada' ? 'Pendiente' : 'Completada'; renderizarTareas(); guardarTareas(); } };
+    window.cambiarProgreso = (id, p) => { const t = misTareas.find(t => t.id == id); if(t) { t.progreso = Math.min(100, p); if(t.progreso===100) t.estado='Completada'; renderizarTareas(); guardarTareas(); } };
+    window.cambiarEntrega = (id, f) => { const t = misTareas.find(t => t.id == id); if(t) { t.entrega = f; guardarTareas(); } };
+    window.editarNotas = (id) => { const t = misTareas.find(t => t.id == id); if(t) { const n = prompt('Notas:', t.notas||''); if(n!==null) { t.notas=n; renderizarTareas(); guardarTareas(); } } };
+    window.eliminarTarea = (id) => { if(confirm('¿Eliminar?')) { misTareas = misTareas.filter(t => t.id != id); renderizarTareas(); guardarTareas(); } };
+
+    async function agregarTarea(texto, modo) {
+      if (!texto.trim()) return;
+      let prioridad = modo === 'auto' ? await priorizarConNate(texto) : modo;
+      misTareas.unshift({ id: Date.now(), tarea: texto.trim(), prioridad: prioridad, estado: 'Pendiente', progreso: 0, inicio: new Date().toLocaleDateString('es-ES'), entrega: '', notas: '' });
+      renderizarTareas();
+      guardarTareas();
+      alert(`✅ Nate priorizó como ${prioridad}`);
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      cargarTareas();
+      document.getElementById('agregarTareaBtn').onclick = () => { agregarTarea(document.getElementById('nuevaTareaInput').value, document.getElementById('prioridadSelect').value); document.getElementById('nuevaTareaInput').value = ''; };
+      document.getElementById('limpiarCompletadasBtn').onclick = () => { if(confirm('¿Eliminar completadas?')) { misTareas = misTareas.filter(t => t.estado !== 'Completada'); renderizarTareas(); guardarTareas(); } };
+      document.getElementById('syncTareasBtn').onclick = () => { cargarTareas(); alert('✅ Sincronizado'); };
+    });
+  </script>
+</body>
+</html>
