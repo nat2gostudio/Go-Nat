@@ -581,7 +581,7 @@ function initPrioridades() {
 function initDecision() {
   const btn = document.getElementById('decisionBtn');
   const highlight = document.getElementById('decisionHighlight');
-  if (!btn || !highlight) return;
+
   btn.addEventListener('click', () => {
     const allUnchecked = [];
     ['dinero', 'clientes', 'marca'].forEach(cat => {
@@ -589,11 +589,13 @@ function initDecision() {
         if (!item.done) allUnchecked.push(item.text);
       });
     });
+
     if (allUnchecked.length === 0) {
       highlight.textContent = 'Todo completado. No hay tareas pendientes.';
       highlight.style.display = 'block';
       return;
     }
+
     const picked = allUnchecked[Math.floor(Math.random() * allUnchecked.length)];
     highlight.textContent = `Ahora mismo: ${picked}`;
     highlight.style.display = 'block';
