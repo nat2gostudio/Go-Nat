@@ -9,94 +9,294 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
   <style>
-    /* Estilos de emergencia por si style.css falla */
-    body { font-family: 'Inter', sans-serif; background: #f4f7fc; margin: 0; padding: 20px; }
-    .card { background: white; border-radius: 24px; padding: 1.5rem; margin-bottom: 1.5rem; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
-    .tasks-table-container { overflow-x: auto; }
-    .tasks-table { width: 100%; border-collapse: collapse; }
-    .tasks-table th, .tasks-table td { padding: 12px 8px; text-align: left; border-bottom: 1px solid #e2e8f0; }
-    .tasks-table th { background: #2d3748; color: white; }
-    .priority-A { background: #fed7d7; color: #c53030; padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; }
-    .priority-B { background: #feebc8; color: #c05621; padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; }
-    .priority-C { background: #e6fffa; color: #234e52; padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; }
-    .btn-small { background: #edf2f7; border: none; padding: 4px 8px; border-radius: 8px; cursor: pointer; }
-    .btn-danger { background: #f56565; color: white; }
-    .sync-status { font-size: 0.75rem; margin-top: 10px; padding: 8px; border-radius: 8px; background: #e8f0fe; }
+    /* ===== NUEVOS ESTILOS (sin romper los existentes) ===== */
+    .top-widgets-row {
+      display: flex;
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+      flex-wrap: wrap;
+    }
+    .widget-card {
+      background: linear-gradient(135deg, #e8f0fe 0%, #d4e4fc 100%);
+      border-radius: 20px;
+      padding: 1rem 1.5rem;
+      flex: 1;
+      min-width: 180px;
+      box-shadow: 0 2px 8px rgba(0,47,167,0.1);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .widget-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0,47,167,0.15);
+    }
+    .widget-title {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #002fa7;
+      margin-bottom: 0.5rem;
+      font-weight: 600;
+    }
+    .widget-content {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    .widget-icon {
+      background: white;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #002fa7;
+    }
+    .sort-buttons {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 1rem;
+    }
+    .sort-btn {
+      background: #f0f2f5;
+      border: none;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-weight: 500;
+    }
+    .sort-btn.active {
+      background: #002fa7;
+      color: white;
+    }
+    .priority-A { background: #fed7d7; color: #c53030; padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; display: inline-block; }
+    .priority-B { background: #feebc8; color: #c05621; padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; display: inline-block; }
+    .priority-C { background: #e6fffa; color: #234e52; padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; display: inline-block; }
+    .task-row.completada { opacity: 0.6; background: #f7fafc; }
+    .task-row:hover { background: #faf5ff; }
+    .btn-primary {
+      background: #002fa7;
+      color: white;
+      border: none;
+      padding: 8px 20px;
+      border-radius: 40px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .btn-primary:hover { background: #001f6e; }
+    .btn-secondary {
+      background: #e2e8f0;
+      color: #2d3748;
+      border: none;
+      padding: 6px 14px;
+      border-radius: 40px;
+      cursor: pointer;
+      font-weight: 500;
+    }
+    .quick-access-mini {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .quick-access-mini a {
+      background: white;
+      padding: 6px 12px;
+      border-radius: 40px;
+      text-decoration: none;
+      font-size: 0.75rem;
+      color: #002fa7;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
   </style>
 </head>
 <body>
-  <main style="max-width: 1400px; margin: 0 auto;">
-    <!-- CABECERA -->
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
-      <div>
-        <h1 id="greetingText" style="margin: 0;">Buenos días, Nati</h1>
-        <p id="dateText" style="color: #666;"></p>
+
+  <!-- SIDEBAR (original, sin cambios) -->
+  <nav class="sidebar" id="sidebar">
+    <div class="sidebar-logo"><span class="logo-mark">GN</span></div>
+    <ul class="nav-list">
+      <li class="nav-item active" data-screen="dashboard"><button class="nav-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z"/><path d="M9 21V12h6v9"/></svg><span class="nav-dot"></span></button></li>
+      <li class="nav-item" data-screen="clientes"><button class="nav-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="7" r="3"/><path d="M3 21v-2a4 4 0 014-4h4a4 4 0 014 4v2"/><path d="M16 3.13a4 4 0 010 7.75"/><path d="M21 21v-2a4 4 0 00-3-3.85"/></svg><span class="nav-dot"></span></button></li>
+      <li class="nav-item" data-screen="contenido"><button class="nav-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg><span class="nav-dot"></span></button></li>
+      <li class="nav-item" data-screen="bienestar"><button class="nav-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg><span class="nav-dot"></span></button></li>
+      <li class="nav-item" data-screen="perfil"><button class="nav-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg><span class="nav-dot"></span></button></li>
+    </ul>
+  </nav>
+
+  <!-- BOTTOM NAV (mobile) -->
+  <nav class="bottom-nav" id="bottomNav">
+    <ul class="bottom-nav-list">
+      <li class="bottom-nav-item active" data-screen="dashboard"><button class="bottom-nav-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z"/><path d="M9 21V12h6v9"/></svg></button></li>
+      <li class="bottom-nav-item" data-screen="clientes"><button class="bottom-nav-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="7" r="3"/><path d="M3 21v-2a4 4 0 014-4h4a4 4 0 014 4v2"/><path d="M16 3.13a4 4 0 010 7.75"/><path d="M21 21v-2a4 4 0 00-3-3.85"/></svg></button></li>
+      <li class="bottom-nav-item" data-screen="contenido"><button class="bottom-nav-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></button></li>
+      <li class="bottom-nav-item" data-screen="bienestar"><button class="bottom-nav-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg></button></li>
+      <li class="bottom-nav-item" data-screen="perfil"><button class="bottom-nav-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg></button></li>
+    </ul>
+  </nav>
+
+  <!-- MAIN CONTENT -->
+  <main class="main-content" id="mainContent">
+
+    <!-- DASHBOARD -->
+    <section class="screen active" id="screen-dashboard">
+      <div class="screen-header">
+        <div class="header-text">
+          <h1 class="greeting" id="greetingText">Buenos días, Nati</h1>
+          <p class="date-text" id="dateText"></p>
+        </div>
+        <img src="images/nati-writing.png" alt="Nati escribiendo" class="header-illustration" />
       </div>
-      <img src="images/nati-writing.png" alt="Nati" style="height: 60px;">
-    </div>
 
-    <!-- CORAZÓN DEL PROYECTO (ÚNICO) -->
-    <div class="card">
-      <h2 style="margin-top: 0;">🧠 Corazón del Proyecto</h2>
-      
-      <div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;">
-        <input type="text" id="nuevaTareaInput" placeholder="Escribe una nueva tarea..." style="flex: 2; padding: 12px; border: 1px solid #ccc; border-radius: 12px;">
-        <select id="prioridadManualSelect" style="padding: 12px; border-radius: 12px; border: 1px solid #ccc;">
-          <option value="auto">🤖 Priorización automática (IA)</option>
-          <option value="A">🔥 Prioridad A</option>
-          <option value="B">📌 Prioridad B</option>
-          <option value="C">⏰ Prioridad C</option>
-        </select>
-        <button id="agregarTareaBtn" style="background: #ff6b6b; color: white; border: none; padding: 0 24px; border-radius: 12px; cursor: pointer;">+ Agregar</button>
+      <!-- ===== NUEVA FILA DE WIDGETS (Pomodoro + Accesos + Spotify) ===== -->
+      <div class="top-widgets-row">
+        <!-- Pomodoro Widget -->
+        <div class="widget-card">
+          <div class="widget-title">🍅 POMODORO</div>
+          <div class="widget-content">
+            <div class="widget-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#002fa7" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            </div>
+            <div>
+              <div class="pomodoro-timer" id="pomodoroTimer" style="font-size: 1.4rem; font-weight: 700;">25:00</div>
+              <label class="toggle-switch" style="display: flex; align-items: center; gap: 8px; margin-top: 4px;">
+                <input type="checkbox" id="pomodoroToggle" />
+                <span style="font-size: 0.7rem;">Activar</span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Accesos Rápidos Widget -->
+        <div class="widget-card">
+          <div class="widget-title">⚡ ACCESOS RÁPIDOS</div>
+          <div class="quick-access-mini">
+            <a href="https://mail.google.com" target="_blank">📧 Gmail</a>
+            <a href="https://drive.google.com" target="_blank">📁 Drive</a>
+            <a href="https://canva.com" target="_blank">🎨 Canva</a>
+            <a href="https://business.facebook.com" target="_blank">📊 Meta</a>
+          </div>
+        </div>
+
+        <!-- Spotify Widget -->
+        <div class="widget-card">
+          <div class="widget-title">🎵 SPOTIFY</div>
+          <div class="widget-content">
+            <div class="widget-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#002fa7" stroke-width="1.5"><path d="M12 2a10 10 0 100 20 10 10 0 000-20z"/><path d="M12 6v6l4 2"/></svg>
+            </div>
+            <iframe src="https://open.spotify.com/embed/playlist/3py7MK3ipW2LVd0ryRlwzw?utm_source=generator" width="160" height="56" frameborder="0" allow="autoplay; clipboard-write; encrypted-media; fullscreen" style="border-radius: 40px;"></iframe>
+          </div>
+        </div>
       </div>
 
-      <div class="tasks-table-container">
-        <table class="tasks-table">
-          <thead>
-            <tr><th>✅</th><th>Tarea</th><th>Prioridad</th><th>Estado</th><th>Progreso</th><th>Inicio</th><th>Entrega</th><th>📝</th><th>🗑️</th></tr>
-          </thead>
-          <tbody id="tasksTableBody">
-            <tr><td colspan="9" style="text-align:center; padding:40px;">✨ Cargando tareas... ✨</td></tr>
-          </tbody>
-        </table>
+      <!-- ===== CORAZÓN DEL PROYECTO (MEJORADO) ===== -->
+      <div class="card" style="margin-bottom: 1.5rem; border-radius: 28px;">
+        <h2 style="margin-bottom: 0.5rem;">🧠 Corazón del Proyecto</h2>
+        
+        <!-- Botones de ordenación -->
+        <div class="sort-buttons">
+          <button class="sort-btn active" data-sort="prioridad">🔽 Ordenar por Prioridad</button>
+          <button class="sort-btn" data-sort="entrega">📅 Ordenar por Entrega</button>
+          <button class="sort-btn" data-sort="fecha">📆 Ordenar por Fecha</button>
+        </div>
+
+        <!-- Entrada rápida -->
+        <div style="display: flex; gap: 12px; margin-bottom: 24px; flex-wrap: wrap;">
+          <input type="text" id="nuevaTareaInput" placeholder="✏️ Escribe una nueva tarea..." style="flex: 2; padding: 14px; border: 1px solid #e2e8f0; border-radius: 40px; font-size: 0.9rem;">
+          <select id="prioridadManualSelect" style="padding: 0 20px; border-radius: 40px; border: 1px solid #e2e8f0; background: white;">
+            <option value="auto">🤖 Priorización automática (IA)</option>
+            <option value="A">🔥 Prioridad A (Urgente)</option>
+            <option value="B">📌 Prioridad B (Importante)</option>
+            <option value="C">⏰ Prioridad C (Normal)</option>
+          </select>
+          <button id="agregarTareaBtn" class="btn-primary">+ Agregar tarea</button>
+        </div>
+
+        <!-- Tabla de tareas -->
+        <div style="overflow-x: auto;">
+          <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
+            <thead>
+              <tr style="background: #f7f9fc; border-bottom: 2px solid #e2e8f0;">
+                <th style="padding: 14px 8px;">✅</th>
+                <th style="padding: 14px 8px;">Tarea</th>
+                <th style="padding: 14px 8px;">Prioridad</th>
+                <th style="padding: 14px 8px;">Estado</th>
+                <th style="padding: 14px 8px;">Progreso</th>
+                <th style="padding: 14px 8px;">Inicio</th>
+                <th style="padding: 14px 8px;">Entrega</th>
+                <th style="padding: 14px 8px;">📝</th>
+                <th style="padding: 14px 8px;">🗑️</th>
+               </tr>
+            </thead>
+            <tbody id="tasksTableBody">
+              <tr><td colspan="9" style="text-align:center; padding:60px;">✨ Cargando tareas... ✨</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 20px;">
+          <button id="limpiarCompletadasBtn" class="btn-secondary">🗑️ Limpiar completadas</button>
+          <span id="contadorPendientes" style="background: #edf2f7; padding: 8px 18px; border-radius: 40px; font-size: 0.8rem;">0 pendientes</span>
+        </div>
+        <div id="syncStatus" style="font-size: 0.7rem; margin-top: 16px; padding: 8px 16px; background: #e8f0fe; border-radius: 40px; text-align: center;">✅ Todo sincronizado | Las tareas se guardan automáticamente</div>
       </div>
 
-      <div style="display: flex; justify-content: space-between; margin-top: 15px;">
-        <button id="limpiarCompletadasBtn" class="btn-small btn-danger">🗑️ Limpiar completadas</button>
-        <span id="contadorPendientes" style="background:#edf2f7; padding:5px 12px; border-radius:20px;">0 pendientes</span>
+      <!-- CAPTURA MASIVA -->
+      <div class="card" style="border-radius: 28px;">
+        <h2 style="margin-bottom: 0.75rem;">📥 Captura masiva de tareas</h2>
+        <textarea id="bulkTasksInput" rows="3" style="width: 100%; padding: 14px; border-radius: 20px; border: 1px solid #e2e8f0; font-family: inherit;" placeholder="Cobrar factura a cliente&#10;Escribir newsletter de Casa Bella&#10;Vacunar a Ula (Prioridad A)&#10;Preparar propuesta para RoscónLab"></textarea>
+        <button id="bulkPrioritizeBtn" class="btn-primary" style="margin-top: 12px;">🤖 Priorizar automáticamente con IA</button>
       </div>
-      <div class="sync-status" id="syncStatus">🔄 Conectando con Google Sheets...</div>
-    </div>
 
-    <!-- CAPTURA MASIVA -->
-    <div class="card">
-      <h2>📥 Captura masiva de tareas</h2>
-      <textarea id="bulkTasksInput" rows="4" style="width: 100%; padding: 12px; border-radius: 12px; border: 1px solid #ccc;" placeholder="Cobrar factura a cliente&#10;Escribir newsletter&#10;Vacunar a Ula"></textarea>
-      <button id="bulkPrioritizeBtn" style="margin-top: 10px; background: #4a90e2; color: white; border: none; padding: 10px 20px; border-radius: 12px; cursor: pointer;">📥 Priorizar automáticamente (IA)</button>
-    </div>
+      <!-- PRIORIDADES A/B/C (originales, se mantienen) -->
+      <div class="priorities-header">
+        <h2 class="section-title">Prioridades del día</h2>
+      </div>
+      <div class="priorities-grid">
+        <div class="card priority-card" id="prio-dinero">
+          <h3 class="priority-title">Prioridad A</h3>
+          <ul class="priority-list" id="list-dinero"></ul>
+          <button class="btn btn-ghost btn-xs add-prio-btn" data-cat="dinero">+ Añadir</button>
+        </div>
+        <div class="card priority-card" id="prio-clientes">
+          <h3 class="priority-title">Prioridad B</h3>
+          <ul class="priority-list" id="list-clientes-prio"></ul>
+          <button class="btn btn-ghost btn-xs add-prio-btn" data-cat="clientes">+ Añadir</button>
+        </div>
+        <div class="card priority-card" id="prio-marca">
+          <h3 class="priority-title">Prioridad C</h3>
+          <ul class="priority-list" id="list-marca"></ul>
+          <button class="btn btn-ghost btn-xs add-prio-btn" data-cat="marca">+ Añadir</button>
+        </div>
+      </div>
+    </section>
 
-    <!-- Accesos Rápidos (simplificado) -->
-    <div class="card" style="display: flex; gap: 16px; flex-wrap: wrap;">
-      <a href="https://mail.google.com" target="_blank" style="text-decoration: none;">📧 Gmail</a>
-      <a href="https://drive.google.com" target="_blank" style="text-decoration: none;">📁 Drive</a>
-      <a href="https://canva.com" target="_blank" style="text-decoration: none;">🎨 Canva</a>
-      <a href="https://open.spotify.com/playlist/3py7MK3ipW2LVd0ryRlwzw" target="_blank" style="text-decoration: none;">🎵 Spotify</a>
-    </div>
+    <!-- OTRAS PANTALLAS (se mantienen igual) -->
+    <section class="screen" id="screen-clientes"><div class="screen-header"><h1>Clientes</h1></div><div id="clientsGrid"></div><button class="fab" id="addClientBtn">+</button></section>
+    <section class="screen" id="screen-contenido"><div class="screen-header"><h1>Contenido</h1></div><div id="kanbanBoard"></div></section>
+    <section class="screen" id="screen-bienestar"><div class="screen-header"><h1>Bienestar</h1></div><ul class="check-list" id="bienestarChecks"><li><label><input type="checkbox" data-key="mandalas"/> Mandalas</label></li><li><label><input type="checkbox" data-key="sol"/> Sol</label></li><li><label><input type="checkbox" data-key="coreano"/> Coreano</label></li><li><label><input type="checkbox" data-key="kickboxing"/> Kickboxing</label></li></ul></section>
+    <section class="screen" id="screen-perfil"><div class="screen-header"><h1>Perfil</h1></div><div class="card"><div class="profile-avatar">N</div><h2>Nati Pérez</h2><p>@nat2gostudio</p></div></section>
   </main>
 
   <script>
     // ==========================================
-    // NAT2GO - RESTAURADO (CON DEEPSEEK IA)
+    // NAT2GO - VERSIÓN DEFINITIVA (CON ORDENACIÓN)
     // ==========================================
     
     const URL_API = 'https://script.google.com/macros/s/AKfycbwnBN3A5YYfLZaDuyh9Glw2hR5hiX0gKRelT8p2ZKT45B7Bp6c0u8YfeyDGY6YTJGr9Ng/exec';
     const DEEPSEEK_API_KEY = 'sk-f0d93900b799462bb6229872d8084939';
     
     let tareas = [];
+    let sortType = 'prioridad'; // prioridad, entrega, fecha
     
-    // Mostrar fecha actual
-    const hoy = new Date();
-    document.getElementById('dateText').innerText = hoy.toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    // Mostrar fecha
+    document.getElementById('dateText').innerHTML = new Date().toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
     
     function setSyncStatus(text, isError) {
       const el = document.getElementById('syncStatus');
@@ -104,14 +304,11 @@
     }
     
     async function priorizarConDeepseek(texto) {
-      const prompt = `Prioriza esta tarea para Nati (diseñadora con TDAH). Responde solo A, B o C.
-Tarea: "${texto}"
-Criterios: A=urgente/salud/mascotas/ingresos, B=importante planificable, C=opcional.`;
       try {
         const res = await fetch('https://api.deepseek.com/v1/chat/completions', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${DEEPSEEK_API_KEY}` },
-          body: JSON.stringify({ model: 'deepseek-chat', messages: [{ role: 'user', content: prompt }], temperature: 0.3, max_tokens: 5 })
+          body: JSON.stringify({ model: 'deepseek-chat', messages: [{ role: 'user', content: `Prioriza solo con A, B o C: "${texto}"` }], temperature: 0.3, max_tokens: 5 })
         });
         const data = await res.json();
         let p = data.choices[0].message.content.trim().toUpperCase();
@@ -124,55 +321,58 @@ Criterios: A=urgente/salud/mascotas/ingresos, B=importante planificable, C=opcio
       }
     }
     
-    async function guardarTareas() {
-      try {
-        await fetch(`${URL_API}?tareas=${encodeURIComponent(JSON.stringify(tareas))}`);
-        localStorage.setItem('nat_tareas', JSON.stringify(tareas));
-        setSyncStatus(`✅ ${tareas.length} tareas guardadas`);
-      } catch(e) { localStorage.setItem('nat_tareas', JSON.stringify(tareas)); setSyncStatus('⚠️ Guardado local', true); }
-    }
-    
-    async function cargarTareas() {
-      try {
-        const res = await fetch(`${URL_API}?accion=tareas`);
-        const data = await res.json();
-        if (data.tareas?.length) tareas = data.tareas;
-        else tareas = JSON.parse(localStorage.getItem('nat_tareas')) || [];
-        renderizarTabla();
-        setSyncStatus(`✅ ${tareas.length} tareas cargadas`);
-      } catch(e) { tareas = JSON.parse(localStorage.getItem('nat_tareas')) || []; renderizarTabla(); setSyncStatus('📦 Modo local', true); }
+    function ordenarTareas() {
+      let copia = [...tareas];
+      if (sortType === 'prioridad') {
+        const peso = { 'A': 1, 'B': 2, 'C': 3 };
+        copia.sort((a,b) => (peso[a.prioridad]||3) - (peso[b.prioridad]||3));
+      } else if (sortType === 'entrega') {
+        copia.sort((a,b) => (a.entrega || '9999-12-31').localeCompare(b.entrega || '9999-12-31'));
+      } else if (sortType === 'fecha') {
+        copia.sort((a,b) => (b.inicio || '').localeCompare(a.inicio || ''));
+      }
+      return copia;
     }
     
     function renderizarTabla() {
       const tbody = document.getElementById('tasksTableBody');
       if (!tbody) return;
-      const orden = { A:1, B:2, C:3 };
-      const ordenadas = [...tareas].sort((a,b) => (orden[a.prioridad]||3) - (orden[b.prioridad]||3));
-      if (!ordenadas.length) { tbody.innerHTML = '<tr><td colspan="9">🎉 No hay tareas</td></tr>'; return; }
+      const ordenadas = ordenarTareas();
+      if (!ordenadas.length) { tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; padding:40px;">🎉 No hay tareas. ¡Añade una arriba! 🎉</td></tr>'; return; }
       tbody.innerHTML = ordenadas.map(t => `
-        <tr>
+        <tr class="task-row ${t.estado === 'Completada' ? 'completada' : ''}">
           <td><input type="checkbox" ${t.estado === 'Completada' ? 'checked' : ''} onchange="toggleTarea(${t.id})"></td>
-          <td><strong>${escapeHtml(t.tarea)}</strong>${t.notas ? `<br><small>📌 ${escapeHtml(t.notas)}</small>` : ''}</td>
+          <td><strong>${escapeHtml(t.tarea)}</strong>${t.notas ? `<br><small style="color:#718096;">📌 ${escapeHtml(t.notas)}</small>` : ''}</td>
           <td><span class="priority-${t.prioridad}">Prioridad ${t.prioridad}</span></td>
           <td>${t.estado || 'Pendiente'}</td>
-          <td><div style="display:flex; gap:5px;"><span>${t.progreso||0}%</span><button class="btn-small" onclick="cambiarProgreso(${t.id},${(t.progreso||0)+10})">+10%</button></div></td>
+          <td><div style="display:flex; gap:6px; align-items:center;"><span>${t.progreso||0}%</span><button class="btn-secondary" style="padding:2px 8px;" onclick="cambiarProgreso(${t.id},${(t.progreso||0)+10})">+10%</button></div></td>
           <td>${t.inicio || ''}</td>
-          <td><input type="date" value="${t.entrega || ''}" onchange="cambiarEntrega(${t.id}, this.value)"></td>
-          <td><button class="btn-small" onclick="editarNotas(${t.id})">📝</button></td>
-          <td><button class="btn-small btn-danger" onclick="eliminarTarea(${t.id})">🗑️</button></td>
+          <td><input type="date" value="${t.entrega || ''}" onchange="cambiarEntrega(${t.id}, this.value)" style="padding:6px; border:1px solid #ddd; border-radius:40px;"></td>
+          <td><button class="btn-secondary" style="padding:4px 10px;" onclick="editarNotas(${t.id})">📝</button></td>
+          <td><button class="btn-secondary" style="background:#fee2e2; color:#c53030;" onclick="eliminarTarea(${t.id})">🗑️</button></td>
         </tr>
       `).join('');
       const pend = tareas.filter(t => t.estado !== 'Completada').length;
-      document.getElementById('contadorPendientes').innerText = `${pend} pendientes`;
+      document.getElementById('contadorPendientes').innerText = `${pend} pendiente${pend !== 1 ? 's' : ''}`;
     }
     
     function escapeHtml(t) { const d = document.createElement('div'); d.textContent = t; return d.innerHTML; }
     
     window.toggleTarea = (id) => { const t = tareas.find(t => t.id == id); if(t) { t.estado = t.estado === 'Completada' ? 'Pendiente' : 'Completada'; renderizarTabla(); guardarTareas(); } };
     window.cambiarProgreso = (id, p) => { const t = tareas.find(t => t.id == id); if(t) { t.progreso = Math.min(100, p); if(t.progreso===100) t.estado='Completada'; renderizarTabla(); guardarTareas(); } };
-    window.cambiarEntrega = (id, f) => { const t = tareas.find(t => t.id == id); if(t) { t.entrega = f; guardarTareas(); } };
+    window.cambiarEntrega = (id, f) => { const t = tareas.find(t => t.id == id); if(t) { t.entrega = f; if(sortType === 'entrega') renderizarTabla(); else guardarTareas(); } };
     window.editarNotas = (id) => { const t = tareas.find(t => t.id == id); if(t) { const n = prompt('Notas:', t.notas||''); if(n!==null) { t.notas=n; renderizarTabla(); guardarTareas(); } } };
-    window.eliminarTarea = (id) => { if(confirm('¿Eliminar?')) { tareas = tareas.filter(t => t.id != id); renderizarTabla(); guardarTareas(); } };
+    window.eliminarTarea = (id) => { if(confirm('¿Eliminar tarea?')) { tareas = tareas.filter(t => t.id != id); renderizarTabla(); guardarTareas(); } };
+    
+    async function guardarTareas() {
+      try { await fetch(`${URL_API}?tareas=${encodeURIComponent(JSON.stringify(tareas))}`); localStorage.setItem('nat_tareas', JSON.stringify(tareas)); setSyncStatus(`✅ ${tareas.length} tareas guardadas`); }
+      catch(e) { localStorage.setItem('nat_tareas', JSON.stringify(tareas)); setSyncStatus('⚠️ Guardado local', true); }
+    }
+    
+    async function cargarTareas() {
+      try { const res = await fetch(`${URL_API}?accion=tareas`); const data = await res.json(); if (data.tareas?.length) tareas = data.tareas; else tareas = JSON.parse(localStorage.getItem('nat_tareas')) || []; renderizarTabla(); setSyncStatus(`✅ ${tareas.length} tareas cargadas`); }
+      catch(e) { tareas = JSON.parse(localStorage.getItem('nat_tareas')) || []; renderizarTabla(); setSyncStatus('📦 Modo local', true); }
+    }
     
     async function agregarTarea(texto, manual) {
       if (!texto.trim()) return;
@@ -186,21 +386,22 @@ Criterios: A=urgente/salud/mascotas/ingresos, B=importante planificable, C=opcio
       const ta = document.getElementById('bulkTasksInput');
       if (!ta.value.trim()) { alert('Escribe tareas (una por línea)'); return; }
       const lineas = ta.value.split(/\r?\n/).filter(l => l.trim());
+      setSyncStatus(`🤖 Procesando ${lineas.length} tareas con IA...`);
       for (const linea of lineas) await agregarTarea(linea, 'auto');
       ta.value = '';
+      setSyncStatus(`✅ ${lineas.length} tareas añadidas`);
       alert(`✨ ${lineas.length} tareas añadidas con IA`);
     }
     
     document.addEventListener('DOMContentLoaded', () => {
       cargarTareas();
-      document.getElementById('agregarTareaBtn').onclick = async () => {
-        await agregarTarea(document.getElementById('nuevaTareaInput').value, document.getElementById('prioridadManualSelect').value);
-        document.getElementById('nuevaTareaInput').value = '';
-      };
+      document.getElementById('agregarTareaBtn').onclick = async () => { await agregarTarea(document.getElementById('nuevaTareaInput').value, document.getElementById('prioridadManualSelect').value); document.getElementById('nuevaTareaInput').value = ''; };
       document.getElementById('bulkPrioritizeBtn').onclick = procesarCaptura;
-      document.getElementById('limpiarCompletadasBtn').onclick = () => {
-        if(confirm('¿Eliminar completadas?')) { tareas = tareas.filter(t => t.estado !== 'Completada'); renderizarTabla(); guardarTareas(); }
-      };
+      document.getElementById('limpiarCompletadasBtn').onclick = () => { if(confirm('¿Eliminar completadas?')) { tareas = tareas.filter(t => t.estado !== 'Completada'); renderizarTabla(); guardarTareas(); } };
+      // Botones de ordenación
+      document.querySelectorAll('.sort-btn').forEach(btn => {
+        btn.onclick = () => { document.querySelectorAll('.sort-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active'); sortType = btn.dataset.sort; renderizarTabla(); };
+      });
     });
   </script>
 </body>
