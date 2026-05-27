@@ -9,7 +9,6 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="./style.css" />
   <style>
-    /* Estilos adicionales para la tabla de tareas */
     .tasks-table-container {
       background: white;
       border-radius: 16px;
@@ -23,8 +22,7 @@
       border-collapse: collapse;
       font-size: 0.85rem;
     }
-    .tasks-table th,
-    .tasks-table td {
+    .tasks-table th, .tasks-table td {
       padding: 12px 8px;
       text-align: left;
       border-bottom: 1px solid #e2e8f0;
@@ -76,7 +74,6 @@
       margin: 0 2px;
     }
     .btn-small:hover { opacity: 0.8; }
-    .btn-success { background: #48bb78; color: white; }
     .btn-danger { background: #f56565; color: white; }
     .task-row.completada {
       opacity: 0.6;
@@ -93,112 +90,28 @@
 </head>
 <body>
 
-  <!-- ===================== SIDEBAR (desktop) ===================== -->
   <nav class="sidebar" id="sidebar">
-    <div class="sidebar-logo">
-      <span class="logo-mark">GN</span>
-    </div>
+    <div class="sidebar-logo"><span class="logo-mark">GN</span></div>
     <ul class="nav-list">
-      <li class="nav-item active" data-screen="dashboard">
-        <button class="nav-btn" aria-label="Dashboard">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z"/>
-            <path d="M9 21V12h6v9"/>
-          </svg>
-          <span class="nav-dot"></span>
-        </button>
-      </li>
-      <li class="nav-item" data-screen="clientes">
-        <button class="nav-btn" aria-label="Clientes">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="9" cy="7" r="3"/>
-            <path d="M3 21v-2a4 4 0 014-4h4a4 4 0 014 4v2"/>
-            <path d="M16 3.13a4 4 0 010 7.75"/>
-            <path d="M21 21v-2a4 4 0 00-3-3.85"/>
-          </svg>
-          <span class="nav-dot"></span>
-        </button>
-      </li>
-      <li class="nav-item" data-screen="contenido">
-        <button class="nav-btn" aria-label="Contenido">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 20h9"/>
-            <path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/>
-          </svg>
-          <span class="nav-dot"></span>
-        </button>
-      </li>
-      <li class="nav-item" data-screen="bienestar">
-        <button class="nav-btn" aria-label="Bienestar">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/>
-          </svg>
-          <span class="nav-dot"></span>
-        </button>
-      </li>
-      <li class="nav-item" data-screen="perfil">
-        <button class="nav-btn" aria-label="Perfil">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="8" r="4"/>
-            <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
-          </svg>
-          <span class="nav-dot"></span>
-        </button>
-      </li>
+      <li class="nav-item active" data-screen="dashboard"><button class="nav-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z"/><path d="M9 21V12h6v9"/></svg><span class="nav-dot"></span></button></li>
+      <li class="nav-item" data-screen="clientes"><button class="nav-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="7" r="3"/><path d="M3 21v-2a4 4 0 014-4h4a4 4 0 014 4v2"/><path d="M16 3.13a4 4 0 010 7.75"/><path d="M21 21v-2a4 4 0 00-3-3.85"/></svg><span class="nav-dot"></span></button></li>
+      <li class="nav-item" data-screen="contenido"><button class="nav-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg><span class="nav-dot"></span></button></li>
+      <li class="nav-item" data-screen="bienestar"><button class="nav-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg><span class="nav-dot"></span></button></li>
+      <li class="nav-item" data-screen="perfil"><button class="nav-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg><span class="nav-dot"></span></button></li>
     </ul>
   </nav>
 
-  <!-- ===================== BOTTOM NAV (mobile) ===================== -->
   <nav class="bottom-nav" id="bottomNav">
     <ul class="bottom-nav-list">
-      <li class="bottom-nav-item active" data-screen="dashboard">
-        <button class="bottom-nav-btn" aria-label="Dashboard">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z"/>
-            <path d="M9 21V12h6v9"/>
-          </svg>
-        </button>
-      </li>
-      <li class="bottom-nav-item" data-screen="clientes">
-        <button class="bottom-nav-btn" aria-label="Clientes">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="9" cy="7" r="3"/>
-            <path d="M3 21v-2a4 4 0 014-4h4a4 4 0 014 4v2"/>
-            <path d="M16 3.13a4 4 0 010 7.75"/>
-            <path d="M21 21v-2a4 4 0 00-3-3.85"/>
-          </svg>
-        </button>
-      </li>
-      <li class="bottom-nav-item" data-screen="contenido">
-        <button class="bottom-nav-btn" aria-label="Contenido">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 20h9"/>
-            <path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/>
-          </svg>
-        </button>
-      </li>
-      <li class="bottom-nav-item" data-screen="bienestar">
-        <button class="bottom-nav-btn" aria-label="Bienestar">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/>
-          </svg>
-        </button>
-      </li>
-      <li class="bottom-nav-item" data-screen="perfil">
-        <button class="bottom-nav-btn" aria-label="Perfil">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="8" r="4"/>
-            <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
-          </svg>
-        </button>
-      </li>
+      <li class="bottom-nav-item active" data-screen="dashboard"><button class="bottom-nav-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z"/><path d="M9 21V12h6v9"/></svg></button></li>
+      <li class="bottom-nav-item" data-screen="clientes"><button class="bottom-nav-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="7" r="3"/><path d="M3 21v-2a4 4 0 014-4h4a4 4 0 014 4v2"/><path d="M16 3.13a4 4 0 010 7.75"/><path d="M21 21v-2a4 4 0 00-3-3.85"/></svg></button></li>
+      <li class="bottom-nav-item" data-screen="contenido"><button class="bottom-nav-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></button></li>
+      <li class="bottom-nav-item" data-screen="bienestar"><button class="bottom-nav-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg></button></li>
+      <li class="bottom-nav-item" data-screen="perfil"><button class="bottom-nav-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg></button></li>
     </ul>
   </nav>
 
-  <!-- ===================== MAIN CONTENT ===================== -->
   <main class="main-content" id="mainContent">
-
-    <!-- ==================== SCREEN: DASHBOARD ==================== -->
     <section class="screen active" id="screen-dashboard">
       <div class="screen-header">
         <div class="header-text">
@@ -208,14 +121,12 @@
         <img src="images/nati-writing.png" alt="Nati escribiendo" class="header-illustration" id="natiWritingImg" />
       </div>
 
-      <!-- CORAZÓN DEL PROYECTO: TABLA DE TAREAS -->
       <div class="card" style="margin-bottom: 1.5rem;">
         <h2 class="card-title" style="display: flex; justify-content: space-between; align-items: center;">
           🧠 Corazón del Proyecto
           <button id="syncNowBtn" style="background: #4a90e2; color: white; border: none; padding: 5px 12px; border-radius: 20px; font-size: 0.75rem;">🔄 Sincronizar</button>
         </h2>
         
-        <!-- Entrada rápida de tarea -->
         <div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;">
           <input type="text" id="nuevaTareaInput" placeholder="Escribe una nueva tarea..." style="flex: 2; padding: 10px; border: 2px solid #e2e8f0; border-radius: 12px;">
           <select id="prioridadManualSelect" style="padding: 10px; border-radius: 12px; border: 2px solid #e2e8f0;">
@@ -227,90 +138,50 @@
           <button id="agregarTareaBtn" style="background: #ff6b6b; color: white; border: none; padding: 0 20px; border-radius: 12px;">+ Agregar</button>
         </div>
 
-        <!-- Tabla de tareas -->
         <div class="tasks-table-container">
-          <table class="tasks-table" id="tasksTable">
-            <thead>
-              <tr>
-                <th>✅</th>
-                <th>Tarea</th>
-                <th>Prioridad</th>
-                <th>Sub-Prioridad</th>
-                <th>Estado</th>
-                <th>Progreso</th>
-                <th>Inicio</th>
-                <th>Entrega</th>
-                <th>📝</th>
-                <th>🗑️</th>
-              </tr>
-            </thead>
-            <tbody id="tasksTableBody">
-              <tr><td colspan="10" style="text-align:center; padding:40px;">✨ Cargando tareas... ✨</td></tr>
-            </tbody>
+          <table class="tasks-table">
+            <thead><tr><th>✅</th><th>Tarea</th><th>Prioridad</th><th>Sub-Prioridad</th><th>Estado</th><th>Progreso</th><th>Inicio</th><th>Entrega</th><th>📝</th><th>🗑️</th></tr></thead>
+            <tbody id="tasksTableBody"><tr><td colspan="10" style="text-align:center; padding:40px;">✨ Cargando tareas... ✨</td></tr></tbody>
           </table>
         </div>
 
-        <!-- Controles adicionales -->
         <div style="display: flex; justify-content: space-between; margin-top: 15px;">
           <div>
             <button id="ordenarPrioridadBtn" class="btn-small">⬇️ Ordenar por prioridad</button>
             <button id="limpiarCompletadasBtn" class="btn-small btn-danger">🗑️ Limpiar completadas</button>
           </div>
-          <div>
-            <span id="contadorPendientes" style="background: #edf2f7; padding: 5px 12px; border-radius: 20px;">0 pendientes</span>
-          </div>
+          <div><span id="contadorPendientes" style="background: #edf2f7; padding: 5px 12px; border-radius: 20px;">0 pendientes</span></div>
         </div>
         
-        <!-- Estado de sincronización -->
-        <div class="sync-status" id="syncStatus">
-          🔄 Conectando con Google Sheets...
-        </div>
+        <div class="sync-status" id="syncStatus">🔄 Conectando con Google Sheets...</div>
       </div>
 
-      <!-- Captura masiva de tareas -->
       <div class="card card--accordion bulk-capture-card" id="bulkCaptureCard">
         <div class="card-header" data-toggle="bulkCaptureCard">
-          <div class="card-header-content">
-            <h2 class="card-title--accordion">Captura masiva de tareas</h2>
-          </div>
-          <div class="card-toggle-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><polyline points="6 9 12 15 18 9"></polyline></svg>
-          </div>
+          <div class="card-header-content"><h2 class="card-title--accordion">Captura masiva de tareas</h2></div>
+          <div class="card-toggle-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><polyline points="6 9 12 15 18 9"></polyline></svg></div>
         </div>
         <div class="card-content">
           <p class="card-desc">Escribe todas tus tareas (una por línea). Las clasificamos en A, B o C según su tipo.</p>
           <textarea class="bulk-textarea" id="bulkTasksInput" placeholder="Cobrar factura a cliente&#10;Escribir newsletter de Casa Bella&#10;Publicar en Instagram&#10;Revisar propuesta..." rows="4"></textarea>
-          <button class="btn btn-primary btn-sm" id="bulkPrioritizeBtn">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
-            Priorizar automáticamente
-          </button>
+          <button class="btn btn-primary btn-sm" id="bulkPrioritizeBtn">Priorizar automáticamente</button>
         </div>
       </div>
-
-      <!-- El resto del contenido del dashboard se mantiene -->
-      <div class="dashboard-top-grid" style="margin-top: 1rem;">
-        <!-- Aquí irían tus elementos originales -->
-      </div>
-      
     </section>
-
-    <!-- Las demás pantallas (clientes, contenido, bienestar, perfil) se mantienen igual -->
-    
   </main>
 
   <script src="./app.js"></script>
-
   <script>
     // ==========================================
-    // NAT2GO - SISTEMA COMPLETO DE TAREAS (CORREGIDO)
+    // NAT2GO - VERSIÓN SIN CORS (USANDO GET PARA GUARDAR)
     // ==========================================
     
-    const URL_API = 'https://script.google.com/macros/s/AKfycbyKdaTOYVacorUJvW_4VrSbTW1z-jP5PaJy0Wv18c0Qv9qVd7-7w1GlVtb-1KXHp6NbNQ/exec';
+    // 👇 PON AQUÍ LA NUEVA URL DE APPS SCRIPT QUE TE DÉ
+    const URL_API = 'https://script.google.com/macros/s/AKfycbwnBN3A5YYfLZaDuyh9Glw2hR5hiX0gKRelT8p2ZKT45B7Bp6c0u8YfeyDGY6YTJGr9Ng/exec';
     
     let tareas = [];
     
-    // Función para actualizar el estado visual
-    function setSyncStatus(text, isError = false) {
+    function setSyncStatus(text, isError) {
       const statusDiv = document.getElementById('syncStatus');
       if (statusDiv) {
         statusDiv.innerHTML = text;
@@ -319,12 +190,10 @@
       }
     }
     
-    // ========== PRIORIZACIÓN AUTOMÁTICA ==========
     function priorizarAutomaticamente(texto) {
       const t = texto.toLowerCase();
-      const palabrasA = ['urgente', 'hoy', 'ahora', 'inmediato', 'cliente', 'reunión', 'llamar', 'entrega', 'deadline', 'límite', 'cobrar', 'factura', 'pago', 'contrato'];
-      const palabrasB = ['preparar', 'revisar', 'enviar', 'crear', 'diseñar', 'escribir', 'newsletter', 'blog', 'post', 'presupuesto', 'propuesta'];
-      
+      const palabrasA = ['urgente', 'hoy', 'ahora', 'inmediato', 'cliente', 'reunión', 'llamar', 'entrega', 'deadline', 'límite', 'cobrar', 'factura', 'pago'];
+      const palabrasB = ['preparar', 'revisar', 'enviar', 'crear', 'diseñar', 'escribir', 'newsletter', 'blog', 'post', 'presupuesto'];
       for (let p of palabrasA) if (t.includes(p)) return 'A';
       for (let p of palabrasB) if (t.includes(p)) return 'B';
       return 'C';
@@ -332,114 +201,70 @@
     
     function detectarSubPrioridad(texto) {
       const t = texto.toLowerCase();
-      if (t.includes('cliente') || t.includes('casa bella') || t.includes('roscón')) return 'Cliente';
+      if (t.includes('cliente')) return 'Cliente';
       if (t.includes('factura') || t.includes('cobrar') || t.includes('pago')) return 'Dinero';
       if (t.includes('newsletter') || t.includes('blog') || t.includes('post')) return 'Contenido';
-      if (t.includes('rutina') || t.includes('kickboxing')) return 'Bienestar';
       return 'General';
     }
     
-    // ========== SINCRONIZACIÓN CON SHEETS ==========
-    async function cargarTareas() {
-      try {
-        setSyncStatus('🔄 Cargando tareas desde Google Sheets...');
-        console.log('🔄 Cargando tareas desde:', URL_API);
-        
-        const res = await fetch(`${URL_API}?accion=tareas`);
-        console.log('📡 Respuesta GET:', res.status);
-        
-        const data = await res.json();
-        console.log('📦 Datos recibidos:', data);
-        
-        if (data.tareas && data.tareas.length > 0) {
-          tareas = data.tareas;
-          console.log(`✅ ${tareas.length} tareas cargadas desde Sheets`);
-          setSyncStatus(`✅ Sincronizado: ${tareas.length} tareas cargadas`);
-        } else {
-          console.log('📭 No hay tareas en Sheets, cargando local...');
-          cargarLocalmente();
-          setSyncStatus(`📦 Modo local: ${tareas.length} tareas cargadas`);
-        }
-        renderizarTabla();
-      } catch(e) {
-        console.error('❌ Error al cargar:', e);
-        setSyncStatus(`⚠️ Error de conexión: ${e.message}. Usando datos locales.`, true);
-        cargarLocalmente();
-        renderizarTabla();
-      }
-    }
-    
+    // Guardar usando GET (sin CORS)
     async function guardarTareas() {
       try {
-        console.log('💾 Guardando', tareas.length, 'tareas en Google Sheets...');
-        setSyncStatus('💾 Guardando en Google Sheets...');
+        const tareasJSON = encodeURIComponent(JSON.stringify(tareas));
+        const url = `${URL_API}?tareas=${tareasJSON}`;
+        console.log('💾 Guardando con GET:', url.substring(0, 200));
         
-        const response = await fetch(URL_API, {
-          method: 'POST',
-          headers: { 
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ tareas: tareas })
-        });
+        const response = await fetch(url);
+        const data = await response.json();
+        console.log('✅ Respuesta guardado:', data);
         
-        console.log('📡 Respuesta POST:', response.status);
-        
-        let respuesta;
-        try {
-          respuesta = await response.json();
-          console.log('📤 Respuesta del servidor:', respuesta);
-        } catch(e) {
-          console.warn('No se pudo parsear respuesta JSON:', e);
-          respuesta = { success: true };
+        if (data.success) {
+          setSyncStatus(`✅ ${tareas.length} tareas guardadas en Google Sheets`);
         }
-        
-        if (respuesta.success !== false) {
-          console.log('✅ Tareas guardadas correctamente en Google Sheets');
-          setSyncStatus(`✅ Guardado: ${tareas.length} tareas en la nube`);
-        } else {
-          console.warn('⚠️ Respuesta inesperada:', respuesta);
-          setSyncStatus(`⚠️ Guardado local: ${tareas.length} tareas (sync pendiente)`, true);
-        }
-        
         guardarLocalmente();
         return true;
       } catch(e) {
-        console.error('❌ ERROR al guardar en Sheets:', e.message);
-        setSyncStatus(`❌ Error de red: ${e.message}. Guardado solo local.`, true);
+        console.error('❌ Error guardando:', e);
+        setSyncStatus(`⚠️ Guardado solo local: ${e.message}`, true);
         guardarLocalmente();
         return false;
       }
     }
     
+    async function cargarTareas() {
+      try {
+        setSyncStatus('🔄 Cargando tareas...');
+        const res = await fetch(`${URL_API}?accion=tareas`);
+        const data = await res.json();
+        
+        if (data.tareas && data.tareas.length > 0) {
+          tareas = data.tareas;
+          setSyncStatus(`✅ ${tareas.length} tareas cargadas desde Sheets`);
+        } else {
+          cargarLocalmente();
+          setSyncStatus(`📦 ${tareas.length} tareas desde localStorage`);
+        }
+        renderizarTabla();
+      } catch(e) {
+        cargarLocalmente();
+        renderizarTabla();
+        setSyncStatus(`📦 Modo local: ${tareas.length} tareas`, true);
+      }
+    }
+    
     function guardarLocalmente() {
       localStorage.setItem('nat_tareas_completas', JSON.stringify(tareas));
-      console.log('📦 Backup local guardado');
     }
     
     function cargarLocalmente() {
       const local = localStorage.getItem('nat_tareas_completas');
-      if (local) {
+      if (local && JSON.parse(local).length > 0) {
         tareas = JSON.parse(local);
-        console.log(`📦 ${tareas.length} tareas cargadas desde localStorage`);
       } else {
-        console.log('📦 No hay datos locales, creando tarea de ejemplo');
-        tareas = [
-          { 
-            id: Date.now(), 
-            tarea: "🎉 ¡Bienvenida! Esta tarea se guardará en Google Sheets", 
-            prioridad: "A", 
-            subPrioridad: "General", 
-            estado: "Pendiente", 
-            progreso: 0, 
-            inicio: new Date().toLocaleDateString('es-ES'), 
-            entrega: "", 
-            notas: "Prueba el sistema añadiendo más tareas" 
-          }
-        ];
+        tareas = [];
       }
     }
     
-    // ========== RENDERIZAR TABLA ==========
     function renderizarTabla() {
       const tbody = document.getElementById('tasksTableBody');
       if (!tbody) return;
@@ -453,197 +278,77 @@
       
       if (ordenadas.length === 0) {
         tbody.innerHTML = '<tr><td colspan="10" style="text-align:center; padding:40px;">🎉 ¡No hay tareas! Añade una arriba 🎉</td></tr>';
-        const contador = document.getElementById('contadorPendientes');
-        if (contador) contador.innerText = '0 pendientes';
+        const c = document.getElementById('contadorPendientes');
+        if (c) c.innerText = '0 pendientes';
         return;
       }
       
       tbody.innerHTML = ordenadas.map(t => `
-        <tr class="task-row ${t.estado === 'Completada' ? 'completada' : ''}" data-id="${t.id}">
+        <tr class="task-row ${t.estado === 'Completada' ? 'completada' : ''}">
           <td><input type="checkbox" ${t.estado === 'Completada' ? 'checked' : ''} onchange="window.toggleEstado(${t.id})"></td>
-          <td><strong>${escapeHtml(t.tarea)}</strong>${t.notas ? `<br><small style="color:#718096;">📌 ${escapeHtml(t.notas)}</small>` : ''}</td>
+          <td><strong>${escapeHtml(t.tarea)}</strong>${t.notas ? `<br><small>📌 ${escapeHtml(t.notas)}</small>` : ''}</td>
           <td><span class="priority-badge priority-${t.prioridad}">Prioridad ${t.prioridad}</span></td>
           <td>${t.subPrioridad || 'General'}</td>
           <td><span class="estado-badge estado-${t.estado === 'Completada' ? 'completada' : (t.estado === 'En curso' ? 'curso' : 'pendiente')}">${t.estado || 'Pendiente'}</span></td>
-          <td>
-            <div style="display: flex; align-items: center; gap: 5px;">
-              <span style="font-size:0.7rem;">${t.progreso || 0}%</span>
-              <div class="progress-bar"><div class="progress-fill" style="width: ${t.progreso || 0}%"></div></div>
-              <button class="btn-small" onclick="window.cambiarProgreso(${t.id}, ${(t.progreso || 0) + 10})">+10%</button>
-            </div>
-           </td>
+          <td><div style="display: flex; align-items: center; gap: 5px;"><span style="font-size:0.7rem;">${t.progreso || 0}%</span><div class="progress-bar"><div class="progress-fill" style="width: ${t.progreso || 0}%"></div></div><button class="btn-small" onclick="window.cambiarProgreso(${t.id}, ${(t.progreso || 0) + 10})">+10%</button></div></td>
           <td>${t.inicio || ''}</td>
           <td><input type="date" value="${t.entrega || ''}" onchange="window.cambiarEntrega(${t.id}, this.value)" style="padding:4px; font-size:0.7rem; border:1px solid #e2e8f0; border-radius:6px;"></td>
           <td><button class="btn-small" onclick="window.editarNotas(${t.id})">📝</button></td>
           <td><button class="btn-small btn-danger" onclick="window.eliminarTarea(${t.id})">🗑️</button></td>
-         </tr>
+        </tr>
       `).join('');
       
       const pendientes = tareas.filter(t => t.estado !== 'Completada').length;
-      const contadorElem = document.getElementById('contadorPendientes');
-      if (contadorElem) contadorElem.innerText = `${pendientes} pendientes`;
+      const c = document.getElementById('contadorPendientes');
+      if (c) c.innerText = `${pendientes} pendientes`;
     }
     
-    function escapeHtml(text) { 
-      if (!text) return '';
-      const div = document.createElement('div'); 
-      div.textContent = text; 
-      return div.innerHTML; 
-    }
+    function escapeHtml(text) { if (!text) return ''; const div = document.createElement('div'); div.textContent = text; return div.innerHTML; }
     
-    // ========== ACCIONES DE TAREAS (globales para que funcionen los onclick) ==========
     window.toggleEstado = (id) => {
-      const tarea = tareas.find(t => t.id == id);
-      if (tarea) {
-        tarea.estado = tarea.estado === 'Completada' ? 'Pendiente' : 'Completada';
-        tarea.progreso = tarea.estado === 'Completada' ? 100 : (tarea.progreso || 0);
-        renderizarTabla();
-        guardarTareas();
-      }
+      const t = tareas.find(t => t.id == id);
+      if (t) { t.estado = t.estado === 'Completada' ? 'Pendiente' : 'Completada'; t.progreso = t.estado === 'Completada' ? 100 : (t.progreso || 0); renderizarTabla(); guardarTareas(); }
     };
     
-    window.cambiarProgreso = (id, nuevoProgreso) => {
-      const tarea = tareas.find(t => t.id == id);
-      if (tarea) {
-        let progreso = Math.min(100, Math.max(0, nuevoProgreso));
-        tarea.progreso = progreso;
-        if (progreso === 100) tarea.estado = 'Completada';
-        else if (progreso > 0 && tarea.estado !== 'Completada') tarea.estado = 'En curso';
-        renderizarTabla();
-        guardarTareas();
-      }
+    window.cambiarProgreso = (id, nuevo) => {
+      const t = tareas.find(t => t.id == id);
+      if (t) { let p = Math.min(100, Math.max(0, nuevo)); t.progreso = p; if (p === 100) t.estado = 'Completada'; else if (p > 0 && t.estado !== 'Completada') t.estado = 'En curso'; renderizarTabla(); guardarTareas(); }
     };
     
-    window.cambiarEntrega = (id, fecha) => {
-      const tarea = tareas.find(t => t.id == id);
-      if (tarea) { 
-        tarea.entrega = fecha; 
-        guardarTareas();
-      }
-    };
+    window.cambiarEntrega = (id, fecha) => { const t = tareas.find(t => t.id == id); if (t) { t.entrega = fecha; guardarTareas(); } };
     
-    window.editarNotas = (id) => {
-      const tarea = tareas.find(t => t.id == id);
-      if (tarea) {
-        const nuevas = prompt('Notas:', tarea.notas || '');
-        if (nuevas !== null) { 
-          tarea.notas = nuevas; 
-          renderizarTabla(); 
-          guardarTareas();
-        }
-      }
-    };
+    window.editarNotas = (id) => { const t = tareas.find(t => t.id == id); if (t) { const n = prompt('Notas:', t.notas || ''); if (n !== null) { t.notas = n; renderizarTabla(); guardarTareas(); } } };
     
-    window.eliminarTarea = (id) => {
-      if (confirm('¿Eliminar esta tarea?')) {
-        tareas = tareas.filter(t => t.id != id);
-        renderizarTabla();
-        guardarTareas();
-      }
-    };
+    window.eliminarTarea = (id) => { if (confirm('¿Eliminar?')) { tareas = tareas.filter(t => t.id != id); renderizarTabla(); guardarTareas(); } };
     
-    function agregarTarea(texto, prioridadManual = null) {
+    function agregarTarea(texto, prioridadManual) {
       if (!texto.trim()) return;
-      
       const prioridad = prioridadManual === 'auto' || !prioridadManual ? priorizarAutomaticamente(texto) : prioridadManual;
-      
-      const nueva = {
-        id: Date.now(),
-        tarea: texto.trim(),
-        prioridad: prioridad,
-        subPrioridad: detectarSubPrioridad(texto),
-        estado: 'Pendiente',
-        progreso: 0,
-        inicio: new Date().toLocaleDateString('es-ES'),
-        entrega: '',
-        notas: ''
-      };
-      
-      tareas.unshift(nueva);
+      tareas.unshift({ id: Date.now(), tarea: texto.trim(), prioridad: prioridad, subPrioridad: detectarSubPrioridad(texto), estado: 'Pendiente', progreso: 0, inicio: new Date().toLocaleDateString('es-ES'), entrega: '', notas: '' });
       renderizarTabla();
-      
-      // Guardar inmediatamente después de añadir
       guardarTareas();
-      
-      console.log(`➕ Tarea añadida: "${texto}" (Prioridad ${prioridad})`);
     }
     
     function procesarCapturaMasiva() {
-      const textarea = document.getElementById('bulkTasksInput');
-      if (!textarea || !textarea.value.trim()) { 
-        alert('Escribe tus tareas (una por línea)'); 
-        return; 
-      }
-      
-      const lineas = textarea.value.split(/\r?\n/).filter(l => l.trim());
-      if (lineas.length === 0) return;
-      
-      console.log(`📝 Procesando ${lineas.length} tareas desde captura masiva...`);
-      
-      // Añadir tareas una por una
-      lineas.forEach(linea => {
-        agregarTarea(linea, 'auto');
-      });
-      
-      textarea.value = '';
-      
-      // Guardado ya se hace dentro de agregarTarea
-      setTimeout(() => {
-        alert(`✨ ${lineas.length} tareas añadidas y guardadas en Google Sheets`);
-      }, 500);
+      const ta = document.getElementById('bulkTasksInput');
+      if (!ta || !ta.value.trim()) { alert('Escribe tareas (una por línea)'); return; }
+      ta.value.split(/\r?\n/).filter(l => l.trim()).forEach(l => agregarTarea(l, 'auto'));
+      ta.value = '';
+      alert('✅ Tareas añadidas');
     }
     
     function limpiarCompletadas() {
-      if (confirm('¿Eliminar todas las tareas completadas?')) {
-        const antes = tareas.length;
-        tareas = tareas.filter(t => t.estado !== 'Completada');
-        const eliminadas = antes - tareas.length;
-        renderizarTabla();
-        guardarTareas();
-        alert(`🗑️ ${eliminadas} tareas completadas eliminadas`);
-      }
+      if (confirm('¿Eliminar completadas?')) { tareas = tareas.filter(t => t.estado !== 'Completada'); renderizarTabla(); guardarTareas(); alert('✅ Completadas eliminadas'); }
     }
     
-    // ========== INICIALIZACIÓN ==========
     document.addEventListener('DOMContentLoaded', async () => {
-      console.log('🚀 Iniciando panel...');
-      
-      // Cargar tareas
       await cargarTareas();
-      
-      // Configurar botones
-      const btnAgregar = document.getElementById('agregarTareaBtn');
-      const inputTarea = document.getElementById('nuevaTareaInput');
-      const selectPrioridad = document.getElementById('prioridadManualSelect');
-      const btnBulk = document.getElementById('bulkPrioritizeBtn');
-      const btnLimpiar = document.getElementById('limpiarCompletadasBtn');
-      const btnOrdenar = document.getElementById('ordenarPrioridadBtn');
-      const btnSync = document.getElementById('syncNowBtn');
-      
-      if (btnAgregar) {
-        btnAgregar.onclick = () => {
-          agregarTarea(inputTarea.value, selectPrioridad.value);
-          inputTarea.value = '';
-        };
-      }
-      
-      if (inputTarea) {
-        inputTarea.addEventListener('keypress', (e) => {
-          if (e.key === 'Enter' && btnAgregar) btnAgregar.click();
-        });
-      }
-      
-      if (btnBulk) btnBulk.onclick = procesarCapturaMasiva;
-      if (btnLimpiar) btnLimpiar.onclick = limpiarCompletadas;
-      if (btnOrdenar) btnOrdenar.onclick = () => renderizarTabla();
-      if (btnSync) {
-        btnSync.onclick = async () => {
-          await guardarTareas();
-          alert('✅ Sincronización completada. Revisa tu Google Sheets.');
-        };
-      }
-      
-      console.log('✅ Panel listo. Abre la consola (F12) para ver los mensajes.');
+      document.getElementById('agregarTareaBtn').onclick = () => { agregarTarea(document.getElementById('nuevaTareaInput').value, document.getElementById('prioridadManualSelect').value); document.getElementById('nuevaTareaInput').value = ''; };
+      document.getElementById('nuevaTareaInput').addEventListener('keypress', e => { if (e.key === 'Enter') document.getElementById('agregarTareaBtn').click(); });
+      document.getElementById('bulkPrioritizeBtn').onclick = procesarCapturaMasiva;
+      document.getElementById('limpiarCompletadasBtn').onclick = limpiarCompletadas;
+      document.getElementById('ordenarPrioridadBtn').onclick = () => renderizarTabla();
+      document.getElementById('syncNowBtn').onclick = async () => { await guardarTareas(); alert('✅ Sincronizado. Revisa Google Sheets.'); };
     });
   </script>
 </body>
