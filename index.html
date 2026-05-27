@@ -481,13 +481,28 @@
     }
     
     function procesarCapturaMasiva() {
-      const textarea = document.getElementById('bulkTasksInput');
-      if (!textarea || !textarea.value.trim()) { alert('Escribe tus tareas (una por línea)'); return; }
-      const lineas = textarea.value.split(/\r?\n/).filter(l => l.trim());
-      lineas.forEach(linea => agregarTarea(linea, 'auto'));
-      textarea.value = '';
-      alert(`✨ ${lineas.length} tareas añadidas`);
-    }
+  const textarea = document.getElementById('bulkTasksInput');
+  if (!textarea || !textarea.value.trim()) { 
+    alert('Escribe tus tareas (una por línea)'); 
+    return; 
+  }
+  
+  const lineas = textarea.value.split(/\r?\n/).filter(l => l.trim());
+  if (lineas.length === 0) return;
+  
+  // Añadir tareas una por una
+  lineas.forEach(linea => {
+    agregarTarea(linea, 'auto');
+  });
+  
+  textarea.value = '';
+  
+  // FORZAR guardado inmediato después de añadir
+  setTimeout(() => {
+    guardarTareas();
+    alert(`✨ ${lineas.length} tareas añadidas Y GUARDADAS en Google Sheets`);
+  }, 100);
+}
     
     function limpiarCompletadas() {
       if (confirm('¿Eliminar todas las tareas completadas?')) {
