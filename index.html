@@ -439,14 +439,70 @@
       <!-- GAS Connection -->
       <div class="card">
         <h2 class="card-title">Sincronización con Google Sheets</h2>
-        <p class="card-desc">Conecta con Google Apps Script para sincronizar tus datos en la nube.</p>
+
+        <div class="connection-status" id="connectionStatus" style="margin-bottom:16px;">
+          <span class="status-dot status-dot--grey"></span>
+          <span class="status-text" id="statusText">Sin conexión (modo local)</span>
+        </div>
+
+        <!-- Setup guide (colapsable) -->
+        <details class="gas-setup-guide" id="gasSetupGuide">
+          <summary class="gas-setup-summary">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            Cómo conectar por primera vez
+          </summary>
+          <ol class="gas-steps">
+            <li class="gas-step">
+              <span class="gas-step-num">1</span>
+              <div class="gas-step-body">
+                <strong>Abre Google Apps Script</strong>
+                <p>Ve a <a href="https://script.google.com" target="_blank" rel="noopener">script.google.com</a> e inicia sesión con tu cuenta de Google.</p>
+              </div>
+            </li>
+            <li class="gas-step">
+              <span class="gas-step-num">2</span>
+              <div class="gas-step-body">
+                <strong>Crea un proyecto nuevo</strong>
+                <p>Haz clic en <em>Nuevo proyecto</em>. Borra todo el contenido del editor y pega el script que está en el archivo <code>gas-sync.gs</code> del repositorio.</p>
+                <a class="gas-copy-btn" href="https://github.com/nat2gostudio/Go-Nat/blob/main/gas-sync.gs" target="_blank" rel="noopener">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                  Ver gas-sync.gs en GitHub
+                </a>
+              </div>
+            </li>
+            <li class="gas-step">
+              <span class="gas-step-num">3</span>
+              <div class="gas-step-body">
+                <strong>Despliega como aplicación web</strong>
+                <p>Menú <em>Implementar → Nueva implementación</em>. Elige:</p>
+                <ul class="gas-substeps">
+                  <li>Tipo: <strong>Aplicación web</strong></li>
+                  <li>Ejecutar como: <strong>Yo (tu cuenta)</strong></li>
+                  <li>Quién tiene acceso: <strong>Cualquier usuario</strong></li>
+                </ul>
+                <p>Haz clic en <em>Implementar</em> y acepta los permisos.</p>
+              </div>
+            </li>
+            <li class="gas-step">
+              <span class="gas-step-num">4</span>
+              <div class="gas-step-body">
+                <strong>Copia la URL y pégala aquí abajo</strong>
+                <p>Copia la <em>URL de la aplicación web</em> que aparece al terminar el despliegue y pégala en el campo de abajo.</p>
+              </div>
+            </li>
+            <li class="gas-step">
+              <span class="gas-step-num">5</span>
+              <div class="gas-step-body">
+                <strong>La hoja se crea sola</strong>
+                <p>El script crea automáticamente las hojas <strong>Prioridades</strong>, <strong>Seguimiento</strong>, <strong>Clientes</strong> y <strong>Checks</strong> en el mismo archivo de Google Sheets donde vive el script. No tienes que crear nada a mano.</p>
+              </div>
+            </li>
+          </ol>
+        </details>
+
         <div class="gas-form">
           <input type="url" id="gasUrlInput" class="input" placeholder="https://script.google.com/macros/s/..." />
           <button class="btn btn-primary" id="saveGasBtn">Guardar</button>
-        </div>
-        <div class="connection-status" id="connectionStatus">
-          <span class="status-dot status-dot--grey"></span>
-          <span class="status-text" id="statusText">Sin conexión (modo local)</span>
         </div>
       </div>
 
