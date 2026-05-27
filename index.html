@@ -290,6 +290,44 @@
         </div>
       </div>
 
+            <!-- MIS TAREAS (NUEVO) -->
+      <div class="card" style="margin-bottom: 1.5rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+          <h2 style="margin: 0;">📋 Mis tareas</h2>
+          <button id="syncTareasBtn" style="background: none; border: none; color: #002fa7; cursor: pointer;" title="Sincronizar con Google Sheets">🔄</button>
+        </div>
+        
+        <div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;">
+          <input type="text" id="nuevaTareaInput" placeholder="Escribe una nueva tarea..." style="flex: 2; padding: 10px; border: 1px solid #e2e8f0; border-radius: 12px;">
+          <select id="prioridadSelect" style="padding: 10px; border-radius: 12px; border: 1px solid #e2e8f0;">
+            <option value="auto">🤖 Nate prioriza</option>
+            <option value="A">🔥 Prioridad A</option>
+            <option value="B">📌 Prioridad B</option>
+            <option value="C">⏰ Prioridad C</option>
+          </select>
+          <button id="agregarTareaBtn" style="background: #ff6b6b; color: white; border: none; padding: 0 20px; border-radius: 12px;">+ Agregar</button>
+        </div>
+
+        <div style="overflow-x: auto;">
+          <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+              <tr style="background: #2d3748; color: white;">
+                <th style="padding: 10px;">✅</th><th style="padding: 10px;">Tarea</th><th style="padding: 10px;">Prioridad</th><th style="padding: 10px;">Estado</th><th style="padding: 10px;">Progreso</th><th style="padding: 10px;">Inicio</th><th style="padding: 10px;">Entrega</th><th style="padding: 10px;">📝</th><th style="padding: 10px;">🗑️</th>
+               </tr>
+            </thead>
+            <tbody id="tareasTableBody">
+              <tr><td colspan="9" style="text-align:center; padding:40px;">✨ Cargando tareas... ✨</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; margin-top: 15px;">
+          <button id="limpiarCompletadasBtn" style="background: #f56565; color: white; border: none; padding: 5px 12px; border-radius: 6px;">🗑️ Limpiar completadas</button>
+          <span id="contadorPendientes" style="background: #edf2f7; padding: 5px 12px; border-radius: 20px;">0 pendientes</span>
+        </div>
+        <div id="syncStatus" style="font-size: 0.75rem; margin-top: 10px; padding: 8px; border-radius: 8px; background: #f0f9ff;">✅ Nate está listo</div>
+      </div>
+
       <!-- Captura masiva de tareas -->
       <div class="card card--accordion bulk-capture-card" id="bulkCaptureCard">
         <div class="card-header" data-toggle="bulkCaptureCard">
