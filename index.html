@@ -98,26 +98,25 @@
       </div>
 
       <!-- CORAZÓN DEL PROYECTO -->
-      <div class="card" style="margin-bottom: 1.5rem;">
-        <h2 style="display: flex; justify-content: space-between;">
-          🧠 Corazón del Proyecto
-          <button id="syncNowBtn" style="background:#4a90e2; color:white; border:none; padding:5px 12px; border-radius:20px;">🔄 Sincronizar</button>
-        </h2>
+      <div class="card" style="margin-bottom: 1.5rem; background: white; border-radius: 20px; padding: 1.5rem;">
+        <h2 style="margin-bottom: 1rem;">🧠 Corazón del Proyecto</h2>
         
         <div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;">
-          <input type="text" id="nuevaTareaInput" placeholder="Escribe una nueva tarea..." style="flex:2; padding:10px; border:2px solid #e2e8f0; border-radius:12px;">
-          <select id="prioridadManualSelect" style="padding:10px; border-radius:12px;">
-            <option value="auto">🤖 Priorización automática</option>
-            <option value="A">🔥 Prioridad A</option>
-            <option value="B">📌 Prioridad B</option>
-            <option value="C">⏰ Prioridad C</option>
+          <input type="text" id="nuevaTareaInput" placeholder="Escribe una nueva tarea..." style="flex: 2; padding: 12px; border: 1px solid #ddd; border-radius: 12px;">
+          <select id="prioridadManualSelect" style="padding: 12px; border-radius: 12px; border: 1px solid #ddd;">
+            <option value="auto">🤖 Priorización automática (IA)</option>
+            <option value="A">🔥 Prioridad A (Urgente)</option>
+            <option value="B">📌 Prioridad B (Importante)</option>
+            <option value="C">⏰ Prioridad C (Normal)</option>
           </select>
-          <button id="agregarTareaBtn" style="background:#ff6b6b; color:white; border:none; padding:0 20px; border-radius:12px;">+ Agregar</button>
+          <button id="agregarTareaBtn" style="background: #ff6b6b; color: white; border: none; padding: 0 24px; border-radius: 12px; cursor: pointer;">+ Agregar</button>
         </div>
 
         <div class="tasks-table-container">
           <table class="tasks-table">
-            <thead><tr><th>✅</th><th>Tarea</th><th>Prioridad</th><th>Sub</th><th>Estado</th><th>Progreso</th><th>Inicio</th><th>Entrega</th><th>📝</th><th>🗑️</th></tr></thead>
+            <thead>
+              <tr><th>✅</th><th>Tarea</th><th>Prioridad</th><th>Sub</th><th>Estado</th><th>Progreso</th><th>Inicio</th><th>Entrega</th><th>📝</th><th>🗑️</th></tr>
+            </thead>
             <tbody id="tasksTableBody"><tr><td colspan="10" style="text-align:center; padding:40px;">✨ Cargando... ✨</td></tr></tbody>
           </table>
         </div>
@@ -158,53 +157,13 @@
           <div class="card-toggle-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><polyline points="6 9 12 15 18 9"></polyline></svg></div>
         </div>
         <div class="card-content">
-          <textarea class="bulk-textarea" id="bulkTasksInput" placeholder="Cobrar factura a cliente&#10;Escribir newsletter&#10;Publicar en Instagram" rows="4"></textarea>
-          <button class="btn btn-primary btn-sm" id="bulkPrioritizeBtn">📥 Priorizar automáticamente</button>
+          <textarea class="bulk-textarea" id="bulkTasksInput" placeholder="Cobrar factura a cliente&#10;Escribir newsletter&#10;Publicar en Instagram&#10;Vacunar a Ula" rows="4"></textarea>
+          <button class="btn btn-primary btn-sm" id="bulkPrioritizeBtn">📥 Priorizar automáticamente (IA)</button>
         </div>
       </div>
     </section>
 
-    <!-- CORAZÓN DEL PROYECTO - TABLA DE TAREAS -->
-<div class="card" style="margin-bottom: 1.5rem; background: white; border-radius: 16px; padding: 1.5rem;">
-  <h2 style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-    🧠 Corazón del Proyecto
-    <button id="syncNowBtn" style="background: #4a90e2; color: white; border: none; padding: 6px 12px; border-radius: 20px; cursor: pointer;">🔄 Sincronizar</button>
-  </h2>
-  
-  <!-- Entrada rápida -->
-  <div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;">
-    <input type="text" id="nuevaTareaInput" placeholder="Escribe una nueva tarea..." style="flex: 2; padding: 10px; border: 1px solid #ddd; border-radius: 8px;">
-    <select id="prioridadManualSelect" style="padding: 10px; border-radius: 8px; border: 1px solid #ddd;">
-      <option value="auto">🤖 Priorización automática</option>
-      <option value="A">🔥 Prioridad A</option>
-      <option value="B">📌 Prioridad B</option>
-      <option value="C">⏰ Prioridad C</option>
-    </select>
-    <button id="agregarTareaBtn" style="background: #ff6b6b; color: white; border: none; padding: 0 20px; border-radius: 8px; cursor: pointer;">+ Agregar</button>
-  </div>
-
-  <!-- Tabla -->
-  <div style="overflow-x: auto;">
-    <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
-      <thead>
-        <tr style="background: #2d3748; color: white;">
-          <th style="padding: 10px;">✅</th><th style="padding: 10px;">Tarea</th><th style="padding: 10px;">Prioridad</th><th style="padding: 10px;">Estado</th><th style="padding: 10px;">Progreso</th><th style="padding: 10px;">Inicio</th><th style="padding: 10px;">Entrega</th><th style="padding: 10px;">📝</th><th style="padding: 10px;">🗑️</th>
-        </tr>
-      </thead>
-      <tbody id="tasksTableBody">
-        <tr><td colspan="9" style="text-align:center; padding:40px;">✨ Cargando tareas... ✨</td></tr>
-      </tbody>
-    </table>
-  </div>
-
-  <div style="display: flex; justify-content: space-between; margin-top: 15px;">
-    <button id="limpiarCompletadasBtn" style="background: #f56565; color: white; border: none; padding: 5px 12px; border-radius: 6px; cursor: pointer;">🗑️ Limpiar completadas</button>
-    <span id="contadorPendientes" style="background: #edf2f7; padding: 5px 12px; border-radius: 20px;">0 pendientes</span>
-  </div>
-  <div id="syncStatus" style="font-size: 0.75rem; margin-top: 10px; padding: 8px; border-radius: 8px; background: #f0f9ff;">🔄 Conectando con Google Sheets...</div>
-</div>
-
-    <!-- OTRAS PANTALLAS (simplificadas pero funcionales) -->
+    <!-- OTRAS PANTALLAS -->
     <section class="screen" id="screen-clientes"><div class="screen-header"><h1>Clientes</h1></div><div id="clientsGrid"></div></section>
     <section class="screen" id="screen-contenido"><div class="screen-header"><h1>Contenido</h1></div><div id="kanbanBoard"></div></section>
     <section class="screen" id="screen-bienestar"><div class="screen-header"><h1>Bienestar</h1></div><ul class="check-list" id="bienestarChecks"><li><label><input type="checkbox" data-key="mandalas"/> Mandalas</label></li><li><label><input type="checkbox" data-key="sol"/> Sol</label></li><li><label><input type="checkbox" data-key="coreano"/> Coreano</label></li><li><label><input type="checkbox" data-key="kickboxing"/> Kickboxing</label></li></ul></section>
@@ -213,11 +172,11 @@
 
   <script>
     // ==========================================
-    // NAT2GO - CON GOOGLE SHEETS (SIN CORS)
+    // NAT2GO - CON DEEPSEEK IA + GOOGLE SHEETS
     // ==========================================
     
-    // 👇 ACTUALIZA ESTA URL CON LA DE TU APPS SCRIPT
     const URL_API = 'https://script.google.com/macros/s/AKfycbwnBN3A5YYfLZaDuyh9Glw2hR5hiX0gKRelT8p2ZKT45B7Bp6c0u8YfeyDGY6YTJGr9Ng/exec';
+    const DEEPSEEK_API_KEY = 'sk-f0d93900b799462bb6229872d8084939';
     
     let tareas = [];
     
@@ -226,30 +185,47 @@
       if (el) { el.innerHTML = text; el.style.background = isError ? '#fee' : '#f0f9ff'; el.style.color = isError ? '#c00' : '#0066cc'; }
     }
     
-   function priorizar(texto) {
-  const t = texto.toLowerCase();
-  
-  // Prioridad A (Urgente) - Incluye mascotas
-  if (t.includes('urgente') || t.includes('hoy') || t.includes('ahora') || t.includes('inmediato') ||
-      t.includes('cliente') || t.includes('reunión') || t.includes('llamar') || t.includes('entregar') ||
-      t.includes('entrega') || t.includes('deadline') || t.includes('límite') ||
-      t.includes('cobrar') || t.includes('factura') || t.includes('pago') || t.includes('contrato') ||
-      t.includes('vacunar') || t.includes('veterinario') || t.includes('gato') || t.includes('gata') ||
-      t.includes('ula') || t.includes('kai') || t.includes('salud') || t.includes('medicina') ||
-      t.includes('cita médica') || t.includes('revisión')) {
-    return 'A';
-  }
-  
-  // Prioridad B (Importante)
-  if (t.includes('preparar') || t.includes('revisar') || t.includes('enviar') || 
-      t.includes('crear') || t.includes('diseñar') || t.includes('escribir') ||
-      t.includes('newsletter') || t.includes('blog') || t.includes('post')) {
-    return 'B';
-  }
-  
-  // Prioridad C (Normal)
-  return 'C';
-}
+    // Priorización con Deepseek API
+    async function priorizarConDeepseek(texto) {
+      const prompt = `Eres una experta en productividad. Prioriza esta tarea para Nati:
+      
+Tarea: "${texto}"
+
+CRITERIOS:
+- A: Urgente (hoy/mañana), afecta ingresos o salud, tareas de mascotas (vacunas, veterinario)
+- B: Importante pero no urgente, requiere planificación
+- C: Puede esperar, es opcional
+
+Responde SOLO con A, B o C.`;
+
+      try {
+        const respuesta = await fetch('https://api.deepseek.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${DEEPSEEK_API_KEY}`
+          },
+          body: JSON.stringify({
+            model: 'deepseek-chat',
+            messages: [{ role: 'user', content: prompt }],
+            temperature: 0.3,
+            max_tokens: 5
+          })
+        });
+        
+        const data = await respuesta.json();
+        let prioridad = data.choices[0].message.content.trim().toUpperCase();
+        if (!['A', 'B', 'C'].includes(prioridad)) prioridad = 'B';
+        console.log(`🤖 "${texto}" → ${prioridad}`);
+        return prioridad;
+      } catch(error) {
+        console.error('Error Deepseek:', error);
+        const t = texto.toLowerCase();
+        if (t.includes('urgente') || t.includes('hoy') || t.includes('cliente') || t.includes('vacunar') || t.includes('veterinario') || t.includes('gato') || t.includes('ula') || t.includes('kai')) return 'A';
+        if (t.includes('preparar') || t.includes('revisar') || t.includes('enviar')) return 'B';
+        return 'C';
+      }
+    }
     
     function subPrioridad(texto) {
       const t = texto.toLowerCase();
@@ -262,13 +238,11 @@
     async function guardarTareas() {
       try {
         const tareasJSON = encodeURIComponent(JSON.stringify(tareas));
-        const res = await fetch(`${URL_API}?tareas=${tareasJSON}`);
-        const data = await res.json();
-        if (data.success) setSyncStatus(`✅ ${tareas.length} tareas guardadas`);
-        else setSyncStatus(`⚠️ ${data.error || 'Error'}`, true);
+        await fetch(`${URL_API}?tareas=${tareasJSON}`);
+        setSyncStatus(`✅ ${tareas.length} tareas guardadas`);
         localStorage.setItem('nat_tareas', JSON.stringify(tareas));
       } catch(e) {
-        setSyncStatus(`⚠️ Guardado local: ${e.message}`, true);
+        setSyncStatus(`⚠️ Guardado local`, true);
         localStorage.setItem('nat_tareas', JSON.stringify(tareas));
       }
     }
@@ -282,10 +256,13 @@
         else cargarLocal();
         renderizarTabla();
         setSyncStatus(`✅ ${tareas.length} tareas cargadas`);
-      } catch(e) { cargarLocal(); renderizarTabla(); setSyncStatus(`📦 Modo local: ${tareas.length} tareas`, true); }
+      } catch(e) { cargarLocal(); renderizarTabla(); setSyncStatus(`📦 Modo local`, true); }
     }
     
-    function cargarLocal() { const local = localStorage.getItem('nat_tareas'); if (local) tareas = JSON.parse(local); else tareas = []; }
+    function cargarLocal() { 
+      const local = localStorage.getItem('nat_tareas'); 
+      tareas = local ? JSON.parse(local) : []; 
+    }
     
     function renderizarTabla() {
       const tbody = document.getElementById('tasksTableBody');
@@ -302,13 +279,14 @@
           <td><span class="estado-badge estado-${t.estado === 'Completada' ? 'completada' : 'pendiente'}">${t.estado || 'Pendiente'}</span></td>
           <td><div style="display:flex; gap:5px;"><span>${t.progreso||0}%</span><div class="progress-bar"><div class="progress-fill" style="width:${t.progreso||0}%"></div></div><button class="btn-small" onclick="cambiarProgreso(${t.id},${(t.progreso||0)+10})">+10%</button></div></td>
           <td>${t.inicio || ''}</td>
-          <td><input type="date" value="${t.entrega || ''}" onchange="cambiarEntrega(${t.id}, this.value)" style="padding:4px; font-size:0.7rem;"></td>
+          <td><input type="date" value="${t.entrega || ''}" onchange="cambiarEntrega(${t.id}, this.value)" style="padding:4px;"></td>
           <td><button class="btn-small" onclick="editarNotas(${t.id})">📝</button></td>
           <td><button class="btn-small btn-danger" onclick="eliminarTarea(${t.id})">🗑️</button></td>
         </tr>
       `).join('');
       const pendientes = tareas.filter(t => t.estado !== 'Completada').length;
-      document.getElementById('contadorPendientes') && (document.getElementById('contadorPendientes').innerText = `${pendientes} pendientes`);
+      const cont = document.getElementById('contadorPendientes');
+      if (cont) cont.innerText = `${pendientes} pendientes`;
     }
     
     function escapeHtml(t) { const d = document.createElement('div'); d.textContent = t; return d.innerHTML; }
@@ -319,128 +297,56 @@
     window.editarNotas = (id) => { const t = tareas.find(t => t.id == id); if(t) { const n = prompt('Notas:', t.notas||''); if(n!==null) { t.notas=n; renderizarTabla(); guardarTareas(); } } };
     window.eliminarTarea = (id) => { if(confirm('¿Eliminar?')) { tareas = tareas.filter(t => t.id != id); renderizarTabla(); guardarTareas(); } };
     
-    function agregarTarea(texto, manual) {
+    async function agregarTarea(texto, manual) {
       if (!texto.trim()) return;
-      const prioridad = manual === 'auto' ? priorizar(texto) : manual;
+      let prioridad;
+      if (manual === 'auto') {
+        setSyncStatus('🤖 IA pensando...', false);
+        prioridad = await priorizarConDeepseek(texto);
+      } else {
+        prioridad = manual;
+      }
       tareas.unshift({ id: Date.now(), tarea: texto.trim(), prioridad: prioridad, subPrioridad: subPrioridad(texto), estado: 'Pendiente', progreso: 0, inicio: new Date().toLocaleDateString('es-ES'), entrega: '', notas: '' });
       renderizarTabla();
       guardarTareas();
+      setSyncStatus(`✅ "${texto.substring(0,30)}..." → Prioridad ${prioridad}`, false);
     }
     
-    function procesarCaptura() {
+    async function procesarCaptura() {
       const ta = document.getElementById('bulkTasksInput');
       if (!ta || !ta.value.trim()) { alert('Escribe tareas (una por línea)'); return; }
-      ta.value.split(/\r?\n/).filter(l => l.trim()).forEach(l => agregarTarea(l, 'auto'));
+      const lineas = ta.value.split(/\r?\n/).filter(l => l.trim());
+      if (lineas.length === 0) return;
+      setSyncStatus(`🤖 Procesando ${lineas.length} tareas con IA...`, false);
+      for (const linea of lineas) await agregarTarea(linea, 'auto');
       ta.value = '';
-      alert('✅ Tareas añadidas');
+      setSyncStatus(`✅ ${lineas.length} tareas añadidas`, false);
+      alert(`✨ ${lineas.length} tareas añadidas con priorización IA`);
     }
     
     document.addEventListener('DOMContentLoaded', () => {
       cargarTareas();
-      document.getElementById('agregarTareaBtn').onclick = () => { agregarTarea(document.getElementById('nuevaTareaInput').value, document.getElementById('prioridadManualSelect').value); document.getElementById('nuevaTareaInput').value = ''; };
+      const btnAgregar = document.getElementById('agregarTareaBtn');
+      const inputTarea = document.getElementById('nuevaTareaInput');
+      const selectPrioridad = document.getElementById('prioridadManualSelect');
+      if (btnAgregar) {
+        btnAgregar.onclick = async () => {
+          await agregarTarea(inputTarea.value, selectPrioridad.value);
+          inputTarea.value = '';
+        };
+      }
+      if (inputTarea) {
+        inputTarea.addEventListener('keypress', async (e) => {
+          if (e.key === 'Enter') {
+            await agregarTarea(inputTarea.value, selectPrioridad.value);
+            inputTarea.value = '';
+          }
+        });
+      }
       document.getElementById('bulkPrioritizeBtn').onclick = procesarCaptura;
       document.getElementById('limpiarCompletadasBtn').onclick = () => { if(confirm('¿Eliminar completadas?')) { tareas = tareas.filter(t => t.estado !== 'Completada'); renderizarTabla(); guardarTareas(); } };
       document.getElementById('ordenarPrioridadBtn').onclick = () => renderizarTabla();
-      document.getElementById('syncNowBtn').onclick = () => guardarTareas();
     });
   </script>
-
-  <script>
-// ==========================================
-// NAT2GO - CONEXIÓN CON GOOGLE SHEETS
-// ==========================================
-
-const URL_API = 'https://script.google.com/macros/s/AKfycbxLp71Lvy70bjSFrn0tLWI7CSey8tkeKqKe46x6CnSOQCxY96iQgiT17dBW4UmUSY794A/exec';
-
-let tareas = [];
-
-function setSyncStatus(text, isError) {
-  const el = document.getElementById('syncStatus');
-  if (el) { el.innerHTML = text; el.style.background = isError ? '#fee' : '#f0f9ff'; }
-}
-
-function priorizar(texto) {
-  const t = texto.toLowerCase();
-  if (t.includes('urgente') || t.includes('hoy') || t.includes('cliente') || t.includes('entrega') || t.includes('cobrar')) return 'A';
-  if (t.includes('preparar') || t.includes('revisar') || t.includes('enviar')) return 'B';
-  return 'C';
-}
-
-async function guardarTareas() {
-  try {
-    const tareasJSON = encodeURIComponent(JSON.stringify(tareas));
-    await fetch(`${URL_API}?tareas=${tareasJSON}`);
-    setSyncStatus(`✅ ${tareas.length} tareas guardadas`);
-    localStorage.setItem('nat_tareas', JSON.stringify(tareas));
-  } catch(e) {
-    setSyncStatus(`⚠️ Guardado local`, true);
-    localStorage.setItem('nat_tareas', JSON.stringify(tareas));
-  }
-}
-
-async function cargarTareas() {
-  try {
-    setSyncStatus('🔄 Cargando...');
-    const res = await fetch(`${URL_API}?accion=tareas`);
-    const data = await res.json();
-    if (data.tareas && data.tareas.length) tareas = data.tareas;
-    else cargarLocal();
-    renderizarTabla();
-    setSyncStatus(`✅ ${tareas.length} tareas cargadas`);
-  } catch(e) { cargarLocal(); renderizarTabla(); setSyncStatus(`📦 Modo local`, true); }
-}
-
-function cargarLocal() { 
-  const local = localStorage.getItem('nat_tareas'); 
-  tareas = local ? JSON.parse(local) : []; 
-}
-
-function renderizarTabla() {
-  const tbody = document.getElementById('tasksTableBody');
-  if (!tbody) return;
-  if (!tareas.length) { tbody.innerHTML = '<tr><td colspan="9">🎉 No hay tareas</td></tr>'; return; }
-  tbody.innerHTML = tareas.map(t => `
-    <tr style="${t.estado === 'Completada' ? 'opacity:0.6' : ''}">
-      <td style="padding:10px"><input type="checkbox" ${t.estado === 'Completada' ? 'checked' : ''} onchange="toggleTarea(${t.id})"></td>
-      <td style="padding:10px"><strong>${escapeHtml(t.tarea)}</strong>${t.notas ? `<br><small>📌 ${escapeHtml(t.notas)}</small>` : ''}</td>
-      <td style="padding:10px"><span style="background:${t.prioridad==='A'?'#fed7d7':t.prioridad==='B'?'#feebc8':'#e6fffa'}; padding:4px 8px; border-radius:12px;">${t.prioridad}</span></td>
-      <td style="padding:10px">${t.estado || 'Pendiente'}</td>
-      <td style="padding:10px"><div style="display:flex; align-items:center; gap:5px;"><span>${t.progreso||0}%</span><div style="width:60px; height:6px; background:#ddd; border-radius:3px;"><div style="width:${t.progreso||0}%; height:100%; background:#48bb78; border-radius:3px;"></div></div><button class="btn-small" onclick="cambiarProgreso(${t.id},${(t.progreso||0)+10})" style="background:#edf2f7; border:none; border-radius:4px; padding:2px 6px;">+10%</button></div></td>
-      <td style="padding:10px">${t.inicio || ''}</td>
-      <td style="padding:10px"><input type="date" value="${t.entrega || ''}" onchange="cambiarEntrega(${t.id}, this.value)" style="padding:4px; border:1px solid #ddd; border-radius:4px;"></td>
-      <td style="padding:10px"><button onclick="editarNotas(${t.id})" style="background:none; border:none; cursor:pointer;">📝</button></td>
-      <td style="padding:10px"><button onclick="eliminarTarea(${t.id})" style="background:#f56565; color:white; border:none; border-radius:4px; padding:4px 8px; cursor:pointer;">🗑️</button></td>
-    </tr>
-  `).join('');
-  const pendientes = tareas.filter(t => t.estado !== 'Completada').length;
-  const cont = document.getElementById('contadorPendientes');
-  if (cont) cont.innerText = `${pendientes} pendientes`;
-}
-
-function escapeHtml(text) { const d = document.createElement('div'); d.textContent = text; return d.innerHTML; }
-
-window.toggleTarea = (id) => { const t = tareas.find(t => t.id == id); if(t) { t.estado = t.estado === 'Completada' ? 'Pendiente' : 'Completada'; t.progreso = t.estado === 'Completada' ? 100 : (t.progreso||0); renderizarTabla(); guardarTareas(); } };
-window.cambiarProgreso = (id, p) => { const t = tareas.find(t => t.id == id); if(t) { t.progreso = Math.min(100, Math.max(0, p)); if(t.progreso===100) t.estado='Completada'; else if(t.progreso>0 && t.estado!=='Completada') t.estado='En curso'; renderizarTabla(); guardarTareas(); } };
-window.cambiarEntrega = (id, f) => { const t = tareas.find(t => t.id == id); if(t) { t.entrega = f; guardarTareas(); } };
-window.editarNotas = (id) => { const t = tareas.find(t => t.id == id); if(t) { const n = prompt('Notas:', t.notas||''); if(n!==null) { t.notas=n; renderizarTabla(); guardarTareas(); } } };
-window.eliminarTarea = (id) => { if(confirm('¿Eliminar?')) { tareas = tareas.filter(t => t.id != id); renderizarTabla(); guardarTareas(); } };
-
-function agregarTarea(texto, manual) {
-  if (!texto.trim()) return;
-  const prioridad = manual === 'auto' ? priorizar(texto) : manual;
-  tareas.unshift({ id: Date.now(), tarea: texto.trim(), prioridad: prioridad, estado: 'Pendiente', progreso: 0, inicio: new Date().toLocaleDateString('es-ES'), entrega: '', notas: '' });
-  renderizarTabla();
-  guardarTareas();
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-  cargarTareas();
-  document.getElementById('agregarTareaBtn').onclick = () => { agregarTarea(document.getElementById('nuevaTareaInput').value, document.getElementById('prioridadManualSelect').value); document.getElementById('nuevaTareaInput').value = ''; };
-  document.getElementById('bulkPrioritizeBtn') && (document.getElementById('bulkPrioritizeBtn').onclick = () => { const ta = document.getElementById('bulkTasksInput'); if(ta && ta.value) { ta.value.split(/\r?\n/).filter(l=>l.trim()).forEach(l=>agregarTarea(l,'auto')); ta.value=''; alert('✅ Tareas añadidas'); } });
-  document.getElementById('limpiarCompletadasBtn').onclick = () => { if(confirm('¿Eliminar completadas?')) { tareas = tareas.filter(t => t.estado !== 'Completada'); renderizarTabla(); guardarTareas(); } };
-  document.getElementById('syncNowBtn').onclick = () => guardarTareas();
-});
-</script>
-  
 </body>
 </html>
