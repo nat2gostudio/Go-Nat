@@ -445,7 +445,7 @@
           <span class="status-text" id="statusText">Sin conexión (modo local)</span>
         </div>
 
-        <!-- Setup guide (colapsable) -->
+        <!-- Setup guide (collapsable) -->
         <details class="gas-setup-guide" id="gasSetupGuide">
           <summary class="gas-setup-summary">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
@@ -770,137 +770,307 @@ function ok_(data) { return ContentService.createTextOutput(JSON.stringify(data)
 
   <script>
 // ==========================================
-// NAT2GO - CONEXIÓN CON GOOGLE SHEETS
+// NAT2GO - CONEXIÓN CON GOOGLE SHEETS (PRIORIDADES)
 // ==========================================
 
-// 👇 PEGA AQUÍ TU URL DE APPS SCRIPT
-const URL_SHEETS = 'https://script.google.com/macros/s/AKfycbxq3tdRZ46CDLNusELFuuGnA0j0sJY7HqG6ds4fGWcyjAqSS2OasiPLKvVfp-Venwf3/exec';
+const URL_SHEETS = 'https://script.google.com/macros/s/AKfycbzFVfflGhpBMoDqpTbxtbkDdBZR1sjN8v2AsyVtSCnaBpMhGMZLsMwKQL0l9WXq47E/exec';
 
-let misTareas = [];
+// Estado local de prioridades
+let prioridadesData = {
+  A: [],  // dinero
+  B: [],  // clientes  
+  C: []   // marca
+};
 
-// Cargar tareas al iniciar
-async function cargarTareas() {
-    try {
-        const res = await fetch(`${URL_SHEETS}?accion=cargar`);
-        const data = await res.json();
-        if (data.tareas) {
-            misTareas = data.tareas;
-            console.log(`✅ ${misTareas.length} tareas cargadas`);
-            mostrarTareasEnPanel();
-        }
-    } catch(e) {
-        console.log('📡 Modo local por ahora');
+// ========== FUNCIONES DE SINCRONIZACIÓN ==========
+async function cargarPrioridadesDesdeSheets() {
+  try {
+    const res = await fetch(`${URL_SHEETS}?accion=prioridades`);
+    const data = await res.json();
+    
+    if (data && data.gonat_prioridades) {
+      prioridadesData.A = data.gonat_prioridades.dinero || [];
+      prioridadesData.B = data.gonat_prioridades.clientes || [];
+      prioridadesData.C = data.gonat_prioridades.marca || [];
+      console.log(`✅ Prioridades cargadas: A:${prioridadesData.A.length}, B:${prioridadesData.B.length}, C:${prioridadesData.C.length}`);
+      renderizarPrioridadesEnUI();
+      return true;
     }
+  } catch(e) {
+    console.log('📡 Cargando prioridades desde localStorage');
+    cargarPrioridadesLocal();
+  }
+  return false;
 }
 
-// Guardar tareas en la nube
-async function guardarTareas() {
-    try {
-        await fetch(URL_SHEETS, {
-            method: 'POST',
-            mode: 'no-cors',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({accion: 'guardar', tareas: misTareas})
-        });
-        console.log('💾 Tareas guardadas en Google Sheets');
-    } catch(e) {
-        console.log('⚠️ No se pudo guardar');
+async function guardarPrioridadesEnSheets() {
+  const payload = {
+    gonat_prioridades: {
+      dinero: prioridadesData.A,
+      clientes: prioridadesData.B,
+      marca: prioridadesData.C
     }
+  };
+  
+  try {
+    await fetch(URL_SHEETS, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    console.log('💾 Prioridades guardadas en Google Sheets');
+    guardarPrioridadesLocal();
+  } catch(e) {
+    console.warn('⚠️ No se pudo guardar en Sheets, guardado local');
+    guardarPrioridadesLocal();
+  }
 }
 
-// Procesar captura masiva (integra con tu botón existente)
-function procesarCaptura() {
-    const textarea = document.querySelector('textarea');
-    if (!textarea || !textarea.value.trim()) {
-        alert('Escribe tus tareas (una por línea)');
-        return;
+// Backup local
+function guardarPrioridadesLocal() {
+  localStorage.setItem('nat_prioridades', JSON.stringify(prioridadesData));
+}
+
+function cargarPrioridadesLocal() {
+  const local = localStorage.getItem('nat_prioridades');
+  if (local) {
+    const data = JSON.parse(local);
+    prioridadesData = data;
+    renderizarPrioridadesEnUI();
+    console.log('📦 Prioridades cargadas desde localStorage');
+  }
+}
+
+// ========== RENDERIZAR EN UI ==========
+function renderizarPrioridadesEnUI() {
+  // Prioridad A -> lista-dinero
+  const listaA = document.getElementById('list-dinero');
+  if (listaA) {
+    listaA.innerHTML = prioridadesData.A.map(t => `
+      <li class="priority-item ${t.done ? 'done' : ''}" data-id="${t.id}">
+        <span class="priority-text">${escapeHtml(t.text)}</span>
+        <div class="priority-actions">
+          <button class="priority-complete" data-id="${t.id}">✓</button>
+          <button class="priority-delete" data-id="${t.id}">🗑️</button>
+        </div>
+      </li>
+    `).join('');
+  }
+  
+  // Prioridad B -> lista-clientes-prio
+  const listaB = document.getElementById('list-clientes-prio');
+  if (listaB) {
+    listaB.innerHTML = prioridadesData.B.map(t => `
+      <li class="priority-item ${t.done ? 'done' : ''}" data-id="${t.id}">
+        <span class="priority-text">${escapeHtml(t.text)}</span>
+        <div class="priority-actions">
+          <button class="priority-complete" data-id="${t.id}">✓</button>
+          <button class="priority-delete" data-id="${t.id}">🗑️</button>
+        </div>
+      </li>
+    `).join('');
+  }
+  
+  // Prioridad C -> lista-marca
+  const listaC = document.getElementById('list-marca');
+  if (listaC) {
+    listaC.innerHTML = prioridadesData.C.map(t => `
+      <li class="priority-item ${t.done ? 'done' : ''}" data-id="${t.id}">
+        <span class="priority-text">${escapeHtml(t.text)}</span>
+        <div class="priority-actions">
+          <button class="priority-complete" data-id="${t.id}">✓</button>
+          <button class="priority-delete" data-id="${t.id}">🗑️</button>
+        </div>
+      </li>
+    `).join('');
+  }
+  
+  // Actualizar contadores visuales si existen
+  actualizarContadores();
+}
+
+function actualizarContadores() {
+  // Puedes añadir contadores si los tienes en tu UI
+  const pendientesA = prioridadesData.A.filter(t => !t.done).length;
+  const pendientesB = prioridadesData.B.filter(t => !t.done).length;
+  const pendientesC = prioridadesData.C.filter(t => !t.done).length;
+  console.log(`📊 Pendientes - A:${pendientesA}, B:${pendientesB}, C:${pendientesC}`);
+}
+
+// ========== PROCESAR CAPTURA MASIVA ==========
+function procesarCapturaMasiva() {
+  const textarea = document.getElementById('bulkTasksInput');
+  if (!textarea || !textarea.value.trim()) {
+    alert('Escribe tus tareas (una por línea)');
+    return;
+  }
+  
+  const lineas = textarea.value.split(/\r?\n/).filter(l => l.trim());
+  const nuevas = lineas.map((texto, i) => ({
+    id: Date.now() + i,
+    text: texto.trim(),
+    done: false,
+    startDate: null,
+    dueDate: null,
+    subtasks: []
+  }));
+  
+  // Clasificar por prioridad según palabras clave
+  nuevas.forEach(tarea => {
+    const prioridad = detectarPrioridad(tarea.text);
+    if (prioridad === 'A') {
+      prioridadesData.A.push(tarea);
+    } else if (prioridad === 'B') {
+      prioridadesData.B.push(tarea);
+    } else {
+      prioridadesData.C.push(tarea);
     }
-    
-    const lineas = textarea.value.split(/\r?\n/).filter(l => l.trim());
-    const nuevas = lineas.map((texto, i) => ({
-        id: Date.now() + i,
-        texto: texto.trim(),
-        prioridad: detectarPrioridad(texto),
-        completada: false,
-        fecha: new Date().toLocaleDateString()
-    }));
-    
-    misTareas = [...misTareas, ...nuevas];
-    guardarTareas();
-    mostrarTareasEnPanel();
-    textarea.value = '';
-    alert(`✨ ${nuevas.length} tareas guardadas`);
+  });
+  
+  renderizarPrioridadesEnUI();
+  guardarPrioridadesEnSheets();
+  textarea.value = '';
+  alert(`✨ ${nuevas.length} tareas clasificadas y guardadas`);
 }
 
 function detectarPrioridad(texto) {
-    const t = texto.toLowerCase();
-    if (t.includes('urgente') || t.includes('hoy') || t.includes('cliente')) return 'A';
-    if (t.includes('preparar') || t.includes('revisar')) return 'B';
-    return 'C';
+  const t = texto.toLowerCase();
+  if (t.includes('urgente') || t.includes('hoy') || t.includes('cliente') || 
+      t.includes('entrega') || t.includes('reunión') || t.includes('cobrar') ||
+      t.includes('factura') || t.includes('pago')) return 'A';
+  if (t.includes('preparar') || t.includes('revisar') || t.includes('enviar') || 
+      t.includes('crear') || t.includes('llamar') || t.includes('newsletter')) return 'B';
+  return 'C';
 }
 
-function mostrarTareasEnPanel() {
-    const pendientes = misTareas.filter(t => !t.completada);
-    const a = pendientes.filter(t => t.prioridad === 'A');
-    const b = pendientes.filter(t => t.prioridad === 'B');
-    const c = pendientes.filter(t => t.prioridad === 'C');
-    
-    // Actualizar tus divs (búscalos o créalos)
-    actualizarSeccion('Prioridad A', a);
-    actualizarSeccion('Prioridad B', b);
-    actualizarSeccion('Prioridad C', c);
-    
-    console.log(`📊 A:${a.length} | B:${b.length} | C:${c.length}`);
+// ========== GESTIÓN DE TAREAS ==========
+function marcarCompletada(id, categoria) {
+  let tarea = null;
+  let lista = null;
+  
+  if (categoria === 'A') {
+    tarea = prioridadesData.A.find(t => t.id == id);
+    lista = prioridadesData.A;
+  } else if (categoria === 'B') {
+    tarea = prioridadesData.B.find(t => t.id == id);
+    lista = prioridadesData.B;
+  } else if (categoria === 'C') {
+    tarea = prioridadesData.C.find(t => t.id == id);
+    lista = prioridadesData.C;
+  }
+  
+  if (tarea) {
+    tarea.done = !tarea.done;
+    renderizarPrioridadesEnUI();
+    guardarPrioridadesEnSheets();
+  }
 }
 
-function actualizarSeccion(titulo, tareas) {
-    // Busca contenedor de prioridades
-    let seccion = document.querySelector(`h3:contains("${titulo}")`)?.parentElement;
-    if (seccion) {
-        const lista = seccion.querySelector('div, p');
-        if (lista) {
-            if (tareas.length === 0) {
-                lista.innerHTML = '✨ Sin tareas';
-            } else {
-                lista.innerHTML = tareas.map(t => `
-                    <div style="margin: 5px 0; display: flex; justify-content: space-between;">
-                        <span>${t.texto}</span>
-                        <button onclick="completarTarea(${t.id})" style="background:#4CAF50; border:none; border-radius:4px; padding:2px 8px;">✓</button>
-                    </div>
-                `).join('');
-            }
-        }
-    }
+function eliminarTarea(id, categoria) {
+  if (categoria === 'A') {
+    prioridadesData.A = prioridadesData.A.filter(t => t.id != id);
+  } else if (categoria === 'B') {
+    prioridadesData.B = prioridadesData.B.filter(t => t.id != id);
+  } else if (categoria === 'C') {
+    prioridadesData.C = prioridadesData.C.filter(t => t.id != id);
+  }
+  
+  renderizarPrioridadesEnUI();
+  guardarPrioridadesEnSheets();
 }
 
-window.completarTarea = function(id) {
-    const tarea = misTareas.find(t => t.id === id);
-    if (tarea) {
-        tarea.completada = true;
-        guardarTareas();
-        mostrarTareasEnPanel();
-    }
-};
+function agregarTareaManual(categoria, texto) {
+  if (!texto.trim()) return;
+  
+  const nuevaTarea = {
+    id: Date.now(),
+    text: texto.trim(),
+    done: false,
+    startDate: null,
+    dueDate: null,
+    subtasks: []
+  };
+  
+  if (categoria === 'A') {
+    prioridadesData.A.push(nuevaTarea);
+  } else if (categoria === 'B') {
+    prioridadesData.B.push(nuevaTarea);
+  } else if (categoria === 'C') {
+    prioridadesData.C.push(nuevaTarea);
+  }
+  
+  renderizarPrioridadesEnUI();
+  guardarPrioridadesEnSheets();
+}
 
-// Conectar con tu botón existente
-document.addEventListener('DOMContentLoaded', () => {
-    cargarTareas();
-    
-    // Buscar tu botón "Clasificamos" y conectarlo
-    const boton = Array.from(document.querySelectorAll('button')).find(b => b.textContent.includes('Clasificamos'));
-    if (boton) {
-        boton.onclick = procesarCaptura;
-    } else {
-        // Si no existe, crea uno
-        const textarea = document.querySelector('textarea');
-        if (textarea && textarea.parentElement) {
-            const btn = document.createElement('button');
-            btn.textContent = '💾 Guardar en Google Sheets';
-            btn.onclick = procesarCaptura;
-            btn.style.marginTop = '10px';
-            textarea.parentElement.appendChild(btn);
-        }
+// Helper
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+// ========== EVENT LISTENERS ==========
+function setupEventListeners() {
+  // Botón de priorización automática
+  const priorizarBtn = document.getElementById('bulkPrioritizeBtn');
+  if (priorizarBtn) {
+    priorizarBtn.onclick = procesarCapturaMasiva;
+  }
+  
+  // Delegación de eventos para botones de tareas
+  document.addEventListener('click', (e) => {
+    // Botón completar
+    if (e.target.classList.contains('priority-complete')) {
+      const id = e.target.dataset.id;
+      const li = e.target.closest('.priority-item');
+      let categoria = null;
+      if (li && li.parentElement) {
+        if (li.parentElement.id === 'list-dinero') categoria = 'A';
+        else if (li.parentElement.id === 'list-clientes-prio') categoria = 'B';
+        else if (li.parentElement.id === 'list-marca') categoria = 'C';
+      }
+      if (id && categoria) marcarCompletada(id, categoria);
     }
+    
+    // Botón eliminar
+    if (e.target.classList.contains('priority-delete')) {
+      const id = e.target.dataset.id;
+      const li = e.target.closest('.priority-item');
+      let categoria = null;
+      if (li && li.parentElement) {
+        if (li.parentElement.id === 'list-dinero') categoria = 'A';
+        else if (li.parentElement.id === 'list-clientes-prio') categoria = 'B';
+        else if (li.parentElement.id === 'list-marca') categoria = 'C';
+      }
+      if (id && categoria && confirm('¿Eliminar esta tarea?')) {
+        eliminarTarea(id, categoria);
+      }
+    }
+  });
+  
+  // Botones "Añadir" de cada prioridad
+  const addButtons = document.querySelectorAll('.add-prio-btn');
+  addButtons.forEach(btn => {
+    btn.onclick = () => {
+      const cat = btn.dataset.cat;
+      let categoriaLetra = '';
+      if (cat === 'dinero') categoriaLetra = 'A';
+      else if (cat === 'clientes') categoriaLetra = 'B';
+      else if (cat === 'marca') categoriaLetra = 'C';
+      
+      const texto = prompt('Escribe la nueva tarea:');
+      if (texto) agregarTareaManual(categoriaLetra, texto);
+    };
+  });
+}
+
+// ========== INICIALIZACIÓN ==========
+document.addEventListener('DOMContentLoaded', async () => {
+  setupEventListeners();
+  await cargarPrioridadesDesdeSheets();
+  console.log('🚀 Panel listo - Prioridades sincronizadas con Google Sheets');
 });
 </script>
 
