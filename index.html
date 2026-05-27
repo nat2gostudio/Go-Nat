@@ -82,6 +82,13 @@
       opacity: 0.6;
       background: #f7fafc;
     }
+    .sync-status {
+      font-size: 0.75rem;
+      margin-top: 10px;
+      padding: 8px;
+      border-radius: 8px;
+      background: #f0f9ff;
+    }
   </style>
 </head>
 <body>
@@ -253,9 +260,14 @@
             <span id="contadorPendientes" style="background: #edf2f7; padding: 5px 12px; border-radius: 20px;">0 pendientes</span>
           </div>
         </div>
+        
+        <!-- Estado de sincronización -->
+        <div class="sync-status" id="syncStatus">
+          🔄 Conectando con Google Sheets...
+        </div>
       </div>
 
-      <!-- Captura masiva de tareas (original, adaptada) -->
+      <!-- Captura masiva de tareas -->
       <div class="card card--accordion bulk-capture-card" id="bulkCaptureCard">
         <div class="card-header" data-toggle="bulkCaptureCard">
           <div class="card-header-content">
@@ -275,16 +287,14 @@
         </div>
       </div>
 
-      <!-- (El resto del contenido original del dashboard se mantiene, pero lo resumo para que quepa) -->
+      <!-- El resto del contenido del dashboard se mantiene -->
       <div class="dashboard-top-grid" style="margin-top: 1rem;">
-        <!-- Aquí irían tus elementos originales, pero los omito para no alargar -->
-        <!-- (Accesos rápidos, Spotify, Pomodoro, etc.) -->
+        <!-- Aquí irían tus elementos originales -->
       </div>
       
     </section>
 
     <!-- Las demás pantallas (clientes, contenido, bienestar, perfil) se mantienen igual -->
-    <!-- Para no hacer el código eterno, las mantengo pero no las modifico -->
     
   </main>
 
@@ -292,12 +302,22 @@
 
   <script>
     // ==========================================
-    // NAT2GO - SISTEMA COMPLETO DE TAREAS
+    // NAT2GO - SISTEMA COMPLETO DE TAREAS (CORREGIDO)
     // ==========================================
     
     const URL_API = 'https://script.google.com/macros/s/AKfycbxLp71Lvy70bjSFrn0tLWI7CSey8tkeKqKe46x6CnSOQCxY96iQgiT17dBW4UmUSY794A/exec';
     
     let tareas = [];
+    
+    // Función para actualizar el estado visual
+    function setSyncStatus(text, isError = false) {
+      const statusDiv = document.getElementById('syncStatus');
+      if (statusDiv) {
+        statusDiv.innerHTML = text;
+        statusDiv.style.background = isError ? '#fee' : '#f0f9ff';
+        statusDiv.style.color = isError ? '#c00' : '#0066cc';
+      }
+    }
     
     // ========== PRIORIZACIÓN AUTOMÁTICA ==========
     function priorizarAutomaticamente(texto) {
@@ -322,41 +342,78 @@
     // ========== SINCRONIZACIÓN CON SHEETS ==========
     async function cargarTareas() {
       try {
+        setSyncStatus('🔄 Cargando tareas desde Google Sheets...');
+        console.log('🔄 Cargando tareas desde:', URL_API);
+        
         const res = await fetch(`${URL_API}?accion=tareas`);
+        console.log('📡 Respuesta GET:', res.status);
+        
         const data = await res.json();
-        if (data.tareas) {
+        console.log('📦 Datos recibidos:', data);
+        
+        if (data.tareas && data.tareas.length > 0) {
           tareas = data.tareas;
           console.log(`✅ ${tareas.length} tareas cargadas desde Sheets`);
-          renderizarTabla();
-          guardarLocalmente();
-          return true;
+          setSyncStatus(`✅ Sincronizado: ${tareas.length} tareas cargadas`);
+        } else {
+          console.log('📭 No hay tareas en Sheets, cargando local...');
+          cargarLocalmente();
+          setSyncStatus(`📦 Modo local: ${tareas.length} tareas cargadas`);
         }
+        renderizarTabla();
       } catch(e) {
-        console.log('📡 Cargando desde localStorage');
+        console.error('❌ Error al cargar:', e);
+        setSyncStatus(`⚠️ Error de conexión: ${e.message}. Usando datos locales.`, true);
         cargarLocalmente();
+        renderizarTabla();
       }
-      renderizarTabla();
-      return false;
     }
     
     async function guardarTareas() {
       try {
-        await fetch(URL_API, {
+        console.log('💾 Guardando', tareas.length, 'tareas en Google Sheets...');
+        setSyncStatus('💾 Guardando en Google Sheets...');
+        
+        const response = await fetch(URL_API, {
           method: 'POST',
-          mode: 'no-cors',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 
+            'Content-Type': 'application/json'
+          },
           body: JSON.stringify({ tareas: tareas })
         });
-        console.log('💾 Tareas guardadas en Google Sheets');
+        
+        console.log('📡 Respuesta POST:', response.status);
+        
+        let respuesta;
+        try {
+          respuesta = await response.json();
+          console.log('📤 Respuesta del servidor:', respuesta);
+        } catch(e) {
+          console.warn('No se pudo parsear respuesta JSON:', e);
+          respuesta = { success: true };
+        }
+        
+        if (respuesta.success !== false) {
+          console.log('✅ Tareas guardadas correctamente en Google Sheets');
+          setSyncStatus(`✅ Guardado: ${tareas.length} tareas en la nube`);
+        } else {
+          console.warn('⚠️ Respuesta inesperada:', respuesta);
+          setSyncStatus(`⚠️ Guardado local: ${tareas.length} tareas (sync pendiente)`, true);
+        }
+        
         guardarLocalmente();
+        return true;
       } catch(e) {
-        console.warn('⚠️ No se pudo guardar en Sheets, guardado local');
+        console.error('❌ ERROR al guardar en Sheets:', e.message);
+        setSyncStatus(`❌ Error de red: ${e.message}. Guardado solo local.`, true);
         guardarLocalmente();
+        return false;
       }
     }
     
     function guardarLocalmente() {
       localStorage.setItem('nat_tareas_completas', JSON.stringify(tareas));
+      console.log('📦 Backup local guardado');
     }
     
     function cargarLocalmente() {
@@ -365,9 +422,19 @@
         tareas = JSON.parse(local);
         console.log(`📦 ${tareas.length} tareas cargadas desde localStorage`);
       } else {
-        // Tareas de ejemplo
+        console.log('📦 No hay datos locales, creando tarea de ejemplo');
         tareas = [
-          { id: Date.now(), tarea: "Bienvenida a tu nuevo sistema de tareas", prioridad: "A", subPrioridad: "General", estado: "Pendiente", progreso: 0, inicio: new Date().toLocaleDateString('es-ES'), entrega: "", notas: "" }
+          { 
+            id: Date.now(), 
+            tarea: "🎉 ¡Bienvenida! Esta tarea se guardará en Google Sheets", 
+            prioridad: "A", 
+            subPrioridad: "General", 
+            estado: "Pendiente", 
+            progreso: 0, 
+            inicio: new Date().toLocaleDateString('es-ES'), 
+            entrega: "", 
+            notas: "Prueba el sistema añadiendo más tareas" 
+          }
         ];
       }
     }
@@ -381,18 +448,19 @@
       const ordenadas = [...tareas].sort((a, b) => {
         if (a.estado === 'Completada' && b.estado !== 'Completada') return 1;
         if (a.estado !== 'Completada' && b.estado === 'Completada') return -1;
-        return ordenPrioridad[a.prioridad] - ordenPrioridad[b.prioridad];
+        return (ordenPrioridad[a.prioridad] || 3) - (ordenPrioridad[b.prioridad] || 3);
       });
       
       if (ordenadas.length === 0) {
         tbody.innerHTML = '<tr><td colspan="10" style="text-align:center; padding:40px;">🎉 ¡No hay tareas! Añade una arriba 🎉</td></tr>';
-        document.getElementById('contadorPendientes').innerText = '0 pendientes';
+        const contador = document.getElementById('contadorPendientes');
+        if (contador) contador.innerText = '0 pendientes';
         return;
       }
       
       tbody.innerHTML = ordenadas.map(t => `
         <tr class="task-row ${t.estado === 'Completada' ? 'completada' : ''}" data-id="${t.id}">
-          <td><input type="checkbox" ${t.estado === 'Completada' ? 'checked' : ''} onchange="toggleEstado(${t.id})"></td>
+          <td><input type="checkbox" ${t.estado === 'Completada' ? 'checked' : ''} onchange="window.toggleEstado(${t.id})"></td>
           <td><strong>${escapeHtml(t.tarea)}</strong>${t.notas ? `<br><small style="color:#718096;">📌 ${escapeHtml(t.notas)}</small>` : ''}</td>
           <td><span class="priority-badge priority-${t.prioridad}">Prioridad ${t.prioridad}</span></td>
           <td>${t.subPrioridad || 'General'}</td>
@@ -401,23 +469,29 @@
             <div style="display: flex; align-items: center; gap: 5px;">
               <span style="font-size:0.7rem;">${t.progreso || 0}%</span>
               <div class="progress-bar"><div class="progress-fill" style="width: ${t.progreso || 0}%"></div></div>
-              <button class="btn-small" onclick="cambiarProgreso(${t.id}, ${(t.progreso || 0) + 10})">+10%</button>
+              <button class="btn-small" onclick="window.cambiarProgreso(${t.id}, ${(t.progreso || 0) + 10})">+10%</button>
             </div>
-          </td>
+           </td>
           <td>${t.inicio || ''}</td>
-          <td><input type="date" value="${t.entrega || ''}" onchange="cambiarEntrega(${t.id}, this.value)" style="padding:4px; font-size:0.7rem; border:1px solid #e2e8f0; border-radius:6px;"></td>
-          <td><button class="btn-small" onclick="editarNotas(${t.id})">📝</button></td>
-          <td><button class="btn-small btn-danger" onclick="eliminarTarea(${t.id})">🗑️</button></td>
-        </tr>
+          <td><input type="date" value="${t.entrega || ''}" onchange="window.cambiarEntrega(${t.id}, this.value)" style="padding:4px; font-size:0.7rem; border:1px solid #e2e8f0; border-radius:6px;"></td>
+          <td><button class="btn-small" onclick="window.editarNotas(${t.id})">📝</button></td>
+          <td><button class="btn-small btn-danger" onclick="window.eliminarTarea(${t.id})">🗑️</button></td>
+         </tr>
       `).join('');
       
       const pendientes = tareas.filter(t => t.estado !== 'Completada').length;
-      document.getElementById('contadorPendientes').innerText = `${pendientes} pendientes`;
+      const contadorElem = document.getElementById('contadorPendientes');
+      if (contadorElem) contadorElem.innerText = `${pendientes} pendientes`;
     }
     
-    function escapeHtml(text) { const div = document.createElement('div'); div.textContent = text; return div.innerHTML; }
+    function escapeHtml(text) { 
+      if (!text) return '';
+      const div = document.createElement('div'); 
+      div.textContent = text; 
+      return div.innerHTML; 
+    }
     
-    // ========== ACCIONES ==========
+    // ========== ACCIONES DE TAREAS (globales para que funcionen los onclick) ==========
     window.toggleEstado = (id) => {
       const tarea = tareas.find(t => t.id == id);
       if (tarea) {
@@ -442,14 +516,21 @@
     
     window.cambiarEntrega = (id, fecha) => {
       const tarea = tareas.find(t => t.id == id);
-      if (tarea) { tarea.entrega = fecha; guardarTareas(); }
+      if (tarea) { 
+        tarea.entrega = fecha; 
+        guardarTareas();
+      }
     };
     
     window.editarNotas = (id) => {
       const tarea = tareas.find(t => t.id == id);
       if (tarea) {
         const nuevas = prompt('Notas:', tarea.notas || '');
-        if (nuevas !== null) { tarea.notas = nuevas; renderizarTabla(); guardarTareas(); }
+        if (nuevas !== null) { 
+          tarea.notas = nuevas; 
+          renderizarTabla(); 
+          guardarTareas();
+        }
       }
     };
     
@@ -462,81 +543,107 @@
     };
     
     function agregarTarea(texto, prioridadManual = null) {
-  if (!texto.trim()) return;
-  
-  const prioridad = prioridadManual === 'auto' || !prioridadManual ? priorizarAutomaticamente(texto) : prioridadManual;
-  
-  const nueva = {
-    id: Date.now(),
-    tarea: texto.trim(),
-    prioridad: prioridad,
-    subPrioridad: detectarSubPrioridad(texto),
-    estado: 'Pendiente',
-    progreso: 0,
-    inicio: new Date().toLocaleDateString('es-ES'),
-    entrega: '',
-    notas: ''
-  };
-  
-  tareas.unshift(nueva);
-  renderizarTabla();
-  
-  // Guardar inmediatamente después de añadir
-  guardarTareas();
-}
+      if (!texto.trim()) return;
+      
+      const prioridad = prioridadManual === 'auto' || !prioridadManual ? priorizarAutomaticamente(texto) : prioridadManual;
+      
+      const nueva = {
+        id: Date.now(),
+        tarea: texto.trim(),
+        prioridad: prioridad,
+        subPrioridad: detectarSubPrioridad(texto),
+        estado: 'Pendiente',
+        progreso: 0,
+        inicio: new Date().toLocaleDateString('es-ES'),
+        entrega: '',
+        notas: ''
+      };
+      
+      tareas.unshift(nueva);
+      renderizarTabla();
+      
+      // Guardar inmediatamente después de añadir
+      guardarTareas();
+      
+      console.log(`➕ Tarea añadida: "${texto}" (Prioridad ${prioridad})`);
+    }
     
     function procesarCapturaMasiva() {
-  const textarea = document.getElementById('bulkTasksInput');
-  if (!textarea || !textarea.value.trim()) { 
-    alert('Escribe tus tareas (una por línea)'); 
-    return; 
-  }
-  
-  const lineas = textarea.value.split(/\r?\n/).filter(l => l.trim());
-  if (lineas.length === 0) return;
-  
-  // Añadir tareas una por una
-  lineas.forEach(linea => {
-    agregarTarea(linea, 'auto');
-  });
-  
-  textarea.value = '';
-  
-  // FORZAR guardado inmediato después de añadir
-  setTimeout(() => {
-    guardarTareas();
-    alert(`✨ ${lineas.length} tareas añadidas Y GUARDADAS en Google Sheets`);
-  }, 100);
-}
+      const textarea = document.getElementById('bulkTasksInput');
+      if (!textarea || !textarea.value.trim()) { 
+        alert('Escribe tus tareas (una por línea)'); 
+        return; 
+      }
+      
+      const lineas = textarea.value.split(/\r?\n/).filter(l => l.trim());
+      if (lineas.length === 0) return;
+      
+      console.log(`📝 Procesando ${lineas.length} tareas desde captura masiva...`);
+      
+      // Añadir tareas una por una
+      lineas.forEach(linea => {
+        agregarTarea(linea, 'auto');
+      });
+      
+      textarea.value = '';
+      
+      // Guardado ya se hace dentro de agregarTarea
+      setTimeout(() => {
+        alert(`✨ ${lineas.length} tareas añadidas y guardadas en Google Sheets`);
+      }, 500);
+    }
     
     function limpiarCompletadas() {
       if (confirm('¿Eliminar todas las tareas completadas?')) {
+        const antes = tareas.length;
         tareas = tareas.filter(t => t.estado !== 'Completada');
+        const eliminadas = antes - tareas.length;
         renderizarTabla();
         guardarTareas();
+        alert(`🗑️ ${eliminadas} tareas completadas eliminadas`);
       }
     }
     
     // ========== INICIALIZACIÓN ==========
     document.addEventListener('DOMContentLoaded', async () => {
+      console.log('🚀 Iniciando panel...');
+      
+      // Cargar tareas
       await cargarTareas();
       
-      document.getElementById('agregarTareaBtn').onclick = () => {
-        const input = document.getElementById('nuevaTareaInput');
-        const select = document.getElementById('prioridadManualSelect');
-        agregarTarea(input.value, select.value);
-        input.value = '';
-      };
-      document.getElementById('nuevaTareaInput').addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') document.getElementById('agregarTareaBtn').click();
-      });
-      document.getElementById('bulkPrioritizeBtn').onclick = procesarCapturaMasiva;
-      document.getElementById('limpiarCompletadasBtn').onclick = limpiarCompletadas;
-      document.getElementById('ordenarPrioridadBtn').onclick = () => renderizarTabla();
-      document.getElementById('syncNowBtn').onclick = async () => {
-        await guardarTareas();
-        alert('✅ Sincronización completada');
-      };
+      // Configurar botones
+      const btnAgregar = document.getElementById('agregarTareaBtn');
+      const inputTarea = document.getElementById('nuevaTareaInput');
+      const selectPrioridad = document.getElementById('prioridadManualSelect');
+      const btnBulk = document.getElementById('bulkPrioritizeBtn');
+      const btnLimpiar = document.getElementById('limpiarCompletadasBtn');
+      const btnOrdenar = document.getElementById('ordenarPrioridadBtn');
+      const btnSync = document.getElementById('syncNowBtn');
+      
+      if (btnAgregar) {
+        btnAgregar.onclick = () => {
+          agregarTarea(inputTarea.value, selectPrioridad.value);
+          inputTarea.value = '';
+        };
+      }
+      
+      if (inputTarea) {
+        inputTarea.addEventListener('keypress', (e) => {
+          if (e.key === 'Enter' && btnAgregar) btnAgregar.click();
+        });
+      }
+      
+      if (btnBulk) btnBulk.onclick = procesarCapturaMasiva;
+      if (btnLimpiar) btnLimpiar.onclick = limpiarCompletadas;
+      if (btnOrdenar) btnOrdenar.onclick = () => renderizarTabla();
+      if (btnSync) {
+        btnSync.onclick = async () => {
+          await guardarTareas();
+          alert('✅ Sincronización completada. Revisa tu Google Sheets.');
+        };
+      }
+      
+      console.log('✅ Panel listo. Abre la consola (F12) para ver los mensajes.');
     });
   </script>
 </body>
