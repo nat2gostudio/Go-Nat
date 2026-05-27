@@ -575,5 +575,101 @@
   </div>
 
   <script src="./app.js"></script>
+
+  <script>
+// ==========================================
+// NATE - MIS TAREAS (sin romper el resto)
+// ==========================================
+
+const URL_API = 'https://script.google.com/macros/s/AKfycbwnBN3A5YYfLZaDuyh9Glw2hR5hiX0gKRelT8p2ZKT45B7Bp6c0u8YfeyDGY6YTJGr9Ng/exec';
+const DEEPSEEK_API_KEY = 'sk-f0d93900b799462bb6229872d8084939';
+
+let misTareas = [];
+
+async function priorizarConNate(texto) {
+  try {
+    const prompt = `Prioriza esta tarea para Nati. Responde solo A, B o C.
+Tarea: "${texto}"
+A=urgente/salud/cliente/mascotas(vacunar,veterinario,ula,kai)
+B=importante planificable
+C=opcional`;
+    const res = await fetch('https://api.deepseek.com/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${DEEPSEEK_API_KEY}` },
+      body: JSON.stringify({ model: 'deepseek-chat', messages: [{ role: 'user', content: prompt }], temperature: 0.3, max_tokens: 5 })
+    });
+    const data = await res.json();
+    let p = data.choices[0].message.content.trim().toUpperCase();
+    return ['A', 'B', 'C'].includes(p) ? p : 'B';
+  } catch(e) {
+    const t = texto.toLowerCase();
+    if (t.includes('urgente')||t.includes('hoy')||t.includes('cliente')||t.includes('vacunar')||t.includes('veterinario')||t.includes('ula')||t.includes('kai')) return 'A';
+    if (t.includes('preparar')||t.includes('revisar')||t.includes('enviar')) return 'B';
+    return 'C';
+  }
+}
+
+async function guardarTareas() {
+  try { await fetch(`${URL_API}?tareas=${encodeURIComponent(JSON.stringify(misTareas))}`); localStorage.setItem('nat_tareas', JSON.stringify(misTareas)); }
+  catch(e) { localStorage.setItem('nat_tareas', JSON.stringify(misTareas)); }
+}
+
+async function cargarTareas() {
+  try { const res = await fetch(`${URL_API}?accion=tareas`); const data = await res.json(); if (data.tareas?.length) misTareas = data.tareas; else misTareas = JSON.parse(localStorage.getItem('nat_tareas') || '[]'); renderizarTareas(); }
+  catch(e) { misTareas = JSON.parse(localStorage.getItem('nat_tareas') || '[]'); renderizarTareas(); }
+}
+
+function renderizarTareas() {
+  const tbody = document.getElementById('tareasTableBody');
+  if (!tbody) return;
+  if (misTareas.length === 0) { tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; padding:40px;">🎉 No hay tareas. ¡Añade una!</td></tr>'; document.getElementById('contadorPendientes').innerText = '0 pendientes'; return; }
+  
+  const orden = { 'A':1, 'B':2, 'C':3 };
+  const ordenadas = [...misTareas].sort((a,b) => (orden[a.prioridad]||3) - (orden[b.prioridad]||3));
+  
+  tbody.innerHTML = ordenadas.map(t => `
+    <tr>
+      <td style="padding:10px"><input type="checkbox" ${t.estado === 'Completada' ? 'checked' : ''} onchange="toggleTarea(${t.id})"></td>
+      <td style="padding:10px"><strong>${escapeHtml(t.tarea)}</strong>${t.notas ? `<br><small>📌 ${escapeHtml(t.notas)}</small>` : ''}</td>
+      <td style="padding:10px"><span style="background:${t.prioridad==='A'?'#ffe2e2':t.prioridad==='B'?'#fff0db':'#e0f2fe'}; padding:5px 12px; border-radius:40px;">Prioridad ${t.prioridad}</span></td>
+      <td style="padding:10px">${t.estado || 'Pendiente'}</td>
+      <td style="padding:10px"><div style="display:flex; gap:5px;"><span>${t.progreso||0}%</span><button class="btn-small" onclick="cambiarProgreso(${t.id},${(t.progreso||0)+10})" style="background:#edf2f7; border:none; border-radius:20px; padding:2px 8px;">+10%</button></div></td>
+      <td style="padding:10px">${t.inicio || ''}</td>
+      <td style="padding:10px"><input type="date" value="${t.entrega || ''}" onchange="cambiarEntrega(${t.id}, this.value)" style="padding:4px; border-radius:20px; border:1px solid #ddd;"></td>
+      <td style="padding:10px"><button onclick="editarNotas(${t.id})" style="background:none; border:none; cursor:pointer;">📝</button></td>
+      <td style="padding:10px"><button onclick="eliminarTarea(${t.id})" style="background:#f56565; color:white; border:none; border-radius:20px; padding:4px 8px;">🗑️</button></td>
+    </tr>
+  `).join('');
+  const pendientes = misTareas.filter(t => t.estado !== 'Completada').length;
+  document.getElementById('contadorPendientes').innerText = `${pendientes} pendientes`;
+}
+
+function escapeHtml(t) { const d = document.createElement('div'); d.textContent = t; return d.innerHTML; }
+
+window.toggleTarea = (id) => { const t = misTareas.find(t => t.id == id); if(t) { t.estado = t.estado === 'Completada' ? 'Pendiente' : 'Completada'; t.progreso = t.estado === 'Completada' ? 100 : (t.progreso||0); renderizarTareas(); guardarTareas(); } };
+window.cambiarProgreso = (id, p) => { const t = misTareas.find(t => t.id == id); if(t) { t.progreso = Math.min(100, Math.max(0, p)); if(t.progreso===100) t.estado='Completada'; else if(t.progreso>0 && t.estado!=='Completada') t.estado='En curso'; renderizarTareas(); guardarTareas(); } };
+window.cambiarEntrega = (id, f) => { const t = misTareas.find(t => t.id == id); if(t) { t.entrega = f; guardarTareas(); } };
+window.editarNotas = (id) => { const t = misTareas.find(t => t.id == id); if(t) { const n = prompt('Notas:', t.notas||''); if(n!==null) { t.notas=n; renderizarTareas(); guardarTareas(); } } };
+window.eliminarTarea = (id) => { if(confirm('¿Eliminar esta tarea?')) { misTareas = misTareas.filter(t => t.id != id); renderizarTareas(); guardarTareas(); } };
+
+async function agregarTarea(texto, modo) {
+  if (!texto.trim()) return;
+  let prioridad;
+  const statusEl = document.getElementById('syncStatus');
+  if (modo === 'auto') { if(statusEl) statusEl.innerHTML = '🤖 Nate está pensando...'; prioridad = await priorizarConNate(texto); if(statusEl) statusEl.innerHTML = '✅ Nate priorizó'; }
+  else { prioridad = modo; }
+  misTareas.unshift({ id: Date.now(), tarea: texto.trim(), prioridad: prioridad, estado: 'Pendiente', progreso: 0, inicio: new Date().toLocaleDateString('es-ES'), entrega: '', notas: '' });
+  renderizarTareas();
+  guardarTareas();
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  cargarTareas();
+  document.getElementById('agregarTareaBtn').onclick = () => { agregarTarea(document.getElementById('nuevaTareaInput').value, document.getElementById('prioridadSelect').value); document.getElementById('nuevaTareaInput').value = ''; };
+  document.getElementById('limpiarCompletadasBtn').onclick = () => { if(confirm('¿Eliminar completadas?')) { misTareas = misTareas.filter(t => t.estado !== 'Completada'); renderizarTareas(); guardarTareas(); } };
+  document.getElementById('syncTareasBtn').onclick = () => { cargarTareas(); alert('✅ Tareas sincronizadas'); };
+});
+</script>
+  
 </body>
 </html>
