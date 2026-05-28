@@ -116,14 +116,16 @@ function syncTaskToGAS(task, cat) {
     progreso:     task.progreso || '',
     notas:        task.notas   || ''
   });
-  fetch(`${GAS_URL}?${params}`, { mode: 'no-cors' }).catch(() => {});
+  fetch(`${GAS_URL}?${params}`)
+    .then(r => r.json())
+    .then(d => { if (!d.ok) console.warn('GAS sync error:', d); })
+    .catch(err => console.warn('GAS sync failed:', err));
 }
 
-// Elimina una tarea del sheet cuando se borra en la app
 function deleteTaskFromGAS(taskId) {
   if (!GAS_URL) return;
   const params = new URLSearchParams({ action: 'delete', id: taskId });
-  fetch(`${GAS_URL}?${params}`, { mode: 'no-cors' }).catch(() => {});
+  fetch(`${GAS_URL}?${params}`).catch(err => console.warn('GAS delete failed:', err));
 }
 
 // Mantiene compatibilidad para checks/clientes (sin sheet dedicado por ahora)
