@@ -1,221 +1,135 @@
 /**
- * ============================================================
  * GO Nat — Google Apps Script Backend
- * Code.gs — Web App for syncing data to Google Sheets
- * ============================================================
+ * Escribe tareas en la hoja "Tareas_Completas" con columnas:
+ * ID | Inicio | Tarea | Prioridad | SubPrioridad | Entrega | Estado | Progreso | Notas
  *
- * HOW TO SET UP:
- * 1. Go to https://script.google.com
- * 2. Create a new project and name it "GoNat Sync"
- * 3. Replace the contents of Code.gs with this entire file
- * 4. Save the project (Ctrl+S)
- * 5. Click "Deploy" → "New deployment"
- * 6. Set type to "Web app"
- * 7. Set "Execute as" to "Me"
- * 8. Set "Who has access" to "Anyone" (required for the app to POST)
- * 9. Click "Deploy" and authorize if prompted
- * 10. Copy the Web App URL that looks like:
- *     https://script.google.com/macros/s/XXXXX.../exec
- * 11. Paste that URL into the GO Nat app → Perfil → URL de Google Apps Script
- *
- * SHEET STRUCTURE:
- * The script auto-creates a Google Sheet named "GoNat" with 4 tabs:
- *   - Clientes    → stores client data
- *   - Contenido   → stores kanban/content data
- *   - Prioridades → stores priority lists
- *   - Checks      → stores daily check data
- *   - Misc        → stores settings and other keys
- *
- * Each tab has two columns:
- *   Column A: key (string)
- *   Column B: value (JSON string)
- *
- * ============================================================
+ * SETUP:
+ * 1. script.google.com → proyecto GoNat Sync
+ * 2. Reemplaza Code.gs con este archivo
+ * 3. Deploy → New deployment → Web app → Execute as: Me → Access: Anyone
+ * 4. Copia la URL al app.js (GAS_URL)
  */
 
-// Name of the spreadsheet to create/use
-// ID de tu Google Spreadsheet (la parte de la URL entre /d/ y /edit)
 var SPREADSHEET_ID = '1r6XM2SkKyLKN9R3JWlBs4wsvjjVunE4WNEkmIBwFV7E';
+var SHEET_NAME     = 'Tareas_Completas';
+var HEADERS        = ['ID', 'Inicio', 'Tarea', 'Prioridad', 'SubPrioridad', 'Entrega', 'Estado', 'Progreso', 'Notas'];
 
-// Valid tab names
-var VALID_TABS = ['Clientes', 'Contenido', 'Prioridades', 'Checks', 'Misc'];
-
-/**
- * GET handler — returns all stored data as a flat JSON object.
- * The client app reads this and merges it with localStorage.
- *
- * Response format:
- * {
- *   "gonat_clientes": [...],
- *   "gonat_contenido": [...],
- *   "gonat_prioridades": {...},
- *   "gonat_checks_YYYY-MM-DD": {...},
- *   ...
- * }
- */
 function doGet(e) {
+  var action = (e.parameter && e.parameter.action) || 'read';
+
+  if (action === 'set')    return doGetSet(e);
+  if (action === 'delete') return doGetDelete(e);
+
   try {
-    var ss = getOrCreateSpreadsheet();
-    var result = {};
+    var sheet   = getSheet();
+    var lastRow = sheet.getLastRow();
+    if (lastRow < 2) return buildResponse([]);
 
-    VALID_TABS.forEach(function(tabName) {
-      var sheet = ss.getSheetByName(tabName);
-      if (!sheet) return;
-
-      var lastRow = sheet.getLastRow();
-      if (lastRow < 2) return; // Only header row, no data
-
-      var data = sheet.getRange(2, 1, lastRow - 1, 2).getValues();
-      data.forEach(function(row) {
-        var key = row[0];
-        var val = row[1];
-        if (key && val) {
-          try {
-            result[key] = JSON.parse(val);
-          } catch (parseErr) {
-            result[key] = val;
-          }
-        }
+    var data   = sheet.getRange(2, 1, lastRow - 1, HEADERS.length).getValues();
+    var result = data
+      .filter(function(r) { return r[0]; })
+      .map(function(r) {
+        return {
+          id:           r[0],
+          inicio:       r[1],
+          tarea:        r[2],
+          prioridad:    r[3],
+          subprioridad: r[4],
+          entrega:      r[5],
+          estado:       r[6],
+          progreso:     r[7],
+          notas:        r[8]
+        };
       });
-    });
 
-    return buildResponse(result, 200);
+    return buildResponse(result);
   } catch (err) {
-    return buildResponse({ error: err.message }, 500);
+    return buildResponse({ error: err.message });
   }
 }
 
-/**
- * POST handler — writes or updates a single key-value pair in a tab.
- *
- * Expected request body (JSON):
- * {
- *   "tab": "Clientes",      // which sheet tab to write to
- *   "key": "gonat_clientes", // the storage key
- *   "value": "..."           // the JSON-stringified value
- * }
- *
- * If the key already exists in the tab, its value is updated.
- * If not, a new row is appended.
- */
-function doPost(e) {
+function doGetSet(e) {
   try {
-    var body;
-    try {
-      body = JSON.parse(e.postData.contents);
-    } catch (parseErr) {
-      return buildResponse({ error: 'Invalid JSON body' }, 400);
-    }
+    var id        = e.parameter.id          || '';
+    var tarea     = e.parameter.tarea       || '';
+    var prioridad = e.parameter.prioridad   || '';
+    var subprio   = e.parameter.subprioridad || '';
+    var estado    = e.parameter.estado      || 'pendiente';
+    var inicio    = e.parameter.inicio      || Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd');
+    var entrega   = e.parameter.entrega     || '';
+    var progreso  = e.parameter.progreso    || '';
+    var notas     = e.parameter.notas       || '';
 
-    var tab   = body.tab   || 'Misc';
-    var key   = body.key;
-    var value = body.value;
+    if (!id || !tarea) return buildResponse({ error: 'Faltan id o tarea' });
 
-    if (!key || value === undefined) {
-      return buildResponse({ error: 'Missing key or value' }, 400);
-    }
-
-    // Sanitize tab name — only allow known tabs
-    if (VALID_TABS.indexOf(tab) === -1) {
-      tab = 'Misc';
-    }
-
-    var ss = getOrCreateSpreadsheet();
-    var sheet = getOrCreateTab(ss, tab);
-
-    // Search for existing key
-    var lastRow = sheet.getLastRow();
-    var existingRow = -1;
-
-    if (lastRow >= 2) {
-      var keys = sheet.getRange(2, 1, lastRow - 1, 1).getValues();
-      for (var i = 0; i < keys.length; i++) {
-        if (keys[i][0] === key) {
-          existingRow = i + 2; // +2 because row 1 is header, array is 0-indexed
-          break;
-        }
-      }
-    }
+    var sheet       = getSheet();
+    var existingRow = findRowById(sheet, id);
+    var row         = [id, inicio, tarea, prioridad, subprio, entrega, estado, progreso, notas];
 
     if (existingRow > 0) {
-      // Update existing row
-      sheet.getRange(existingRow, 1, 1, 2).setValues([[key, value]]);
+      sheet.getRange(existingRow, 1, 1, HEADERS.length).setValues([row]);
     } else {
-      // Append new row
-      sheet.appendRow([key, value]);
+      sheet.appendRow(row);
     }
 
-    return buildResponse({ ok: true, tab: tab, key: key }, 200);
+    return buildResponse({ ok: true, id: id });
   } catch (err) {
-    return buildResponse({ error: err.message }, 500);
+    return buildResponse({ error: err.message });
   }
 }
 
-/**
- * Build a ContentService response with CORS headers and JSON body.
- */
-function buildResponse(data, statusCode) {
-  var output = ContentService
-    .createTextOutput(JSON.stringify(data))
-    .setMimeType(ContentService.MimeType.JSON);
-  // Note: Apps Script ContentService does not support custom HTTP status codes
-  // or arbitrary headers. CORS is handled via the "Anyone" access deployment setting.
-  // For GET requests from the web app, the deployment type handles CORS automatically.
-  return output;
-}
+function doGetDelete(e) {
+  try {
+    var id = e.parameter.id || '';
+    if (!id) return buildResponse({ error: 'Falta id' });
 
-/**
- * Abre el spreadsheet por ID fijo y crea las pestanas si no existen.
- */
-function getOrCreateSpreadsheet() {
-  var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    var sheet       = getSheet();
+    var existingRow = findRowById(sheet, id);
+    if (existingRow > 0) sheet.deleteRow(existingRow);
 
-  // Crear pestanas que falten
-  for (var i = 0; i < VALID_TABS.length; i++) {
-    if (!ss.getSheetByName(VALID_TABS[i])) {
-      var newSheet = ss.insertSheet(VALID_TABS[i]);
-      newSheet.appendRow(['key', 'value']);
-    }
+    return buildResponse({ ok: true, id: id });
+  } catch (err) {
+    return buildResponse({ error: err.message });
   }
-
-  return ss;
 }
 
-/**
- * Get a tab by name, creating it (with header) if it doesn't exist.
- */
-function getOrCreateTab(ss, tabName) {
-  var sheet = ss.getSheetByName(tabName);
+function getSheet() {
+  var ss    = SpreadsheetApp.openById(SPREADSHEET_ID);
+  var sheet = ss.getSheetByName(SHEET_NAME);
   if (!sheet) {
-    sheet = ss.insertSheet(tabName);
-    sheet.appendRow(['key', 'value']);
+    sheet = ss.insertSheet(SHEET_NAME);
+    sheet.appendRow(HEADERS);
   }
+  if (sheet.getLastRow() === 0) sheet.appendRow(HEADERS);
   return sheet;
 }
 
-/**
- * Test function — run manually from the Apps Script editor to verify setup.
- * Click Run → testSetup to check that the spreadsheet is created correctly.
- */
+function findRowById(sheet, id) {
+  var lastRow = sheet.getLastRow();
+  if (lastRow < 2) return -1;
+  var ids = sheet.getRange(2, 1, lastRow - 1, 1).getValues();
+  for (var i = 0; i < ids.length; i++) {
+    if (String(ids[i][0]) === String(id)) return i + 2;
+  }
+  return -1;
+}
+
+function buildResponse(data) {
+  return ContentService
+    .createTextOutput(JSON.stringify(data))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
 function testSetup() {
-  var ss = getOrCreateSpreadsheet();
-  Logger.log('Spreadsheet URL: ' + ss.getUrl());
-  Logger.log('Tabs: ' + ss.getSheets().map(function(s) { return s.getName(); }).join(', '));
-
-  // Write a test record
-  var testBody = {
-    postData: {
-      contents: JSON.stringify({
-        tab: 'Misc',
-        key: 'test_key',
-        value: JSON.stringify({ test: true, ts: new Date().toISOString() })
-      })
-    }
-  };
-  var response = doPost(testBody);
-  Logger.log('doPost test result: ' + response.getContent());
-
-  // Read it back
-  var getResult = doGet({});
-  Logger.log('doGet result (first 200 chars): ' + getResult.getContent().substring(0, 200));
+  var fakeGet = { parameter: {
+    action: 'set',
+    id: 'test123',
+    tarea: 'Tarea de prueba',
+    prioridad: 'A',
+    subprioridad: 'dinero',
+    estado: 'pendiente',
+    inicio: '2026-05-28'
+  }};
+  Logger.log(doGetSet(fakeGet).getContent());
+  Logger.log('Tareas: ' + doGet({ parameter: {} }).getContent().substring(0, 300));
 }

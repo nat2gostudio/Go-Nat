@@ -3,7 +3,7 @@
 // ==========================================
 
 // ========== CONFIGURACIÓN ==========
-const GAS_URL = 'https://script.google.com/macros/s/AKfycby9az8NS5q_jkJTmuu1nixnbwImCvTfAcEOq23BVK1lWQaRvaImUNF6CPQZ8YvLC3Xnwg/exec';
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbwnBN3A5YYfLZaDuyh9Glw2hR5hiX0gKRelT8p2ZKT45B7Bp6c0u8YfeyDGY6YTJGr9Ng/exec';
 
 // ========== STORAGE HELPERS ==========
 function lsGet(key, fallback) {
@@ -99,29 +99,42 @@ function initPomodoro() {
 }
 
 // ========== SINCRONIZACION CON GOOGLE SHEETS ==========
-function guessTab(key) {
-  if (key.includes('prioridad') || key === 'gonat_prioridades') return 'Prioridades';
-  if (key.includes('cliente') || key === 'gonat_clientes') return 'Clientes';
-  if (key.includes('contenido') || key === 'gonat_contenido') return 'Contenido';
-  if (key.includes('check') || key.includes('bienestar')) return 'Checks';
-  return 'Misc';
+const PRIO_LETRA = { dinero: 'A', clientes: 'B', marca: 'C' };
+
+// Sincroniza una tarea individual como fila en Tareas_Completas
+function syncTaskToGAS(task, cat) {
+  if (!GAS_URL) return;
+  const params = new URLSearchParams({
+    action:       'set',
+    id:           task.id,
+    tarea:        task.text,
+    prioridad:    PRIO_LETRA[cat] || '',
+    subprioridad: cat,
+    estado:       task.done ? 'hecha' : 'pendiente',
+    inicio:       task.addedAt || new Date().toISOString().slice(0, 10),
+    entrega:      task.entrega  || '',
+    progreso:     task.progreso || '',
+    notas:        task.notas   || ''
+  });
+  fetch(`${GAS_URL}?${params}`)
+    .then(r => r.json())
+    .then(d => { if (!d.ok) console.warn('GAS sync error:', d); })
+    .catch(err => console.warn('GAS sync failed:', err));
 }
 
-async function syncToGAS(key, value, tab) {
+function deleteTaskFromGAS(taskId) {
   if (!GAS_URL) return;
-  // no-cors no permite Content-Type: application/json
-  // enviamos el body sin cabecera — GAS lo recibe en e.postData.contents igual
-  fetch(GAS_URL, {
-    method: 'POST',
-    mode: 'no-cors',
-    body: JSON.stringify({ tab: tab || guessTab(key), key, value: JSON.stringify(value) })
-  }).catch(() => {});
+  const params = new URLSearchParams({ action: 'delete', id: taskId });
+  fetch(`${GAS_URL}?${params}`).catch(err => console.warn('GAS delete failed:', err));
 }
+
+// sin sheet dedicado por ahora para checks/clientes
+function syncToGAS() {}
 
 async function syncFromGAS() {
   if (!GAS_URL) return null;
   try {
-    const res = await fetch(`${GAS_URL}?action=all`);
+    const res = await fetch(`${GAS_URL}?action=read`);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return await res.json();
   } catch (e) {
@@ -137,19 +150,8 @@ async function testAndSyncFromGAS(onStatus) {
     onStatus('error', data && data.error ? data.error : 'No se pudo conectar. Verifica que el script este desplegado con acceso "Cualquier usuario".');
     return;
   }
-  const prio = data['gonat_prioridades'] || data['prioridades'];
-  const seg  = data['gonat_seguimiento']  || data['seguimiento'];
-  const cli  = data['gonat_clientes']     || data['clientes'];
-  if (prio) { prioridades = prio; lsSet('gonat_prioridades', prio); }
-  if (seg)  { seguimiento = seg;  lsSet('gonat_seguimiento', seg); }
-  if (cli)  { clientes = cli;     lsSet('gonat_clientes', cli); }
-  renderPrioridades();
-  renderClientes();
-  renderSeguimiento();
-  const pCount = Object.values(prio || {}).flat().length;
-  const sCount = (seg || []).length;
-  const cCount = (cli || []).length;
-  onStatus('ok', `Conectado — ${pCount} prioridades, ${sCount} seguimiento, ${cCount} clientes`);
+  const count = Array.isArray(data) ? data.length : 0;
+  onStatus('ok', `Conectado — ${count} tareas en Tareas_Completas`);
 }
 
 // ========== IA CON GROQ ==========
@@ -210,7 +212,9 @@ let prioridades = lsGet('gonat_prioridades', { dinero: [], clientes: [], marca: 
 
 function savePrioridades() {
   lsSet('gonat_prioridades', prioridades);
-  syncToGAS('gonat_prioridades', prioridades, 'Prioridades');
+  ['dinero', 'clientes', 'marca'].forEach(cat => {
+    (prioridades[cat] || []).forEach(task => syncTaskToGAS(task, cat));
+  });
 }
 
 function renderPrioridades() {
@@ -231,7 +235,9 @@ function renderPrioridades() {
         savePrioridades(); renderPrioridades();
       });
       li.querySelector('.priority-item-del').addEventListener('click', () => {
+        const deletedId = prioridades[cat][i].id;
         prioridades[cat].splice(i, 1);
+        deleteTaskFromGAS(deletedId);
         savePrioridades(); renderPrioridades();
       });
       ul.appendChild(li);
@@ -243,12 +249,32 @@ function initPrioridades() {
   document.querySelectorAll('.add-prio-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       const cat = btn.dataset.cat;
-      const labels = { dinero: 'A (Dinero)', clientes: 'B (Clientes)', marca: 'C (Marca)' };
-      const text = prompt(`Nueva tarea — Prioridad ${labels[cat]}:`);
-      if (!text || !text.trim()) return;
-      if (!prioridades[cat]) prioridades[cat] = [];
-      prioridades[cat].push({ id: uid(), text: text.trim(), done: false, subtasks: [] });
-      savePrioridades(); renderPrioridades();
+      const existing = btn.parentElement.querySelector('.prio-inline-add');
+      if (existing) { existing.querySelector('.prio-inline-input').focus(); return; }
+
+      const row = document.createElement('div');
+      row.className = 'prio-inline-add';
+      row.innerHTML = `<input class="prio-inline-input" type="text" placeholder="Escribe la tarea..." /><button class="btn btn-primary btn-xs prio-inline-confirm">Añadir</button>`;
+      btn.parentElement.insertBefore(row, btn);
+
+      const input = row.querySelector('.prio-inline-input');
+      input.focus();
+
+      function addTask() {
+        const text = input.value.trim();
+        row.remove();
+        if (!text) return;
+        if (!prioridades[cat]) prioridades[cat] = [];
+        prioridades[cat].push({ id: uid(), text, done: false, subtasks: [], addedAt: new Date().toISOString().slice(0, 10) });
+        savePrioridades();
+        renderPrioridades();
+      }
+
+      row.querySelector('.prio-inline-confirm').addEventListener('click', addTask);
+      input.addEventListener('keydown', e => {
+        if (e.key === 'Enter') addTask();
+        if (e.key === 'Escape') row.remove();
+      });
     });
   });
 }
@@ -276,7 +302,7 @@ function initBulkPrioritize() {
         (result[cat] || []).forEach(text => {
           if (!text || !text.trim()) return;
           if (!prioridades[cat]) prioridades[cat] = [];
-          prioridades[cat].push({ id: uid(), text: text.trim(), done: false, subtasks: [] });
+          prioridades[cat].push({ id: uid(), text: text.trim(), done: false, subtasks: [], addedAt: new Date().toISOString().slice(0, 10) });
           total++;
         });
       });
@@ -311,7 +337,6 @@ let seguimiento = lsGet('gonat_seguimiento', []);
 
 function saveSeguimiento() {
   lsSet('gonat_seguimiento', seguimiento);
-  syncToGAS('gonat_seguimiento', seguimiento, 'Misc');
 }
 
 function renderSeguimiento() {
@@ -361,7 +386,6 @@ let clientes = lsGet('gonat_clientes', []);
 
 function saveClientes() {
   lsSet('gonat_clientes', clientes);
-  syncToGAS('gonat_clientes', clientes, 'Clientes');
 }
 
 function renderClientes() {
@@ -425,7 +449,6 @@ function loadMorningChecks() {
     cb.addEventListener('change', () => {
       data[cb.dataset.key] = cb.checked;
       lsSet(`gonat_checks_${today}`, data);
-      syncToGAS(`gonat_checks_${today}`, data, 'Checks');
       renderStats();
     });
   });
@@ -439,7 +462,6 @@ function loadBienestarChecks() {
     cb.addEventListener('change', () => {
       data[cb.dataset.key] = cb.checked;
       lsSet(`gonat_bienestar_${today}`, data);
-      syncToGAS(`gonat_bienestar_${today}`, data, 'Checks');
       renderStats();
     });
   });
@@ -494,7 +516,6 @@ function initPerfil() {
     });
   }
 
-  // Groq API key
   const keyInput = document.getElementById('deepseekKeyInput');
   const saveKeyBtn = document.getElementById('saveDeepseekKeyBtn');
   const keyStatus = document.getElementById('deepseekKeyStatus');
@@ -571,17 +592,6 @@ document.addEventListener('DOMContentLoaded', function() {
   loadBienestarChecks();
   renderStats();
   initPerfil();
-
-  // Sync en segundo plano al cargar
-  syncFromGAS().then(data => {
-    if (!data || data.error) return;
-    const prio = data['gonat_prioridades'] || data['prioridades'];
-    const seg  = data['gonat_seguimiento']  || data['seguimiento'];
-    const cli  = data['gonat_clientes']     || data['clientes'];
-    if (prio) { prioridades = prio; lsSet('gonat_prioridades', prio); renderPrioridades(); }
-    if (seg)  { seguimiento = seg;  lsSet('gonat_seguimiento', seg);  renderSeguimiento(); }
-    if (cli)  { clientes = cli;     lsSet('gonat_clientes', cli);     renderClientes(); }
-  });
 });
 
 console.log('GO Nat - Aplicacion lista');
