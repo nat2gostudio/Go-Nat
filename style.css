@@ -1317,11 +1317,109 @@ body.dark .gas-code-textarea {
   display: flex;
   gap: 10px;
   margin-bottom: 12px;
+  flex-wrap: wrap;
 }
 
 .gas-form .input {
   flex: 1;
+  min-width: 0;
 }
+
+.gas-test-result {
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  margin-top: 4px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.gas-test-result--loading {
+  background: #f0f9ff;
+  color: #0369a1;
+  border: 1px solid #bae6fd;
+}
+.gas-test-result--ok {
+  background: #f0fdf4;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+}
+.gas-test-result--error {
+  background: #fef2f2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+}
+body.dark .gas-test-result--loading { background: #0c2233; color: #7dd3fc; border-color: #075985; }
+body.dark .gas-test-result--ok { background: #052e16; color: #86efac; border-color: #166534; }
+body.dark .gas-test-result--error { background: #2d0a0a; color: #fca5a5; border-color: #7f1d1d; }
+
+/* Smart task add */
+.smart-add-card {
+  padding: 14px 16px;
+  margin-bottom: 16px;
+  border: 2px solid transparent;
+  transition: border-color 0.2s;
+}
+.smart-add-card:focus-within {
+  border-color: var(--color-primary, #7c3aed);
+}
+.smart-add-row {
+  display: flex;
+  gap: 10px;
+}
+.smart-add-input {
+  flex: 1;
+  padding: 9px 12px;
+  border: 1px solid var(--border-color, #e5e7eb);
+  border-radius: 8px;
+  font-size: 14px;
+  background: var(--input-bg, #fff);
+  color: var(--text-primary, #111827);
+  outline: none;
+  transition: border-color 0.2s;
+}
+.smart-add-input:focus {
+  border-color: var(--color-primary, #7c3aed);
+}
+.smart-add-btn {
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.smart-add-preview {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+  font-size: 13px;
+}
+.smart-cat-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.03em;
+}
+.smart-cat-badge--dinero  { background: #fef3c7; color: #92400e; }
+.smart-cat-badge--clientes { background: #ede9fe; color: #5b21b6; }
+.smart-cat-badge--marca   { background: #fce7f3; color: #9d174d; }
+.smart-cat-badge--unknown { background: #f3f4f6; color: #4b5563; }
+.smart-cat-reason {
+  color: var(--text-secondary, #6b7280);
+  font-size: 12px;
+}
+body.dark .smart-add-input {
+  background: var(--card-bg, #1e293b);
+  border-color: #334155;
+  color: #f1f5f9;
+}
+body.dark .smart-cat-badge--dinero   { background: #451a03; color: #fcd34d; }
+body.dark .smart-cat-badge--clientes { background: #2e1065; color: #c4b5fd; }
+body.dark .smart-cat-badge--marca    { background: #500724; color: #f9a8d4; }
+body.dark .smart-cat-badge--unknown  { background: #1e293b; color: #94a3b8; }
 
 .connection-status {
   display: flex;
@@ -1343,6 +1441,10 @@ body.dark .gas-code-textarea {
 
 .status-dot--green {
   background: var(--success);
+}
+
+.status-dot--red {
+  background: #ef4444;
 }
 
 .status-text {

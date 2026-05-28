@@ -272,6 +272,18 @@
       </div>
       <div class="decision-highlight" id="decisionHighlight" style="display:none;"></div>
 
+      <!-- Smart task input -->
+      <div class="smart-add-card card">
+        <div class="smart-add-row">
+          <input type="text" id="smartTaskInput" class="smart-add-input" placeholder="Escribe una tarea y la clasifica automáticamente..." maxlength="200" />
+          <button class="btn btn-primary smart-add-btn" id="smartAddBtn">Añadir</button>
+        </div>
+        <div class="smart-add-preview" id="smartAddPreview" style="display:none;">
+          <span class="smart-cat-badge" id="smartCatBadge"></span>
+          <span class="smart-cat-reason" id="smartCatReason"></span>
+        </div>
+      </div>
+
       <div class="priorities-grid">
         <div class="card priority-card" id="prio-dinero">
           <h3 class="priority-title">Prioridad A</h3>
@@ -677,7 +689,9 @@ function ok_(data) { return ContentService.createTextOutput(JSON.stringify(data)
         <div class="gas-form">
           <input type="url" id="gasUrlInput" class="input" placeholder="https://script.google.com/macros/s/..." />
           <button class="btn btn-primary" id="saveGasBtn">Guardar</button>
+          <button class="btn btn-secondary" id="testGasBtn" style="display:none;">Probar conexión</button>
         </div>
+        <div id="gasTestResult" class="gas-test-result" style="display:none;"></div>
       </div>
 
       <!-- Theme -->

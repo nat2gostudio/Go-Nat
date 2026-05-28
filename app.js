@@ -1314,20 +1314,29 @@ function initLockOverlay() {
    ============================================================ */
 
 function initPerfil() {
-  // Load saved GAS URL
   const gasInput = document.getElementById('gasUrlInput');
   const statusDot = document.querySelector('.status-dot');
   const statusText = document.getElementById('statusText');
+  const testBtn = document.getElementById('testGasBtn');
+  const testResult = document.getElementById('gasTestResult');
 
   gasInput.value = settings.gasUrl || '';
 
-  const updateConnectionStatus = () => {
-    if (settings.gasUrl) {
+  // Populate GAS script textarea
+  const ta = document.getElementById('gasScriptContent');
+  if (ta && ta.value === '') ta.value = GAS_SCRIPT_TEMPLATE.join('\n');
+
+  const updateConnectionStatus = (url) => {
+    const u = url !== undefined ? url : settings.gasUrl;
+    if (u) {
       statusDot.className = 'status-dot status-dot--green';
-      statusText.textContent = 'Conectado';
+      statusText.textContent = 'URL guardada';
+      testBtn.style.display = '';
     } else {
       statusDot.className = 'status-dot status-dot--grey';
       statusText.textContent = 'Sin conexión (modo local)';
+      testBtn.style.display = 'none';
+      if (testResult) testResult.style.display = 'none';
     }
   };
 
@@ -1337,38 +1346,72 @@ function initPerfil() {
     settings.gasUrl = gasInput.value.trim();
     saveSettings();
     updateConnectionStatus();
-    if (settings.gasUrl) {
-      syncAllToGAS();   // push local data to sheets first
-      syncFromGAS();    // then pull (sheets win on conflict)
-    }
+    if (settings.gasUrl) syncAllToGAS();
   });
+
+  // Test connection button
+  if (testBtn) {
+    testBtn.addEventListener('click', async () => {
+      if (!settings.gasUrl) return;
+      testBtn.disabled = true;
+      testBtn.textContent = 'Probando...';
+      testResult.style.display = 'flex';
+      testResult.className = 'gas-test-result gas-test-result--loading';
+      testResult.textContent = 'Conectando con Google Sheets...';
+
+      try {
+        const gasUrl = `${settings.gasUrl}?action=all&token=${encodeURIComponent(GAS_TOKEN)}`;
+        const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(gasUrl)}`;
+        const res = await fetch(proxyUrl, { method: 'GET' });
+        if (!res.ok) throw new Error(`Proxy devolvió HTTP ${res.status}`);
+        const envelope = await res.json();
+        const data = envelope.contents ? JSON.parse(envelope.contents) : envelope;
+
+        if (data && data.error) throw new Error(data.error);
+
+        const pCount = Object.values(data.gonat_prioridades || {}).flat().length;
+        const sCount = (data.gonat_seguimiento || []).length;
+        const cCount = (data.gonat_clientes || []).length;
+
+        testResult.className = 'gas-test-result gas-test-result--ok';
+        testResult.textContent = `Conectado — ${pCount} prioridades, ${sCount} seguimiento, ${cCount} clientes`;
+        statusDot.className = 'status-dot status-dot--green';
+        statusText.textContent = 'Conectado y sincronizado';
+
+        if (data.gonat_prioridades) lsSet(KEYS.prioridades, data.gonat_prioridades);
+        if (data.gonat_seguimiento) lsSet(KEYS.seguimiento, data.gonat_seguimiento);
+        if (data.gonat_clientes)    lsSet(KEYS.clientes,    data.gonat_clientes);
+        initApp();
+      } catch (err) {
+        testResult.className = 'gas-test-result gas-test-result--error';
+        testResult.textContent = `Error: ${err.message}`;
+        statusDot.className = 'status-dot status-dot--red';
+        statusText.textContent = 'Error de conexión';
+      } finally {
+        testBtn.disabled = false;
+        testBtn.textContent = 'Probar conexión';
+      }
+    });
+  }
 
   // Theme
-  document.getElementById('themeLightBtn').addEventListener('click', () => {
-    setTheme('light');
-  });
-
-  document.getElementById('themeDarkBtn').addEventListener('click', () => {
-    setTheme('dark');
-  });
+  document.getElementById('themeLightBtn').addEventListener('click', () => setTheme('light'));
+  document.getElementById('themeDarkBtn').addEventListener('click', () => setTheme('dark'));
 
   // Copy GAS script button
   const copyBtn = document.getElementById('copyGasScriptBtn');
   if (copyBtn) {
     copyBtn.addEventListener('click', () => {
-      const ta = document.getElementById('gasScriptContent');
-      if (!ta) return;
-      navigator.clipboard.writeText(ta.value).then(() => {
+      const scriptTa = document.getElementById('gasScriptContent');
+      if (!scriptTa) return;
+      navigator.clipboard.writeText(scriptTa.value).then(() => {
         copyBtn.textContent = '✓ Copiado';
         copyBtn.classList.add('gas-copy-btn--copied');
         setTimeout(() => {
           copyBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg> Copiar script`;
           copyBtn.classList.remove('gas-copy-btn--copied');
         }, 2000);
-      }).catch(() => {
-        ta.select();
-        document.execCommand('copy');
-      });
+      }).catch(() => { scriptTa.select(); document.execCommand('copy'); });
     });
   }
 
@@ -1510,15 +1553,30 @@ function initPomodoro() {
    ============================================================ */
 
 const PRIORITY_WORDS = {
-  dinero: ['factura', 'cobrar', 'cobro', 'pago', 'pagos', 'presupuesto', 'propuesta',
-           'urgente', 'dinero', 'precio', 'contrato', 'hoy', 'deadline', 'vence',
-           'llamar', 'invoice', 'cargo', 'ingreso', 'honorarios'],
-  clientes: ['ae', 'casa bella', 'roscónlab', 'roscónlab', 'cliente', 'clientes',
-             'reunión', 'entrega', 'revisión', 'corrección', 'feedback',
-             'enviar a', 'llamada', 'responder', 'email a', 'proyecto'],
-  marca: ['instagram', 'newsletter', 'blog', 'marca', 'contenido', 'web',
-          'linkedin', 'canva', 'diseño', 'post', 'stories', 'reel',
-          'portfolio', 'branding', 'foto', 'vídeo', 'podcast', 'publicar', 'social'],
+  dinero: [
+    'factura', 'cobrar', 'cobro', 'pago', 'pagos', 'presupuesto', 'propuesta',
+    'urgente', 'dinero', 'precio', 'contrato', 'hoy', 'deadline', 'vence', 'vencimiento',
+    'llamar', 'invoice', 'cargo', 'ingreso', 'honorarios', 'transferencia',
+    'deposito', 'depósito', 'banco', 'cuenta', 'cotización', 'cotizacion',
+    'oferta', 'negocio', 'negociacion', 'negociación', 'firma', 'firmar',
+    'urgente', 'prioridad', 'hoy mismo', 'inmediato', 'antes de',
+  ],
+  clientes: [
+    'ae', 'casa bella', 'rosconlab', 'cliente', 'clientes',
+    'reunion', 'reunión', 'entrega', 'revision', 'revisión', 'correccion', 'corrección',
+    'feedback', 'enviar a', 'llamada', 'responder', 'email a', 'proyecto',
+    'presentacion', 'presentación', 'aprobacion', 'aprobación', 'aprobar',
+    'brief', 'briefing', 'informe', 'reporte', 'seguimiento',
+    'whatsapp', 'mensaje a', 'contactar', 'confirmar con',
+  ],
+  marca: [
+    'instagram', 'newsletter', 'blog', 'marca', 'contenido', 'web',
+    'linkedin', 'canva', 'diseño', 'diseno', 'post', 'stories', 'reel',
+    'portfolio', 'branding', 'foto', 'video', 'vídeo', 'podcast', 'publicar', 'social',
+    'tiktok', 'youtube', 'twitter', 'x.com', 'facebook', 'pinterest',
+    'copy', 'copywriting', 'texto', 'caption', 'hashtag', 'feed',
+    'imagen', 'banner', 'plantilla', 'template', 'identidad',
+  ],
 };
 
 function assignCategory(taskText) {
@@ -1532,6 +1590,69 @@ function assignCategory(taskText) {
   const max = Math.max(...Object.values(scores));
   if (max === 0) return null;
   return Object.entries(scores).find(([, v]) => v === max)[0];
+}
+
+function assignCategoryWithReason(taskText) {
+  const text = taskText.toLowerCase();
+  const scores = { dinero: 0, clientes: 0, marca: 0 };
+  const matched = { dinero: [], clientes: [], marca: [] };
+  for (const [cat, words] of Object.entries(PRIORITY_WORDS)) {
+    for (const word of words) {
+      if (text.includes(word)) { scores[cat]++; matched[cat].push(word); }
+    }
+  }
+  const max = Math.max(...Object.values(scores));
+  if (max === 0) return { cat: null, reason: 'Sin palabras clave — se distribuirá por equilibrio' };
+  const cat = Object.entries(scores).find(([, v]) => v === max)[0];
+  const labels = { dinero: 'A — Dinero', clientes: 'B — Clientes', marca: 'C — Marca' };
+  return { cat, label: labels[cat], reason: `Por: "${matched[cat].slice(0, 2).join('", "')}"` };
+}
+
+function initSmartAdd() {
+  const input = document.getElementById('smartTaskInput');
+  const addBtn = document.getElementById('smartAddBtn');
+  const preview = document.getElementById('smartAddPreview');
+  const badge = document.getElementById('smartCatBadge');
+  const reason = document.getElementById('smartCatReason');
+  if (!input) return;
+
+  let currentCat = null;
+
+  const updatePreview = () => {
+    const text = input.value.trim();
+    if (!text) { preview.style.display = 'none'; return; }
+    const result = assignCategoryWithReason(text);
+    currentCat = result.cat;
+    preview.style.display = 'flex';
+    badge.className = `smart-cat-badge smart-cat-badge--${result.cat || 'unknown'}`;
+    badge.textContent = result.label || 'Sin categoría clara';
+    reason.textContent = result.reason;
+  };
+
+  input.addEventListener('input', updatePreview);
+
+  const doAdd = () => {
+    const text = input.value.trim();
+    if (!text) return;
+    const cat = currentCat || (() => {
+      const counts = {
+        dinero: (prioridades.dinero || []).length,
+        clientes: (prioridades.clientes || []).length,
+        marca: (prioridades.marca || []).length,
+      };
+      return Object.entries(counts).sort((a, b) => a[1] - b[1])[0][0];
+    })();
+    if (!prioridades[cat]) prioridades[cat] = [];
+    prioridades[cat].push({ id: uid(), text, done: false, subtasks: [], startDate: null, dueDate: null });
+    savePrioridades();
+    renderPrioridades();
+    input.value = '';
+    preview.style.display = 'none';
+    currentCat = null;
+  };
+
+  addBtn.addEventListener('click', doAdd);
+  input.addEventListener('keydown', e => { if (e.key === 'Enter') doAdd(); });
 }
 
 function initBulkPrioritize() {
@@ -1911,6 +2032,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initPrioridades();
   initDecision();
   initPomodoro();
+  initSmartAdd();
   initBulkPrioritize();
   initSeguimiento();
   initClientes();
