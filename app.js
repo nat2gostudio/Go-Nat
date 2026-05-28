@@ -3,7 +3,7 @@
 // ==========================================
 
 // ========== CONFIGURACIÓN ==========
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbwjYQIHruVe_d6PPiVH5M0SGqNLObb_tHustIvIYBGu-ZibF0-bO3sauuXfjr8nwIjZAQ/exec';
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbwOrIhsW-3mHZEABYrpA_IOhg7I__s7vdyY2HAfaUBq6xsZq5j9S9FlS_H6tDCQpMUxIQ/exec';
 
 // ========== STORAGE HELPERS ==========
 function lsGet(key, fallback) {
