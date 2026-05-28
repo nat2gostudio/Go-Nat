@@ -92,3 +92,13 @@ frontend/node_modules/.cache/default-development/9.pack
 credentials.json
 *.key
 .credentials
+
+# Archivos del proyecto anterior (emergent.sh) - no pertenecen a Go-Nat
+.emergent/
+backend/
+frontend/
+design_guidelines.json
+memory/
+test_reports/
+test_result.md
+tests/
