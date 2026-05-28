@@ -14,16 +14,19 @@ var SPREADSHEET_ID = '1r6XM2SkKyLKN9R3JWlBs4wsvjjVunE4WNEkmIBwFV7E';
 var SHEET_NAME     = 'Tareas_Completas';
 var HEADERS        = ['ID', 'Inicio', 'Tarea', 'Prioridad', 'SubPrioridad', 'Entrega', 'Estado', 'Progreso', 'Notas'];
 
+// ── GET handler ──────────────────────────────────────────────────────────────
 function doGet(e) {
   var action = (e.parameter && e.parameter.action) || 'read';
 
-  if (action === 'set')    return doGetSet(e);
-  if (action === 'delete') return doGetDelete(e);
+  if (action === 'set')      return doGetSet(e);
+  if (action === 'delete')   return doGetDelete(e);
+  if (action === 'calendar') return doGetCalendar(e);
 
+  // Lectura: devuelve todas las tareas como array de objetos
   try {
     var sheet   = getSheet();
     var lastRow = sheet.getLastRow();
-    if (lastRow < 2) return buildResponse([]);
+    if (lastRow < 2) return buildResponse([], 200);
 
     var data   = sheet.getRange(2, 1, lastRow - 1, HEADERS.length).getValues();
     var result = data
@@ -42,25 +45,26 @@ function doGet(e) {
         };
       });
 
-    return buildResponse(result);
+    return buildResponse(result, 200);
   } catch (err) {
-    return buildResponse({ error: err.message });
+    return buildResponse({ error: err.message }, 500);
   }
 }
 
+// ── Escritura / actualización de una tarea ────────────────────────────────────
 function doGetSet(e) {
   try {
-    var id        = e.parameter.id          || '';
-    var tarea     = e.parameter.tarea       || '';
-    var prioridad = e.parameter.prioridad   || '';
-    var subprio   = e.parameter.subprioridad || '';
-    var estado    = e.parameter.estado      || 'pendiente';
-    var inicio    = e.parameter.inicio      || Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd');
-    var entrega   = e.parameter.entrega     || '';
-    var progreso  = e.parameter.progreso    || '';
-    var notas     = e.parameter.notas       || '';
+    var id          = e.parameter.id          || '';
+    var tarea       = e.parameter.tarea       || '';
+    var prioridad   = e.parameter.prioridad   || '';
+    var subprio     = e.parameter.subprioridad || '';
+    var estado      = e.parameter.estado      || 'pendiente';
+    var inicio      = e.parameter.inicio      || Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd');
+    var entrega     = e.parameter.entrega     || '';
+    var progreso    = e.parameter.progreso    || '';
+    var notas       = e.parameter.notas       || '';
 
-    if (!id || !tarea) return buildResponse({ error: 'Faltan id o tarea' });
+    if (!id || !tarea) return buildResponse({ error: 'Faltan id o tarea' }, 400);
 
     var sheet       = getSheet();
     var existingRow = findRowById(sheet, id);
@@ -72,22 +76,55 @@ function doGetSet(e) {
       sheet.appendRow(row);
     }
 
-    return buildResponse({ ok: true, id: id });
+    return buildResponse({ ok: true, id: id }, 200);
   } catch (err) {
-    return buildResponse({ error: err.message });
+    return buildResponse({ error: err.message }, 500);
   }
 }
 
+// ── Eliminación de una tarea por ID ──────────────────────────────────────────
 function doGetDelete(e) {
   try {
     var id = e.parameter.id || '';
-    if (!id) return buildResponse({ error: 'Falta id' });
+    if (!id) return buildResponse({ error: 'Falta id' }, 400);
 
     var sheet       = getSheet();
     var existingRow = findRowById(sheet, id);
     if (existingRow > 0) sheet.deleteRow(existingRow);
 
-    return buildResponse({ ok: true, id: id });
+    return buildResponse({ ok: true, id: id }, 200);
+  } catch (err) {
+    return buildResponse({ error: err.message }, 500);
+  }
+}
+
+// ── Eventos de Google Calendar (hoy) ─────────────────────────────────────────
+function doGetCalendar(e) {
+  try {
+    var now   = new Date();
+    var start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
+    var end   = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
+
+    var calendars = CalendarApp.getAllCalendars();
+    var allEvents = [];
+
+    calendars.forEach(function(cal) {
+      cal.getEvents(start, end).forEach(function(ev) {
+        allEvents.push({
+          title:    ev.getTitle(),
+          start:    ev.getStartTime().toISOString(),
+          end:      ev.getEndTime().toISOString(),
+          allDay:   ev.isAllDayEvent(),
+          location: ev.getLocation() || '',
+          calendar: cal.getName()
+        });
+      });
+    });
+
+    // Ordenar por hora de inicio
+    allEvents.sort(function(a, b) { return new Date(a.start) - new Date(b.start); });
+
+    return buildResponse(allEvents);
   } catch (err) {
     return buildResponse({ error: err.message });
   }
@@ -100,6 +137,7 @@ function getSheet() {
     sheet = ss.insertSheet(SHEET_NAME);
     sheet.appendRow(HEADERS);
   }
+  // Asegura cabeceras si la hoja existe pero está vacía
   if (sheet.getLastRow() === 0) sheet.appendRow(HEADERS);
   return sheet;
 }
@@ -120,6 +158,7 @@ function buildResponse(data) {
     .setMimeType(ContentService.MimeType.JSON);
 }
 
+// ── Test manual desde el editor de GAS ───────────────────────────────────────
 function testSetup() {
   var fakeGet = { parameter: {
     action: 'set',
@@ -131,5 +170,7 @@ function testSetup() {
     inicio: '2026-05-28'
   }};
   Logger.log(doGetSet(fakeGet).getContent());
-  Logger.log('Tareas: ' + doGet({ parameter: {} }).getContent().substring(0, 300));
+
+  var readResult = doGet({ parameter: {} });
+  Logger.log('Tareas: ' + readResult.getContent().substring(0, 300));
 }

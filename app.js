@@ -101,6 +101,7 @@ function initPomodoro() {
 // ========== SINCRONIZACION CON GOOGLE SHEETS ==========
 const PRIO_LETRA = { dinero: 'A', clientes: 'B', marca: 'C' };
 
+// Sincroniza una tarea individual como fila en Tareas_Completas
 function syncTaskToGAS(task, cat) {
   if (!GAS_URL) return;
   const params = new URLSearchParams({
@@ -127,6 +128,7 @@ function deleteTaskFromGAS(taskId) {
   fetch(`${GAS_URL}?${params}`).catch(err => console.warn('GAS delete failed:', err));
 }
 
+// Mantiene compatibilidad para checks/clientes (sin sheet dedicado por ahora)
 function syncToGAS() {}
 
 // Carga desde GAS y convierte el array de filas a {dinero,clientes,marca}
@@ -173,6 +175,32 @@ async function testAndSyncFromGAS(onStatus) {
   onStatus('ok', `Conectado — ${count} tareas cargadas desde Sheets`);
 }
 
+// ========== CALENDARIO ==========
+async function loadCalendarEvents() {
+  const el = document.getElementById('calendarEventsList');
+  if (!el || !GAS_URL) return;
+  try {
+    const res = await fetch(`${GAS_URL}?action=calendar`);
+    const events = await res.json();
+    if (!Array.isArray(events) || events.length === 0) {
+      el.innerHTML = '<p class="cal-empty">Sin eventos para hoy.</p>';
+      return;
+    }
+    el.innerHTML = events.map(ev => {
+      const start = new Date(ev.start);
+      const time  = ev.allDay
+        ? 'Todo el día'
+        : start.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+      return `<div class="cal-event">
+        <span class="cal-time">${time}</span>
+        <span class="cal-title">${esc(ev.title)}</span>
+      </div>`;
+    }).join('');
+  } catch (e) {
+    el.innerHTML = '<p class="cal-empty">No se pudo cargar el calendario.</p>';
+  }
+}
+
 // ========== IA CON GROQ ==========
 const GROQ_API = 'https://api.groq.com/openai/v1/chat/completions';
 
@@ -184,7 +212,20 @@ async function classifyWithDeepseek(tasks) {
   const apiKey = getGroqKey();
   if (!apiKey) throw new Error('Falta la API key de Groq. Ve a Perfil > IA para añadirla.');
 
-  const prompt = `Eres asistente de productividad de Nat2Go Studio, una agencia de marketing y comunicacion.\n\nClasifica cada tarea en exactamente una de estas categorias:\n- dinero: facturacion, cobros, presupuestos, contratos, pagos, negociaciones, propuestas economicas. TAMBIEN cualquier tarea personal urgente e intransferible: citas medicas, veterinario, farmacias, tramites administrativos, gestiones bancarias personales, salud propia o de mascotas.\n- clientes: entregas para clientes, reuniones, feedback, revisiones, comunicacion con clientes concretos\n- marca: contenido propio de la marca, redes sociales, newsletter, branding, web, diseño propio\n\nTareas a clasificar:\n${tasks.map((t, i) => `${i + 1}. ${t}`).join('\n')}\n\nResponde SOLO con un JSON valido, sin markdown, sin texto extra. Formato exacto:\n{"dinero":["tarea completa","..."],"clientes":["..."],"marca":["..."]}\n\nReglas: cada tarea va en exactamente una categoria. Si hay duda, prioriza dinero > clientes > marca.`;
+  const prompt = `Eres asistente de productividad de Nat2Go Studio, una agencia de marketing y comunicacion.
+
+Clasifica cada tarea en exactamente una de estas categorias:
+- dinero: facturacion, cobros, presupuestos, contratos, pagos, negociaciones, propuestas economicas. TAMBIEN cualquier tarea personal urgente e intransferible: citas medicas, veterinario, farmacias, tramites administrativos, gestiones bancarias personales, salud propia o de mascotas.
+- clientes: entregas para clientes, reuniones, feedback, revisiones, comunicacion con clientes concretos
+- marca: contenido propio de la marca, redes sociales, newsletter, branding, web, diseño propio
+
+Tareas a clasificar:
+${tasks.map((t, i) => `${i + 1}. ${t}`).join('\n')}
+
+Responde SOLO con un JSON valido, sin markdown, sin texto extra. Formato exacto:
+{"dinero":["tarea completa","..."],"clientes":["..."],"marca":["..."]}
+
+Reglas: cada tarea va en exactamente una categoria. Si hay duda, prioriza dinero > clientes > marca.`;
 
   const res = await fetch(GROQ_API, {
     method: 'POST',
@@ -343,6 +384,7 @@ let seguimiento = lsGet('gonat_seguimiento', []);
 
 function saveSeguimiento() {
   lsSet('gonat_seguimiento', seguimiento);
+  syncToGAS('gonat_seguimiento', seguimiento, 'Misc');
 }
 
 function renderSeguimiento() {
@@ -352,7 +394,7 @@ function renderSeguimiento() {
   const pending = seguimiento.filter(t => !t.done);
   if (count) count.textContent = pending.length;
   if (pending.length === 0) {
-    list.innerHTML = '<p class="seguimiento-empty">Sin tareas en espera.</p>';
+    list.innerHTML = '<p class="seguimiento-empty">Sin tareas bloqueadas.</p>';
     return;
   }
   list.innerHTML = '';
@@ -392,6 +434,7 @@ let clientes = lsGet('gonat_clientes', []);
 
 function saveClientes() {
   lsSet('gonat_clientes', clientes);
+  syncToGAS('gonat_clientes', clientes, 'Clientes');
 }
 
 function renderClientes() {
@@ -455,6 +498,7 @@ function loadMorningChecks() {
     cb.addEventListener('change', () => {
       data[cb.dataset.key] = cb.checked;
       lsSet(`gonat_checks_${today}`, data);
+      syncToGAS(`gonat_checks_${today}`, data, 'Checks');
       renderStats();
     });
   });
@@ -468,6 +512,7 @@ function loadBienestarChecks() {
     cb.addEventListener('change', () => {
       data[cb.dataset.key] = cb.checked;
       lsSet(`gonat_bienestar_${today}`, data);
+      syncToGAS(`gonat_bienestar_${today}`, data, 'Checks');
       renderStats();
     });
   });
@@ -522,6 +567,7 @@ function initPerfil() {
     });
   }
 
+  // Groq API key
   const keyInput = document.getElementById('deepseekKeyInput');
   const saveKeyBtn = document.getElementById('saveDeepseekKeyBtn');
   const keyStatus = document.getElementById('deepseekKeyStatus');
@@ -598,6 +644,8 @@ document.addEventListener('DOMContentLoaded', function() {
   loadBienestarChecks();
   renderStats();
   initPerfil();
+
+  loadCalendarEvents();
 
   // Al arrancar: carga desde GAS como fuente de verdad (sincroniza móvil ↔ ordenador)
   syncFromGAS().then(prio => {
