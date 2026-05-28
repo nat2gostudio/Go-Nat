@@ -368,7 +368,7 @@ function renderSeguimiento() {
   const pending = seguimiento.filter(t => !t.done);
   if (count) count.textContent = pending.length;
   if (pending.length === 0) {
-    list.innerHTML = '<p class="seguimiento-empty">Sin tareas en espera.</p>';
+    list.innerHTML = '<p class="seguimiento-empty">Sin tareas bloqueadas.</p>';
     return;
   }
   list.innerHTML = '';

@@ -2057,6 +2057,12 @@ body.dark .seguimiento-title {
   color: #fbbf24;
 }
 
+.seguimiento-subtitle {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin: -6px 0 8px;
+}
+
 .seguimiento-count {
   display: inline-flex;
   align-items: center;
