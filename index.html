@@ -126,6 +126,21 @@
         <img src="images/nati-writing.png" alt="Nati escribiendo" class="header-illustration" id="natiWritingImg" />
       </div>
 
+      <!-- Seguimiento de tareas -->
+      <div class="seguimiento-banner" id="seguimientoBanner">
+        <div class="seguimiento-header">
+          <div class="seguimiento-title-row">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="17" height="17" class="seguimiento-icon"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            <span class="seguimiento-title">En seguimiento</span>
+            <span class="seguimiento-count" id="seguimientoCount">0</span>
+          </div>
+          <button class="seguimiento-add-btn" id="seguimientoAddBtn">+ Añadir</button>
+        </div>
+        <div class="seguimiento-list" id="seguimientoList">
+          <p class="seguimiento-empty" id="seguimientoEmpty">Sin tareas en espera. Añade una cuando inicies algo y estés esperando respuesta.</p>
+        </div>
+      </div>
+
       <!-- 3-col top grid: Arranque | Accesos Rápidos | Spotify + Pomodoro -->
       <div class="dashboard-top-grid">
 
@@ -211,26 +226,7 @@
 
           <!-- Spotify widget -->
           <div class="card spotify-widget">
-            <a class="spotify-open-link" href="https://open.spotify.com/search/bts%20chill/playlists" target="_blank" rel="noopener noreferrer" aria-label="Abrir Focus Music en Spotify">
-              <div class="spotify-controls">
-                <button class="spotify-ctrl-btn" tabindex="-1" aria-hidden="true">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/></svg>
-                </button>
-                <button class="spotify-ctrl-btn" tabindex="-1" aria-hidden="true">
-                  <svg viewBox="0 0 24 24" width="16" height="16"><polygon points="19 20 9 12 19 4 19 20" fill="currentColor"/><rect x="5" y="4" width="2" height="16" fill="currentColor"/></svg>
-                </button>
-                <div class="spotify-play-btn">
-                  <svg viewBox="0 0 24 24" width="20" height="20"><polygon points="5 3 19 12 5 21 5 3" fill="currentColor"/></svg>
-                </div>
-                <button class="spotify-ctrl-btn" tabindex="-1" aria-hidden="true">
-                  <svg viewBox="0 0 24 24" width="16" height="16"><polygon points="5 4 15 12 5 20 5 4" fill="currentColor"/><rect x="17" y="4" width="2" height="16" fill="currentColor"/></svg>
-                </button>
-                <button class="spotify-ctrl-btn" tabindex="-1" aria-hidden="true">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 014-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 01-4 4H3"/></svg>
-                </button>
-              </div>
-              <span class="spotify-label">Focus Music</span>
-            </a>
+            <iframe src="https://open.spotify.com/embed/playlist/3py7MK3ipW2LVd0ryRlwzw?utm_source=generator" width="100%" height="152" frameborder="0" allowfullscreen="" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
           </div>
 
           <!-- Pomodoro widget -->
@@ -247,24 +243,24 @@
           </div>
 
         </div>
-      </div><!-- end dashboard-top-grid -->
 
-      <!-- Eventos del Calendar -->
-      <div class="card card--accordion calendar-widget" id="calendarCard">
-        <div class="card-header" data-toggle="calendarCard">
-          <div class="card-header-content">
-            <h2 class="card-title--accordion">Eventos de hoy</h2>
+        <!-- Eventos del Calendar - moved inside grid for tetris layout -->
+        <div class="card card--accordion calendar-widget" id="calendarCard">
+          <div class="card-header" data-toggle="calendarCard">
+            <div class="card-header-content">
+              <h2 class="card-title--accordion">Eventos de hoy</h2>
+            </div>
+            <div class="card-toggle-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><polyline points="6 9 12 15 18 9"></polyline></svg>
+            </div>
           </div>
-          <div class="card-toggle-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><polyline points="6 9 12 15 18 9"></polyline></svg>
+          <div class="card-content">
+            <div id="calendarEventsList" class="calendar-events-list">
+              <p class="calendar-empty">Cargando eventos...</p>
+            </div>
           </div>
         </div>
-        <div class="card-content">
-          <div id="calendarEventsList" class="calendar-events-list">
-            <p class="calendar-empty">Cargando eventos...</p>
-          </div>
-        </div>
-      </div>
+      </div><!-- end dashboard-top-grid -->
 
       <!-- Prioridades del día -->
       <div class="priorities-header">
@@ -443,14 +439,73 @@
       <!-- GAS Connection -->
       <div class="card">
         <h2 class="card-title">Sincronización con Google Sheets</h2>
-        <p class="card-desc">Conecta con Google Apps Script para sincronizar tus datos en la nube.</p>
+
+        <div class="connection-status" id="connectionStatus" style="margin-bottom:16px;">
+          <span class="status-dot status-dot--grey"></span>
+          <span class="status-text" id="statusText">Sin conexión (modo local)</span>
+        </div>
+
+        <!-- Setup guide (colapsable) -->
+        <details class="gas-setup-guide" id="gasSetupGuide">
+          <summary class="gas-setup-summary">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            Cómo conectar por primera vez
+          </summary>
+          <ol class="gas-steps">
+            <li class="gas-step">
+              <span class="gas-step-num">1</span>
+              <div class="gas-step-body">
+                <strong>Abre Google Apps Script</strong>
+                <p>Ve a <a href="https://script.google.com" target="_blank" rel="noopener">script.google.com</a> e inicia sesión con tu cuenta de Google.</p>
+              </div>
+            </li>
+            <li class="gas-step">
+              <span class="gas-step-num">2</span>
+              <div class="gas-step-body">
+                <strong>Crea un proyecto nuevo</strong>
+                <p>Haz clic en <em>Nuevo proyecto</em>. Borra todo el contenido del editor y pega este script:</p>
+                <div class="gas-code-block">
+                  <button class="gas-copy-btn" id="copyGasScriptBtn">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+                    Copiar script
+                  </button>
+                  <textarea id="gasScriptContent" class="gas-code-textarea" readonly></textarea>
+                </div>
+              </div>
+            </li>
+            <li class="gas-step">
+              <span class="gas-step-num">3</span>
+              <div class="gas-step-body">
+                <strong>Despliega como aplicación web</strong>
+                <p>Menú <em>Implementar → Nueva implementación</em>. Elige:</p>
+                <ul class="gas-substeps">
+                  <li>Tipo: <strong>Aplicación web</strong></li>
+                  <li>Ejecutar como: <strong>Yo (tu cuenta)</strong></li>
+                  <li>Quién tiene acceso: <strong>Cualquier usuario</strong></li>
+                </ul>
+                <p>Haz clic en <em>Implementar</em> y acepta los permisos.</p>
+              </div>
+            </li>
+            <li class="gas-step">
+              <span class="gas-step-num">4</span>
+              <div class="gas-step-body">
+                <strong>Copia la URL y pégala aquí abajo</strong>
+                <p>Copia la <em>URL de la aplicación web</em> que aparece al terminar el despliegue y pégala en el campo de abajo.</p>
+              </div>
+            </li>
+            <li class="gas-step">
+              <span class="gas-step-num">5</span>
+              <div class="gas-step-body">
+                <strong>La hoja se crea sola</strong>
+                <p>El script crea automáticamente las hojas <strong>Prioridades</strong>, <strong>Seguimiento</strong>, <strong>Clientes</strong> y <strong>Checks</strong> en el mismo archivo de Google Sheets donde vive el script. No tienes que crear nada a mano.</p>
+              </div>
+            </li>
+          </ol>
+        </details>
+
         <div class="gas-form">
           <input type="url" id="gasUrlInput" class="input" placeholder="https://script.google.com/macros/s/..." />
           <button class="btn btn-primary" id="saveGasBtn">Guardar</button>
-        </div>
-        <div class="connection-status" id="connectionStatus">
-          <span class="status-dot status-dot--grey"></span>
-          <span class="status-text" id="statusText">Sin conexión (modo local)</span>
         </div>
       </div>
 
