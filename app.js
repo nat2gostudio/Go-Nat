@@ -167,7 +167,7 @@ async function classifyWithDeepseek(tasks) {
   const prompt = `Eres asistente de productividad de Nat2Go Studio, una agencia de marketing y comunicacion.
 
 Clasifica cada tarea en exactamente una de estas categorias:
-- dinero: facturacion, cobros, presupuestos, contratos, pagos, negociaciones, propuestas economicas
+- dinero: facturacion, cobros, presupuestos, contratos, pagos, negociaciones, propuestas economicas. TAMBIEN cualquier tarea personal urgente e intransferible: citas medicas, veterinario, farmacias, tramites administrativos, gestiones bancarias personales, salud propia o de mascotas.
 - clientes: entregas para clientes, reuniones, feedback, revisiones, comunicacion con clientes concretos
 - marca: contenido propio de la marca, redes sociales, newsletter, branding, web, diseño propio
 
