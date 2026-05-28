@@ -60,6 +60,16 @@ function esc(str) {
   return d.innerHTML;
 }
 
+function formatShortDate(dateStr) {
+  if (!dateStr) return null;
+  const d = new Date(dateStr + 'T12:00:00');
+  return d.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
+}
+
+function isOverdueDate(dateStr, done) {
+  return dateStr && !done && new Date(dateStr + 'T23:59:59') < new Date();
+}
+
 /* ============================================================
    GAS SCRIPT TEMPLATE
    ============================================================ */
@@ -291,6 +301,7 @@ const KEYS = {
   clientes:    'gonat_clientes',
   contenido:   'gonat_contenido',
   settings:    'gonat_settings',
+  seguimiento: 'gonat_seguimiento',
 };
 
 /* ============================================================
@@ -342,25 +353,42 @@ function guessTab(key) {
 }
 
 /**
- * On load, attempt to fetch all data from GAS and merge.
- * Sheet data takes priority for clientes, contenido, prioridades.
- * localStorage takes priority for daily checks.
+ * Push all app data to GAS in one request.
+ */
+function syncAllToGAS() {
+  if (!settings.gasUrl) return;
+  const payload = {
+    gonat_prioridades: prioridades,
+    gonat_seguimiento: seguimiento,
+    gonat_clientes:    clientes,
+  };
+  const url = `${settings.gasUrl}?token=${GAS_TOKEN}`;
+  fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+    mode: 'no-cors',
+  }).catch(e => console.log('GAS full-sync error (silent):', e));
+}
+
+/**
+ * Pull all data from GAS sheets and merge into localStorage + UI.
+ * GAS wins for persistent data; local wins for today's checks.
  */
 async function syncFromGAS() {
   if (!settings.gasUrl) return;
   try {
-    const res = await fetch(settings.gasUrl, { mode: 'cors' });
+    const gasUrl = `${settings.gasUrl}?action=all&token=${GAS_TOKEN}`;
+    const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(gasUrl)}`;
+    const res = await fetch(proxyUrl, { method: 'GET' });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();
-    if (data && typeof data === 'object') {
-      // Merge remote data into localStorage (remote wins for persistent data)
-      const priorityKeys = [KEYS.prioridades, KEYS.clientes, KEYS.contenido];
-      priorityKeys.forEach(k => {
-        if (data[k] !== undefined) {
-          lsSet(k, data[k]);
-        }
-      });
-      // Reinitialize app with merged data
+    const envelope = await res.json();
+    const data = envelope.contents ? JSON.parse(envelope.contents) : envelope;
+
+    if (data && typeof data === 'object' && !data.error) {
+      if (data.gonat_prioridades) lsSet(KEYS.prioridades,  data.gonat_prioridades);
+      if (data.gonat_seguimiento) lsSet(KEYS.seguimiento,  data.gonat_seguimiento);
+      if (data.gonat_clientes)    lsSet(KEYS.clientes,     data.gonat_clientes);
       initApp();
     }
   } catch (e) {
@@ -385,21 +413,22 @@ async function callGAS(action, method = 'GET', data = null) {
   }
 
   try {
-    let url = `${settings.gasUrl}?action=${action}&token=${GAS_TOKEN}`;
-    const options = {
-      method: method,
-      headers: { 'Content-Type': 'application/json' },
-      mode: 'cors'
-    };
+    let gasUrl = `${settings.gasUrl}?action=${action}&token=${GAS_TOKEN}`;
+    let url = `https://api.allorigins.win/get?url=${encodeURIComponent(gasUrl)}`;
 
-    if (method === 'POST' && data) {
-      options.body = JSON.stringify(data);
-      url += `&action=${action}&token=${GAS_TOKEN}`;
-    }
+    const options = {
+      method: 'GET',
+      headers: { 'Accept': 'application/json' }
+    };
 
     const response = await fetch(url, options);
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    return await response.json();
+    const data_response = await response.json();
+
+    if (data_response.contents) {
+      return JSON.parse(data_response.contents);
+    }
+    return null;
   } catch (e) {
     console.error(`GAS call error (${action}):`, e);
     return null;
@@ -426,7 +455,12 @@ function renderCalendarEvents(events) {
   if (!container) return;
 
   if (!events || events.length === 0) {
-    container.innerHTML = '<p class="calendar-empty">Sin eventos para hoy</p>';
+    container.innerHTML = `
+      <p class="calendar-empty" style="color: #dc2626;">
+        ⚠️ Verificando Google Calendar...
+        <br><small style="color: #a09890;">Si persiste, revisa la consola (F12)</small>
+      </p>
+    `;
     return;
   }
 
@@ -576,7 +610,7 @@ let prioridades = lsGet(KEYS.prioridades, {
 
 function savePrioridades() {
   lsSet(KEYS.prioridades, prioridades);
-  syncToGAS(KEYS.prioridades, prioridades);
+  syncAllToGAS();
 }
 
 function renderPrioridades() {
@@ -595,6 +629,11 @@ function renderPrioridades() {
         </li>
       `).join('');
 
+      const overdue = isOverdueDate(item.dueDate, item.done);
+      const dueChip = item.dueDate
+        ? `<span class="priority-due-chip${overdue ? ' priority-due-chip--overdue' : ''}">${formatShortDate(item.dueDate)}</span>`
+        : '';
+
       const li = document.createElement('li');
       li.className = 'priority-item';
       li.dataset.cat = cat;
@@ -602,12 +641,20 @@ function renderPrioridades() {
       li.innerHTML = `
         <input type="checkbox" ${item.done ? 'checked' : ''} />
         <span class="priority-item-text">${esc(item.text)}</span>
+        ${dueChip}
+        <button class="priority-item-dates-btn" aria-label="Fechas" title="Fechas de inicio y entrega">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        </button>
         <button class="priority-item-expand" aria-label="Añadir microtarea" title="Dividir en microtareas">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="11" height="11"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
         </button>
         <button class="priority-item-del" aria-label="Eliminar">×</button>
         <div class="priority-item-subtasks">
           ${subtasks.length > 0 ? `<ul class="subtask-list">${subtasksHtml}</ul>` : ''}
+        </div>
+        <div class="priority-dates-panel">
+          <label class="priority-date-label">Inicio<input type="date" class="priority-date-input prio-start-input" value="${item.startDate || ''}" /></label>
+          <label class="priority-date-label">Entrega<input type="date" class="priority-date-input prio-due-input" value="${item.dueDate || ''}" /></label>
         </div>
       `;
 
@@ -623,6 +670,25 @@ function renderPrioridades() {
       // Delete main task
       li.querySelector('.priority-item-del').addEventListener('click', () => {
         prioridades[cat].splice(idx, 1);
+        savePrioridades();
+        renderPrioridades();
+      });
+
+      // Dates panel toggle
+      li.querySelector('.priority-item-dates-btn').addEventListener('click', () => {
+        li.querySelector('.priority-dates-panel').classList.toggle('priority-dates-panel--open');
+      });
+
+      // Start date
+      li.querySelector('.prio-start-input').addEventListener('change', e => {
+        prioridades[cat][idx].startDate = e.target.value || null;
+        savePrioridades();
+        renderPrioridades();
+      });
+
+      // Due date
+      li.querySelector('.prio-due-input').addEventListener('change', e => {
+        prioridades[cat][idx].dueDate = e.target.value || null;
         savePrioridades();
         renderPrioridades();
       });
@@ -716,7 +782,7 @@ function initPrioridades() {
         const text = input.value.trim();
         if (text) {
           if (!prioridades[cat]) prioridades[cat] = [];
-          prioridades[cat].push({ id: uid(), text, done: false });
+          prioridades[cat].push({ id: uid(), text, done: false, subtasks: [], startDate: null, dueDate: null });
           savePrioridades();
           renderPrioridades();
         }
@@ -800,6 +866,13 @@ function saveClientes() {
   syncToGAS(KEYS.clientes, clientes);
 }
 
+function safeUrl(raw) {
+  const url = raw.trim();
+  if (/^https?:\/\//i.test(url)) return url;
+  if (/^\/\//.test(url)) return 'https:' + url;
+  return 'https://' + url;
+}
+
 function renderClientes() {
   const grid = document.getElementById('clientsGrid');
   grid.innerHTML = '';
@@ -816,6 +889,16 @@ function renderClientes() {
       </li>
     `).join('');
 
+    const linksHtml = (client.links || []).map((link, li) => `
+      <span class="client-link-wrap" data-li="${li}">
+        <a class="client-link-item" href="${esc(link.url)}" target="_blank" rel="noopener noreferrer">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="11" height="11"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+          ${esc(link.label)}
+        </a>
+        <button class="client-link-del" aria-label="Eliminar enlace">×</button>
+      </span>
+    `).join('');
+
     card.innerHTML = `
       <div class="client-card-header">
         <span class="client-name" title="Clic para editar">${esc(client.name)}</span>
@@ -823,6 +906,10 @@ function renderClientes() {
       </div>
       <ul class="client-tasks">${tasksHtml}</ul>
       <button class="btn btn-ghost btn-xs add-task-btn">+ Tarea</button>
+      <div class="client-links-section">
+        <div class="client-links-row" id="links-${client.id}">${linksHtml}</div>
+        <button class="client-link-add-btn" aria-label="Añadir enlace">+ Enlace</button>
+      </div>
     `;
 
     // Client name inline edit
@@ -904,6 +991,57 @@ function renderClientes() {
       input.addEventListener('keydown', e => {
         if (e.key === 'Enter') confirm2();
         if (e.key === 'Escape') row.remove();
+      });
+    });
+
+    // Delete link buttons
+    card.querySelectorAll('.client-link-del').forEach(btn => {
+      const li = parseInt(btn.closest('.client-link-wrap').dataset.li, 10);
+      btn.addEventListener('click', () => {
+        clientes[ci].links.splice(li, 1);
+        saveClientes();
+        renderClientes();
+      });
+    });
+
+    // Add link
+    card.querySelector('.client-link-add-btn').addEventListener('click', () => {
+      const section = card.querySelector('.client-links-section');
+      if (section.querySelector('.client-link-form')) return;
+
+      const form = document.createElement('div');
+      form.className = 'client-link-form';
+      form.innerHTML = `
+        <input class="client-link-label-input" type="text" placeholder="Nombre (Canva, Plan...)" maxlength="40" />
+        <input class="client-link-url-input" type="url" placeholder="https://..." maxlength="500" />
+        <button class="client-link-form-ok">OK</button>
+        <button class="client-link-form-cancel">✕</button>
+      `;
+      section.appendChild(form);
+      form.querySelector('.client-link-label-input').focus();
+
+      const confirmLink = () => {
+        const label = form.querySelector('.client-link-label-input').value.trim();
+        const rawUrl = form.querySelector('.client-link-url-input').value.trim();
+        if (label && rawUrl) {
+          if (!clientes[ci].links) clientes[ci].links = [];
+          clientes[ci].links.push({ id: uid(), label, url: safeUrl(rawUrl) });
+          saveClientes();
+          renderClientes();
+        } else {
+          form.remove();
+        }
+      };
+
+      form.querySelector('.client-link-form-ok').addEventListener('click', confirmLink);
+      form.querySelector('.client-link-form-cancel').addEventListener('click', () => form.remove());
+      form.querySelector('.client-link-url-input').addEventListener('keydown', e => {
+        if (e.key === 'Enter') confirmLink();
+        if (e.key === 'Escape') form.remove();
+      });
+      form.querySelector('.client-link-label-input').addEventListener('keydown', e => {
+        if (e.key === 'Escape') form.remove();
+        if (e.key === 'Enter') form.querySelector('.client-link-url-input').focus();
       });
     });
 
@@ -1200,7 +1338,8 @@ function initPerfil() {
     saveSettings();
     updateConnectionStatus();
     if (settings.gasUrl) {
-      syncFromGAS();
+      syncAllToGAS();   // push local data to sheets first
+      syncFromGAS();    // then pull (sheets win on conflict)
     }
   });
 
@@ -1212,6 +1351,26 @@ function initPerfil() {
   document.getElementById('themeDarkBtn').addEventListener('click', () => {
     setTheme('dark');
   });
+
+  // Copy GAS script button
+  const copyBtn = document.getElementById('copyGasScriptBtn');
+  if (copyBtn) {
+    copyBtn.addEventListener('click', () => {
+      const ta = document.getElementById('gasScriptContent');
+      if (!ta) return;
+      navigator.clipboard.writeText(ta.value).then(() => {
+        copyBtn.textContent = '✓ Copiado';
+        copyBtn.classList.add('gas-copy-btn--copied');
+        setTimeout(() => {
+          copyBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg> Copiar script`;
+          copyBtn.classList.remove('gas-copy-btn--copied');
+        }, 2000);
+      }).catch(() => {
+        ta.select();
+        document.execCommand('copy');
+      });
+    });
+  }
 
   // Reset day
   document.getElementById('resetDayBtn').addEventListener('click', () => {
@@ -1400,7 +1559,7 @@ function initBulkPrioritize() {
         unmatched++;
       }
       if (!prioridades[cat]) prioridades[cat] = [];
-      prioridades[cat].push({ id: uid(), text, done: false, subtasks: [] });
+      prioridades[cat].push({ id: uid(), text, done: false, subtasks: [], startDate: null, dueDate: null });
       added[cat]++;
     });
 
@@ -1439,9 +1598,10 @@ function initBusinessHoursOverlay() {
 
   let holdTimer = null;
   let checkTimer = null;
+  let userDismissed = false;
 
   const showOverlay = () => {
-    if (isAfterHours()) {
+    if (isAfterHours() && !userDismissed) {
       overlay.style.display = 'flex';
     }
   };
@@ -1449,12 +1609,12 @@ function initBusinessHoursOverlay() {
   const startHold = (e) => {
     e.preventDefault();
     progressBar.classList.remove('animating');
-    // Force reflow to restart animation
     void progressBar.offsetWidth;
     progressBar.classList.add('animating');
 
     holdTimer = setTimeout(() => {
       overlay.style.display = 'none';
+      userDismissed = true;
       progressBar.classList.remove('animating');
       progressBar.style.width = '0';
     }, 5000);
@@ -1478,9 +1638,186 @@ function initBusinessHoursOverlay() {
   holdBtn.addEventListener('touchend', endHold);
   holdBtn.addEventListener('touchcancel', endHold);
 
-  // Check every minute if we've crossed into after-hours
+  // Cerrar con Escape
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && overlay.style.display === 'flex') {
+      overlay.style.display = 'none';
+      userDismissed = true;
+      progressBar.classList.remove('animating');
+      progressBar.style.width = '0';
+    }
+  });
+
+  // Reset dismissal at midnight
+  const resetDismissal = () => {
+    const now = new Date();
+    const midnight = new Date(now);
+    midnight.setHours(24, 0, 0, 0);
+    const timeUntilMidnight = midnight - now;
+    setTimeout(() => {
+      userDismissed = false;
+      resetDismissal();
+    }, timeUntilMidnight);
+  };
+
   showOverlay();
   checkTimer = setInterval(showOverlay, 60000);
+  resetDismissal();
+}
+
+/* ============================================================
+   SEGUIMIENTO DE TAREAS (Task Follow-up Tracker)
+   ============================================================ */
+
+let seguimiento = lsGet(KEYS.seguimiento, []);
+
+function saveSeguimiento() {
+  lsSet(KEYS.seguimiento, seguimiento);
+  syncAllToGAS();
+}
+
+function relativeDate(dateStr) {
+  const now = new Date();
+  const then = new Date(dateStr + 'T12:00:00');
+  const diffDays = Math.floor((now - then) / 86400000);
+  if (diffDays <= 0) return 'hoy';
+  if (diffDays === 1) return 'ayer';
+  return `hace ${diffDays} días`;
+}
+
+function renderSeguimiento() {
+  const list = document.getElementById('seguimientoList');
+  const empty = document.getElementById('seguimientoEmpty');
+  const countEl = document.getElementById('seguimientoCount');
+  if (!list) return;
+
+  const pending = seguimiento.filter(item => !item.done);
+
+  if (countEl) {
+    countEl.textContent = pending.length;
+    countEl.style.display = pending.length > 0 ? 'inline-flex' : 'none';
+  }
+
+  list.querySelectorAll('.seguimiento-item, .seguimiento-add-form').forEach(el => el.remove());
+
+  if (pending.length === 0) {
+    if (empty) empty.style.display = 'block';
+    return;
+  }
+
+  if (empty) empty.style.display = 'none';
+
+  pending.forEach(item => {
+    const el = document.createElement('div');
+    el.className = 'seguimiento-item';
+    el.dataset.id = item.id;
+    el.innerHTML = `
+      <span class="seguimiento-item-text">${esc(item.text)}</span>
+      <span class="seguimiento-item-date">${relativeDate(item.addedAt)}</span>
+      <div class="seguimiento-prio-wrap">
+        <button class="seguimiento-item-prio" aria-label="Añadir a prioridades">→ Prio</button>
+        <div class="seguimiento-prio-picker" style="display:none;">
+          <span class="seguimiento-prio-label">Añadir a:</span>
+          <button class="seguimiento-prio-btn" data-cat="dinero">A</button>
+          <button class="seguimiento-prio-btn" data-cat="clientes">B</button>
+          <button class="seguimiento-prio-btn" data-cat="marca">C</button>
+          <button class="seguimiento-prio-cancel">✕</button>
+        </div>
+      </div>
+      <button class="seguimiento-item-done" aria-label="Marcar como listo">✓ Listo</button>
+      <button class="seguimiento-item-del" aria-label="Eliminar">×</button>
+    `;
+
+    const prioBtn = el.querySelector('.seguimiento-item-prio');
+    const prioPicker = el.querySelector('.seguimiento-prio-picker');
+
+    prioBtn.addEventListener('click', () => {
+      prioBtn.style.display = 'none';
+      prioPicker.style.display = 'flex';
+    });
+
+    el.querySelector('.seguimiento-prio-cancel').addEventListener('click', () => {
+      prioPicker.style.display = 'none';
+      prioBtn.style.display = 'inline-flex';
+    });
+
+    el.querySelectorAll('.seguimiento-prio-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const cat = btn.dataset.cat;
+        if (!prioridades[cat]) prioridades[cat] = [];
+        prioridades[cat].push({ id: uid(), text: item.text, done: false, subtasks: [] });
+        savePrioridades();
+        renderPrioridades();
+        prioPicker.style.display = 'none';
+        prioBtn.textContent = '✓ Añadida';
+        prioBtn.classList.add('seguimiento-item-prio--added');
+        prioBtn.style.display = 'inline-flex';
+        prioBtn.disabled = true;
+      });
+    });
+
+    el.querySelector('.seguimiento-item-done').addEventListener('click', () => {
+      seguimiento = seguimiento.filter(s => s.id !== item.id);
+      saveSeguimiento();
+      renderSeguimiento();
+    });
+
+    el.querySelector('.seguimiento-item-del').addEventListener('click', () => {
+      seguimiento = seguimiento.filter(s => s.id !== item.id);
+      saveSeguimiento();
+      renderSeguimiento();
+    });
+
+    list.appendChild(el);
+  });
+}
+
+function initSeguimiento() {
+  const addBtn = document.getElementById('seguimientoAddBtn');
+  if (!addBtn) return;
+
+  addBtn.addEventListener('click', () => {
+    const list = document.getElementById('seguimientoList');
+    if (list.querySelector('.seguimiento-add-form')) return;
+
+    const empty = document.getElementById('seguimientoEmpty');
+    if (empty) empty.style.display = 'none';
+
+    const form = document.createElement('div');
+    form.className = 'seguimiento-add-form';
+    form.innerHTML = `
+      <input class="seguimiento-add-input" type="text" placeholder="Ej: Enviado email a cliente, esperando respuesta..." maxlength="200" />
+      <button class="seguimiento-add-ok">Añadir</button>
+      <button class="seguimiento-add-cancel">Cancelar</button>
+    `;
+    list.appendChild(form);
+    const input = form.querySelector('.seguimiento-add-input');
+    input.focus();
+
+    const confirm = () => {
+      const text = input.value.trim();
+      if (text) {
+        seguimiento.push({ id: uid(), text, addedAt: todayStr(), done: false });
+        saveSeguimiento();
+        renderSeguimiento();
+      } else {
+        form.remove();
+        renderSeguimiento();
+      }
+    };
+
+    form.querySelector('.seguimiento-add-ok').addEventListener('click', confirm);
+    form.querySelector('.seguimiento-add-cancel').addEventListener('click', () => {
+      form.remove();
+      renderSeguimiento();
+    });
+    input.addEventListener('keydown', e => {
+      if (e.key === 'Enter') confirm();
+      if (e.key === 'Escape') { form.remove(); renderSeguimiento(); }
+    });
+  });
+
+  renderSeguimiento();
 }
 
 /* ============================================================
@@ -1575,6 +1912,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initDecision();
   initPomodoro();
   initBulkPrioritize();
+  initSeguimiento();
   initClientes();
   initContenido();
   initBienestar();
