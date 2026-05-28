@@ -153,44 +153,57 @@ async function testAndSyncFromGAS(onStatus) {
   onStatus('ok', `Conectado — ${pCount} prioridades, ${sCount} seguimiento, ${cCount} clientes`);
 }
 
-// ========== PALABRAS CLAVE PARA CATEGORIZACION ==========
-const PRIORITY_WORDS = {
-  dinero: [
-    'factura', 'cobrar', 'cobro', 'pago', 'pagos', 'presupuesto', 'propuesta',
-    'urgente', 'dinero', 'precio', 'contrato', 'hoy', 'deadline', 'vence', 'vencimiento',
-    'llamar', 'invoice', 'cargo', 'ingreso', 'honorarios', 'transferencia',
-    'deposito', 'banco', 'cuenta', 'cotizacion', 'oferta', 'negocio', 'firma', 'firmar',
-  ],
-  clientes: [
-    'ae', 'casa bella', 'rosconlab', 'cliente', 'clientes',
-    'reunion', 'entrega', 'revision', 'correccion', 'feedback',
-    'enviar a', 'llamada', 'responder', 'email a', 'proyecto',
-    'presentacion', 'aprobacion', 'aprobar', 'brief', 'briefing',
-    'informe', 'reporte', 'seguimiento', 'whatsapp', 'contactar', 'confirmar',
-  ],
-  marca: [
-    'instagram', 'newsletter', 'blog', 'marca', 'contenido', 'web',
-    'linkedin', 'canva', 'diseno', 'post', 'stories', 'reel',
-    'portfolio', 'branding', 'foto', 'video', 'podcast', 'publicar', 'social',
-    'tiktok', 'youtube', 'twitter', 'facebook', 'copy', 'caption', 'hashtag',
-    'imagen', 'banner', 'plantilla', 'identidad',
-  ],
-};
+// ========== IA CON DEEPSEEK ==========
+const DEEPSEEK_API = 'https://api.deepseek.com/chat/completions';
 
-function assignCategory(taskText) {
-  const text = taskText.toLowerCase();
-  const scores = { dinero: 0, clientes: 0, marca: 0 };
-  const matched = { dinero: [], clientes: [], marca: [] };
-  for (const [cat, words] of Object.entries(PRIORITY_WORDS)) {
-    for (const word of words) {
-      if (text.includes(word)) { scores[cat]++; matched[cat].push(word); }
-    }
+function getDeepseekKey() {
+  return lsGet('gonat_deepseek_key', '');
+}
+
+async function classifyWithDeepseek(tasks) {
+  const apiKey = getDeepseekKey();
+  if (!apiKey) throw new Error('Falta la API key de Deepseek. Ve a Perfil > IA para añadirla.');
+
+  const prompt = `Eres asistente de productividad de Nat2Go Studio, una agencia de marketing y comunicacion.
+
+Clasifica cada tarea en exactamente una de estas categorias:
+- dinero: facturacion, cobros, presupuestos, contratos, pagos, negociaciones, propuestas economicas
+- clientes: entregas para clientes, reuniones, feedback, revisiones, comunicacion con clientes concretos
+- marca: contenido propio de la marca, redes sociales, newsletter, branding, web, diseño propio
+
+Tareas a clasificar:
+${tasks.map((t, i) => `${i + 1}. ${t}`).join('\n')}
+
+Responde SOLO con un JSON valido, sin markdown, sin texto extra. Formato exacto:
+{"dinero":["tarea completa","..."],"clientes":["..."],"marca":["..."]}
+
+Reglas: cada tarea va en exactamente una categoria. Si hay duda, prioriza dinero > clientes > marca.`;
+
+  const res = await fetch(DEEPSEEK_API, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model: 'deepseek-chat',
+      messages: [{ role: 'user', content: prompt }],
+      temperature: 0.1,
+      max_tokens: 500,
+    }),
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error?.message || `HTTP ${res.status}`);
   }
-  const max = Math.max(...Object.values(scores));
-  if (max === 0) return { cat: null, label: null, reason: 'Sin palabras clave — se distribuira por equilibrio' };
-  const cat = Object.entries(scores).find(([, v]) => v === max)[0];
-  const labels = { dinero: 'A — Dinero', clientes: 'B — Clientes', marca: 'C — Marca' };
-  return { cat, label: labels[cat], reason: `Detectado: "${matched[cat].slice(0,2).join('", "')}"` };
+
+  const data = await res.json();
+  const content = data.choices?.[0]?.message?.content?.trim();
+  if (!content) throw new Error('Respuesta vacia de Deepseek');
+
+  const cleaned = content.replace(/```json|```/g, '').trim();
+  return JSON.parse(cleaned);
 }
 
 // ========== PRIORIDADES ==========
@@ -241,77 +254,56 @@ function initPrioridades() {
   });
 }
 
-// ========== SMART ADD (clasificacion automatica) ==========
-function initSmartAdd() {
-  const input = document.getElementById('smartTaskInput');
-  const addBtn = document.getElementById('smartAddBtn');
-  const preview = document.getElementById('smartAddPreview');
-  const badge = document.getElementById('smartCatBadge');
-  const reason = document.getElementById('smartCatReason');
-  if (!input) return;
-
-  let currentCat = null;
-
-  input.addEventListener('input', () => {
-    const text = input.value.trim();
-    if (!text) { preview.style.display = 'none'; return; }
-    const result = assignCategory(text);
-    currentCat = result.cat;
-    preview.style.display = 'flex';
-    badge.className = `smart-cat-badge smart-cat-badge--${result.cat || 'unknown'}`;
-    badge.textContent = result.label || 'Sin categoria clara';
-    reason.textContent = result.reason;
-  });
-
-  const doAdd = () => {
-    const text = input.value.trim();
-    if (!text) return;
-    const cat = currentCat || (() => {
-      const counts = { dinero: (prioridades.dinero||[]).length, clientes: (prioridades.clientes||[]).length, marca: (prioridades.marca||[]).length };
-      return Object.entries(counts).sort((a,b) => a[1]-b[1])[0][0];
-    })();
-    if (!prioridades[cat]) prioridades[cat] = [];
-    prioridades[cat].push({ id: uid(), text, done: false, subtasks: [] });
-    savePrioridades(); renderPrioridades();
-    input.value = ''; preview.style.display = 'none'; currentCat = null;
-  };
-
-  addBtn.addEventListener('click', doAdd);
-  input.addEventListener('keydown', e => { if (e.key === 'Enter') doAdd(); });
-}
-
-// ========== BULK PRIORITIZE ==========
+// ========== BULK PRIORITIZE CON IA ==========
 function initBulkPrioritize() {
   const btn = document.getElementById('bulkPrioritizeBtn');
   if (!btn) return;
-  btn.addEventListener('click', () => {
+
+  btn.addEventListener('click', async () => {
     const textarea = document.getElementById('bulkTasksInput');
+    const statusEl = document.getElementById('bulkStatus');
     const lines = textarea.value.split('\n').map(l => l.trim()).filter(Boolean);
     if (!lines.length) return;
-    const added = { dinero: 0, clientes: 0, marca: 0 };
-    let unmatched = 0;
-    lines.forEach(text => {
-      let { cat } = assignCategory(text);
-      if (!cat) {
-        const counts = {
-          dinero:   (prioridades.dinero  ||[]).length + added.dinero,
-          clientes: (prioridades.clientes||[]).length + added.clientes,
-          marca:    (prioridades.marca   ||[]).length + added.marca,
-        };
-        cat = Object.entries(counts).sort((a,b) => a[1]-b[1])[0][0];
-        unmatched++;
+
+    btn.disabled = true;
+    btn.textContent = 'Preguntando a la IA...';
+    if (statusEl) { statusEl.textContent = ''; statusEl.className = 'bulk-status'; }
+
+    try {
+      const result = await classifyWithDeepseek(lines);
+
+      let total = 0;
+      ['dinero', 'clientes', 'marca'].forEach(cat => {
+        (result[cat] || []).forEach(text => {
+          if (!text || !text.trim()) return;
+          if (!prioridades[cat]) prioridades[cat] = [];
+          prioridades[cat].push({ id: uid(), text: text.trim(), done: false, subtasks: [] });
+          total++;
+        });
+      });
+
+      savePrioridades();
+      renderPrioridades();
+      textarea.value = '';
+
+      const counts = {
+        a: (result.dinero  || []).length,
+        b: (result.clientes|| []).length,
+        c: (result.marca   || []).length,
+      };
+      if (statusEl) {
+        statusEl.textContent = `${total} tareas clasificadas: ${counts.a} en A, ${counts.b} en B, ${counts.c} en C`;
+        statusEl.className = 'bulk-status bulk-status--ok';
       }
-      if (!prioridades[cat]) prioridades[cat] = [];
-      prioridades[cat].push({ id: uid(), text, done: false, subtasks: [] });
-      added[cat]++;
-    });
-    savePrioridades(); renderPrioridades();
-    textarea.value = '';
-    const msg = unmatched > 0
-      ? `${lines.length} tareas anadidas. ${unmatched} distribuidas por equilibrio.`
-      : `${lines.length} tareas clasificadas automaticamente.`;
-    const highlight = document.getElementById('decisionHighlight');
-    if (highlight) { highlight.textContent = msg; highlight.style.display = 'block'; setTimeout(() => highlight.style.display = 'none', 4000); }
+    } catch (err) {
+      if (statusEl) {
+        statusEl.textContent = err.message;
+        statusEl.className = 'bulk-status bulk-status--error';
+      }
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M12 2a10 10 0 1 0 10 10"/><path d="M12 8v4l3 3"/><path d="M18 2v4h4"/></svg> Priorizar con IA`;
+    }
   });
 }
 
@@ -503,6 +495,26 @@ function initPerfil() {
     });
   }
 
+  // Deepseek API key
+  const keyInput = document.getElementById('deepseekKeyInput');
+  const saveKeyBtn = document.getElementById('saveDeepseekKeyBtn');
+  const keyStatus = document.getElementById('deepseekKeyStatus');
+  if (keyInput) {
+    const saved = getDeepseekKey();
+    keyInput.value = saved ? `sk-${'•'.repeat(20)}` : '';
+    if (keyStatus && saved) keyStatus.textContent = 'API key guardada';
+    if (saveKeyBtn) {
+      saveKeyBtn.addEventListener('click', () => {
+        const val = keyInput.value.trim();
+        if (!val || val.startsWith('sk-••')) { if (keyStatus) keyStatus.textContent = 'Sin cambios'; return; }
+        if (!val.startsWith('sk-')) { if (keyStatus) { keyStatus.textContent = 'La key debe empezar con sk-'; keyStatus.style.color = '#ef4444'; } return; }
+        lsSet('gonat_deepseek_key', val);
+        keyInput.value = `sk-${'•'.repeat(20)}`;
+        if (keyStatus) { keyStatus.textContent = 'API key guardada correctamente'; keyStatus.style.color = '#16a34a'; }
+      });
+    }
+  }
+
   const resetBtn = document.getElementById('resetDayBtn');
   if (resetBtn) {
     resetBtn.addEventListener('click', () => {
@@ -548,7 +560,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
   renderPrioridades();
   initPrioridades();
-  initSmartAdd();
   initBulkPrioritize();
 
   renderSeguimiento();

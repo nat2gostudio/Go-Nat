@@ -88,27 +88,23 @@
       <div class="priorities-header"><h2 class="section-title">Prioridades del día</h2><button class="btn btn-ghost btn-sm" id="decisionBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><rect x="2" y="2" width="20" height="20" rx="3"/><circle cx="8" cy="8" r="1.5" fill="currentColor"/><circle cx="16" cy="8" r="1.5" fill="currentColor"/><circle cx="8" cy="16" r="1.5" fill="currentColor"/><circle cx="16" cy="16" r="1.5" fill="currentColor"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/></svg> Decisiones</button></div>
       <div class="decision-highlight" id="decisionHighlight" style="display:none;"></div>
 
-      <!-- Smart add: clasifica automáticamente -->
-      <div class="smart-add-card card">
-        <div class="smart-add-row">
-          <input type="text" id="smartTaskInput" class="smart-add-input" placeholder="Escribe una tarea y la clasificamos en A, B o C automáticamente..." maxlength="200" />
-          <button class="btn btn-primary smart-add-btn" id="smartAddBtn">Añadir</button>
-        </div>
-        <div class="smart-add-preview" id="smartAddPreview" style="display:none;">
-          <span class="smart-cat-badge" id="smartCatBadge"></span>
-          <span class="smart-cat-reason" id="smartCatReason"></span>
-        </div>
-      </div>
-
       <div class="priorities-grid">
         <div class="card priority-card" id="prio-dinero"><h3>Prioridad A</h3><ul id="list-dinero"></ul><button class="btn add-prio-btn" data-cat="dinero">+ Añadir</button></div>
         <div class="card priority-card" id="prio-clientes"><h3>Prioridad B</h3><ul id="list-clientes-prio"></ul><button class="btn add-prio-btn" data-cat="clientes">+ Añadir</button></div>
         <div class="card priority-card" id="prio-marca"><h3>Prioridad C</h3><ul id="list-marca"></ul><button class="btn add-prio-btn" data-cat="marca">+ Añadir</button></div>
       </div>
 
-      <div class="card card--accordion bulk-capture-card" id="bulkCaptureCard">
-        <div class="card-header" data-toggle="bulkCaptureCard"><div class="card-header-content"><h2 class="card-title--accordion">Captura masiva de tareas</h2></div><div class="card-toggle-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><polyline points="6 9 12 15 18 9"></polyline></svg></div></div>
-        <div class="card-content"><textarea class="bulk-textarea" id="bulkTasksInput" placeholder="Cobrar factura a cliente&#10;Escribir newsletter&#10;Vacunar a Ula" rows="4"></textarea><button class="btn btn-primary btn-sm" id="bulkPrioritizeBtn">Priorizar automáticamente</button></div>
+      <div class="card bulk-capture-card" id="bulkCaptureCard">
+        <h2 class="card-title">Captura de tareas con IA</h2>
+        <p class="card-desc">Escribe tus tareas (una por línea). La IA decide qué va en A, B o C.</p>
+        <textarea class="bulk-textarea" id="bulkTasksInput" placeholder="Cobrar factura a Casa Bella&#10;Publicar stories de la semana&#10;Enviar propuesta a nuevo cliente&#10;Revisar diseño newsletter" rows="5"></textarea>
+        <div class="bulk-actions">
+          <button class="btn btn-primary" id="bulkPrioritizeBtn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M12 2a10 10 0 1 0 10 10"/><path d="M12 8v4l3 3"/><path d="M18 2v4h4"/></svg>
+            Priorizar con IA
+          </button>
+          <span class="bulk-status" id="bulkStatus"></span>
+        </div>
       </div>
     </section>
 
@@ -138,6 +134,15 @@
       <div class="screen-header"><div class="header-text"><h1 class="screen-title">Perfil</h1></div><img src="images/nati-cats-aviso.png" alt="Nati" class="header-illustration" /></div>
       <div class="card profile-card"><div class="profile-avatar">N</div><div><h2>Nati Pérez</h2><p>@nat2gostudio</p></div></div>
       <div class="card"><h2>Apariencia</h2><div class="theme-toggle-row"><button class="theme-btn active" id="themeLightBtn">☀️ Claro</button><button class="theme-btn" id="themeDarkBtn">🌙 Oscuro</button></div></div>
+      <div class="card">
+        <h2>IA (Deepseek)</h2>
+        <p style="font-size:13px;color:var(--text-muted);margin-bottom:10px;">Tu API key se guarda solo en este navegador y se usa para clasificar tareas automáticamente.</p>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <input type="password" id="deepseekKeyInput" class="smart-add-input" placeholder="sk-..." style="flex:1;" />
+          <button class="btn btn-primary" id="saveDeepseekKeyBtn">Guardar</button>
+        </div>
+        <div id="deepseekKeyStatus" style="margin-top:8px;font-size:12px;color:var(--text-muted);"></div>
+      </div>
       <div class="card"><h2>Sincronización Google Sheets</h2><p style="font-size:13px;color:var(--text-muted);margin-bottom:12px;">Pulsa para cargar los datos desde tu tabla y verificar la conexión.</p><button class="btn btn-primary" id="testGasBtn">Probar conexión</button><div id="gasTestResult" class="gas-test-result" style="display:none;margin-top:10px;"></div></div>
       <div class="card"><h2>Estadísticas de hoy</h2><div class="stats-grid"><div><span id="statMorningDone">0</span><br>Arranque</div><div><span id="statBienestarDone">0</span><br>Bienestar</div><div><span id="statTotalDone">0</span><br>Total</div></div></div>
       <div class="card"><button class="btn btn-danger" id="resetDayBtn">Restablecer datos del día</button></div>

@@ -2431,3 +2431,23 @@ body.dark .gas-test-result--error   { background: #2d0a0a; color: #fca5a5; borde
 
 /* ========== STATUS DOT RED ========== */
 .status-dot--red { background: #ef4444; }
+
+/* ========== BULK CAPTURE ACTUALIZADO ========== */
+.bulk-capture-card .card-desc {
+  font-size: 13px;
+  color: var(--text-muted, #6b7280);
+  margin-bottom: 12px;
+}
+.bulk-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+.bulk-status {
+  font-size: 12px;
+  font-weight: 500;
+}
+.bulk-status--ok    { color: #16a34a; }
+.bulk-status--error { color: #dc2626; }
