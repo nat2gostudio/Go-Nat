@@ -16,7 +16,7 @@ var HEADERS        = ['ID', 'Inicio', 'Tarea', 'Prioridad', 'SubPrioridad', 'Ent
 
 // ── GET handler ──────────────────────────────────────────────────────────────
 function doGet(e) {
-  var action = (e.parameter && e.parameter.action) || 'read';
+  var action = (e && e.parameter && e.parameter.action) || 'read';
 
   if (action === 'set')      return doGetSet(e);
   if (action === 'delete')   return doGetDelete(e);
