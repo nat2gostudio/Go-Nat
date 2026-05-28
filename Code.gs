@@ -34,7 +34,8 @@
  */
 
 // Name of the spreadsheet to create/use
-var SHEET_NAME = 'GoNat';
+// ID de tu Google Spreadsheet (la parte de la URL entre /d/ y /edit)
+var SPREADSHEET_ID = '1r6XM2SkKyLKN9R3JWlBs4wsvjjVunE4WNEkmIBwFV7E';
 
 // Valid tab names
 var VALID_TABS = ['Clientes', 'Contenido', 'Prioridades', 'Checks', 'Misc'];
@@ -164,34 +165,19 @@ function buildResponse(data, statusCode) {
 }
 
 /**
- * Find or create the "GoNat" spreadsheet in the user's Drive.
- * On first run it creates the sheet and initialises all tabs.
+ * Abre el spreadsheet por ID fijo y crea las pestanas si no existen.
  */
 function getOrCreateSpreadsheet() {
-  // Search in Drive for an existing spreadsheet named "GoNat"
-  var files = DriveApp.getFilesByName(SHEET_NAME);
-  if (files.hasNext()) {
-    var file = files.next();
-    return SpreadsheetApp.openById(file.getId());
+  var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+
+  // Crear pestanas que falten
+  for (var i = 0; i < VALID_TABS.length; i++) {
+    if (!ss.getSheetByName(VALID_TABS[i])) {
+      var newSheet = ss.insertSheet(VALID_TABS[i]);
+      newSheet.appendRow(['key', 'value']);
+    }
   }
 
-  // Create a new spreadsheet
-  var ss = SpreadsheetApp.create(SHEET_NAME);
-
-  // Rename the default "Sheet1" tab to the first valid tab
-  var defaultSheet = ss.getSheets()[0];
-  defaultSheet.setName(VALID_TABS[0]);
-
-  // Add header row to first tab
-  defaultSheet.appendRow(['key', 'value']);
-
-  // Create remaining tabs
-  for (var i = 1; i < VALID_TABS.length; i++) {
-    var newSheet = ss.insertSheet(VALID_TABS[i]);
-    newSheet.appendRow(['key', 'value']);
-  }
-
-  Logger.log('Created GoNat spreadsheet: ' + ss.getUrl());
   return ss;
 }
 

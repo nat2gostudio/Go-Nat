@@ -109,14 +109,13 @@ function guessTab(key) {
 
 async function syncToGAS(key, value, tab) {
   if (!GAS_URL) return;
-  try {
-    fetch(GAS_URL, {
-      method: 'POST',
-      mode: 'no-cors',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ tab: tab || guessTab(key), key, value: JSON.stringify(value) })
-    });
-  } catch (e) { /* silent */ }
+  // no-cors no permite Content-Type: application/json
+  // enviamos el body sin cabecera — GAS lo recibe en e.postData.contents igual
+  fetch(GAS_URL, {
+    method: 'POST',
+    mode: 'no-cors',
+    body: JSON.stringify({ tab: tab || guessTab(key), key, value: JSON.stringify(value) })
+  }).catch(() => {});
 }
 
 async function syncFromGAS() {
