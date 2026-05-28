@@ -54,6 +54,11 @@ var VALID_TABS = ['Clientes', 'Contenido', 'Prioridades', 'Checks', 'Misc'];
  * }
  */
 function doGet(e) {
+  // Escritura via GET (evita problemas de CORS/redirect con POST)
+  if (e.parameter && e.parameter.action === 'set') {
+    return doGetSet(e);
+  }
+
   try {
     var ss = getOrCreateSpreadsheet();
     var result = {};
@@ -63,7 +68,7 @@ function doGet(e) {
       if (!sheet) return;
 
       var lastRow = sheet.getLastRow();
-      if (lastRow < 2) return; // Only header row, no data
+      if (lastRow < 2) return;
 
       var data = sheet.getRange(2, 1, lastRow - 1, 2).getValues();
       data.forEach(function(row) {
@@ -80,6 +85,44 @@ function doGet(e) {
     });
 
     return buildResponse(result, 200);
+  } catch (err) {
+    return buildResponse({ error: err.message }, 500);
+  }
+}
+
+/**
+ * Escritura via GET params. Llamado cuando action=set.
+ */
+function doGetSet(e) {
+  try {
+    var tab   = e.parameter.tab   || 'Misc';
+    var key   = e.parameter.key;
+    var value = e.parameter.value;
+
+    if (!key || value === undefined) {
+      return buildResponse({ error: 'Missing key or value' }, 400);
+    }
+    if (VALID_TABS.indexOf(tab) === -1) tab = 'Misc';
+
+    var ss = getOrCreateSpreadsheet();
+    var sheet = getOrCreateTab(ss, tab);
+    var lastRow = sheet.getLastRow();
+    var existingRow = -1;
+
+    if (lastRow >= 2) {
+      var keys = sheet.getRange(2, 1, lastRow - 1, 1).getValues();
+      for (var i = 0; i < keys.length; i++) {
+        if (keys[i][0] === key) { existingRow = i + 2; break; }
+      }
+    }
+
+    if (existingRow > 0) {
+      sheet.getRange(existingRow, 1, 1, 2).setValues([[key, value]]);
+    } else {
+      sheet.appendRow([key, value]);
+    }
+
+    return buildResponse({ ok: true, tab: tab, key: key }, 200);
   } catch (err) {
     return buildResponse({ error: err.message }, 500);
   }

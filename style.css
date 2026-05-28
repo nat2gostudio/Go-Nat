@@ -569,6 +569,24 @@ body.dark .btn-close-day {
   color: var(--primary);
 }
 
+/* ---------- Inline add (prioridades) ---------- */
+.prio-inline-add {
+  display: flex;
+  gap: 6px;
+  margin: 8px 0 4px;
+}
+
+.prio-inline-input {
+  flex: 1;
+  padding: 6px 10px;
+  border: 1.5px solid var(--primary);
+  border-radius: var(--radius);
+  font-size: 13px;
+  background: var(--card);
+  color: var(--text);
+  outline: none;
+}
+
 /* ---------- Inline add input ---------- */
 .inline-add-row {
   display: flex;

@@ -107,15 +107,16 @@ function guessTab(key) {
   return 'Misc';
 }
 
-async function syncToGAS(key, value, tab) {
+function syncToGAS(key, value, tab) {
   if (!GAS_URL) return;
-  // no-cors no permite Content-Type: application/json
-  // enviamos el body sin cabecera — GAS lo recibe en e.postData.contents igual
-  fetch(GAS_URL, {
-    method: 'POST',
-    mode: 'no-cors',
-    body: JSON.stringify({ tab: tab || guessTab(key), key, value: JSON.stringify(value) })
-  }).catch(() => {});
+  // GET + no-cors: evita CORS errors y el body no se pierde (a diferencia del POST que redirige).
+  const params = new URLSearchParams({
+    action: 'set',
+    tab: tab || guessTab(key),
+    key,
+    value: JSON.stringify(value)
+  });
+  fetch(`${GAS_URL}?${params}`, { mode: 'no-cors' }).catch(() => {});
 }
 
 async function syncFromGAS() {
@@ -243,12 +244,32 @@ function initPrioridades() {
   document.querySelectorAll('.add-prio-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       const cat = btn.dataset.cat;
-      const labels = { dinero: 'A (Dinero)', clientes: 'B (Clientes)', marca: 'C (Marca)' };
-      const text = prompt(`Nueva tarea — Prioridad ${labels[cat]}:`);
-      if (!text || !text.trim()) return;
-      if (!prioridades[cat]) prioridades[cat] = [];
-      prioridades[cat].push({ id: uid(), text: text.trim(), done: false, subtasks: [] });
-      savePrioridades(); renderPrioridades();
+      const existing = btn.parentElement.querySelector('.prio-inline-add');
+      if (existing) { existing.querySelector('.prio-inline-input').focus(); return; }
+
+      const row = document.createElement('div');
+      row.className = 'prio-inline-add';
+      row.innerHTML = `<input class="prio-inline-input" type="text" placeholder="Escribe la tarea..." /><button class="btn btn-primary btn-xs prio-inline-confirm">Añadir</button>`;
+      btn.parentElement.insertBefore(row, btn);
+
+      const input = row.querySelector('.prio-inline-input');
+      input.focus();
+
+      function addTask() {
+        const text = input.value.trim();
+        row.remove();
+        if (!text) return;
+        if (!prioridades[cat]) prioridades[cat] = [];
+        prioridades[cat].push({ id: uid(), text, done: false, subtasks: [] });
+        savePrioridades();
+        renderPrioridades();
+      }
+
+      row.querySelector('.prio-inline-confirm').addEventListener('click', addTask);
+      input.addEventListener('keydown', e => {
+        if (e.key === 'Enter') addTask();
+        if (e.key === 'Escape') row.remove();
+      });
     });
   });
 }
