@@ -3,7 +3,7 @@
 // ==========================================
 
 // ========== CONFIGURACIÓN ==========
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbwnBN3A5YYfLZaDuyh9Glw2hR5hiX0gKRelT8p2ZKT45B7Bp6c0u8YfeyDGY6YTJGr9Ng/exec';
+const GAS_URL = 'https://script.google.com/macros/s/AKfycby9az8NS5q_jkJTmuu1nixnbwImCvTfAcEOq23BVK1lWQaRvaImUNF6CPQZ8YvLC3Xnwg/exec';
 
 // ========== STORAGE HELPERS ==========
 function lsGet(key, fallback) {
@@ -101,7 +101,6 @@ function initPomodoro() {
 // ========== SINCRONIZACION CON GOOGLE SHEETS ==========
 const PRIO_LETRA = { dinero: 'A', clientes: 'B', marca: 'C' };
 
-// Sincroniza una tarea individual como fila en Tareas_Completas
 function syncTaskToGAS(task, cat) {
   if (!GAS_URL) return;
   const params = new URLSearchParams({
@@ -128,7 +127,6 @@ function deleteTaskFromGAS(taskId) {
   fetch(`${GAS_URL}?${params}`).catch(err => console.warn('GAS delete failed:', err));
 }
 
-// sin sheet dedicado por ahora para checks/clientes
 function syncToGAS() {}
 
 async function syncFromGAS() {
