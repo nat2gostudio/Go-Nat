@@ -175,6 +175,32 @@ async function testAndSyncFromGAS(onStatus) {
   onStatus('ok', `Conectado — ${count} tareas cargadas desde Sheets`);
 }
 
+// ========== CALENDARIO ==========
+async function loadCalendarEvents() {
+  const el = document.getElementById('calendarEventsList');
+  if (!el || !GAS_URL) return;
+  try {
+    const res = await fetch(`${GAS_URL}?action=calendar`);
+    const events = await res.json();
+    if (!Array.isArray(events) || events.length === 0) {
+      el.innerHTML = '<p class="cal-empty">Sin eventos para hoy.</p>';
+      return;
+    }
+    el.innerHTML = events.map(ev => {
+      const start = new Date(ev.start);
+      const time  = ev.allDay
+        ? 'Todo el día'
+        : start.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+      return `<div class="cal-event">
+        <span class="cal-time">${time}</span>
+        <span class="cal-title">${esc(ev.title)}</span>
+      </div>`;
+    }).join('');
+  } catch (e) {
+    el.innerHTML = '<p class="cal-empty">No se pudo cargar el calendario.</p>';
+  }
+}
+
 // ========== IA CON GROQ ==========
 const GROQ_API = 'https://api.groq.com/openai/v1/chat/completions';
 
@@ -618,6 +644,8 @@ document.addEventListener('DOMContentLoaded', function() {
   loadBienestarChecks();
   renderStats();
   initPerfil();
+
+  loadCalendarEvents();
 
   // Al arrancar: carga desde GAS como fuente de verdad (sincroniza móvil ↔ ordenador)
   syncFromGAS().then(prio => {

@@ -18,8 +18,9 @@ var HEADERS        = ['ID', 'Inicio', 'Tarea', 'Prioridad', 'SubPrioridad', 'Ent
 function doGet(e) {
   var action = (e.parameter && e.parameter.action) || 'read';
 
-  if (action === 'set')    return doGetSet(e);
-  if (action === 'delete') return doGetDelete(e);
+  if (action === 'set')      return doGetSet(e);
+  if (action === 'delete')   return doGetDelete(e);
+  if (action === 'calendar') return doGetCalendar(e);
 
   // Lectura: devuelve todas las tareas como array de objetos
   try {
@@ -98,6 +99,38 @@ function doGetDelete(e) {
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
+// ── Eventos de Google Calendar (hoy) ─────────────────────────────────────────
+function doGetCalendar(e) {
+  try {
+    var now   = new Date();
+    var start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
+    var end   = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
+
+    var calendars = CalendarApp.getAllCalendars();
+    var allEvents = [];
+
+    calendars.forEach(function(cal) {
+      cal.getEvents(start, end).forEach(function(ev) {
+        allEvents.push({
+          title:    ev.getTitle(),
+          start:    ev.getStartTime().toISOString(),
+          end:      ev.getEndTime().toISOString(),
+          allDay:   ev.isAllDayEvent(),
+          location: ev.getLocation() || '',
+          calendar: cal.getName()
+        });
+      });
+    });
+
+    // Ordenar por hora de inicio
+    allEvents.sort(function(a, b) { return new Date(a.start) - new Date(b.start); });
+
+    return buildResponse(allEvents);
+  } catch (err) {
+    return buildResponse({ error: err.message });
+  }
+}
+
 function getSheet() {
   var ss    = SpreadsheetApp.openById(SPREADSHEET_ID);
   var sheet = ss.getSheetByName(SHEET_NAME);
