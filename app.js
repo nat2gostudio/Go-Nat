@@ -129,12 +129,30 @@ function deleteTaskFromGAS(taskId) {
 
 function syncToGAS() {}
 
+// Carga desde GAS y convierte el array de filas a {dinero,clientes,marca}
 async function syncFromGAS() {
   if (!GAS_URL) return null;
   try {
     const res = await fetch(`${GAS_URL}?action=read`);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return await res.json();
+    const rows = await res.json();
+    if (!Array.isArray(rows)) return null;
+    const prio = { dinero: [], clientes: [], marca: [] };
+    rows.forEach(r => {
+      const cat = r.subprioridad;
+      if (!prio[cat]) return;
+      prio[cat].push({
+        id:       r.id,
+        text:     r.tarea,
+        done:     r.estado === 'hecha',
+        addedAt:  r.inicio   || '',
+        entrega:  r.entrega  || '',
+        progreso: r.progreso || '',
+        notas:    r.notas    || '',
+        subtasks: []
+      });
+    });
+    return prio;
   } catch (e) {
     console.log('GAS fetch error:', e.message);
     return null;
@@ -143,13 +161,16 @@ async function syncFromGAS() {
 
 async function testAndSyncFromGAS(onStatus) {
   onStatus('loading', 'Conectando con Google Sheets...');
-  const data = await syncFromGAS();
-  if (!data || data.error) {
-    onStatus('error', data && data.error ? data.error : 'No se pudo conectar. Verifica que el script este desplegado con acceso "Cualquier usuario".');
+  const prio = await syncFromGAS();
+  if (!prio) {
+    onStatus('error', 'No se pudo conectar. Verifica que el script este desplegado con acceso "Cualquier usuario".');
     return;
   }
-  const count = Array.isArray(data) ? data.length : 0;
-  onStatus('ok', `Conectado — ${count} tareas en Tareas_Completas`);
+  prioridades = prio;
+  lsSet('gonat_prioridades', prio);
+  renderPrioridades();
+  const count = Object.values(prio).flat().length;
+  onStatus('ok', `Conectado — ${count} tareas cargadas desde Sheets`);
 }
 
 // ========== IA CON GROQ ==========
@@ -163,20 +184,7 @@ async function classifyWithDeepseek(tasks) {
   const apiKey = getGroqKey();
   if (!apiKey) throw new Error('Falta la API key de Groq. Ve a Perfil > IA para añadirla.');
 
-  const prompt = `Eres asistente de productividad de Nat2Go Studio, una agencia de marketing y comunicacion.
-
-Clasifica cada tarea en exactamente una de estas categorias:
-- dinero: facturacion, cobros, presupuestos, contratos, pagos, negociaciones, propuestas economicas. TAMBIEN cualquier tarea personal urgente e intransferible: citas medicas, veterinario, farmacias, tramites administrativos, gestiones bancarias personales, salud propia o de mascotas.
-- clientes: entregas para clientes, reuniones, feedback, revisiones, comunicacion con clientes concretos
-- marca: contenido propio de la marca, redes sociales, newsletter, branding, web, diseño propio
-
-Tareas a clasificar:
-${tasks.map((t, i) => `${i + 1}. ${t}`).join('\n')}
-
-Responde SOLO con un JSON valido, sin markdown, sin texto extra. Formato exacto:
-{"dinero":["tarea completa","..."],"clientes":["..."],"marca":["..."]}
-
-Reglas: cada tarea va en exactamente una categoria. Si hay duda, prioriza dinero > clientes > marca.`;
+  const prompt = `Eres asistente de productividad de Nat2Go Studio, una agencia de marketing y comunicacion.\n\nClasifica cada tarea en exactamente una de estas categorias:\n- dinero: facturacion, cobros, presupuestos, contratos, pagos, negociaciones, propuestas economicas. TAMBIEN cualquier tarea personal urgente e intransferible: citas medicas, veterinario, farmacias, tramites administrativos, gestiones bancarias personales, salud propia o de mascotas.\n- clientes: entregas para clientes, reuniones, feedback, revisiones, comunicacion con clientes concretos\n- marca: contenido propio de la marca, redes sociales, newsletter, branding, web, diseño propio\n\nTareas a clasificar:\n${tasks.map((t, i) => `${i + 1}. ${t}`).join('\n')}\n\nResponde SOLO con un JSON valido, sin markdown, sin texto extra. Formato exacto:\n{"dinero":["tarea completa","..."],"clientes":["..."],"marca":["..."]}\n\nReglas: cada tarea va en exactamente una categoria. Si hay duda, prioriza dinero > clientes > marca.`;
 
   const res = await fetch(GROQ_API, {
     method: 'POST',
@@ -590,6 +598,14 @@ document.addEventListener('DOMContentLoaded', function() {
   loadBienestarChecks();
   renderStats();
   initPerfil();
+
+  // Al arrancar: carga desde GAS como fuente de verdad (sincroniza móvil ↔ ordenador)
+  syncFromGAS().then(prio => {
+    if (!prio) return;
+    prioridades = prio;
+    lsSet('gonat_prioridades', prio);
+    renderPrioridades();
+  });
 });
 
 console.log('GO Nat - Aplicacion lista');
