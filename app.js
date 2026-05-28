@@ -153,16 +153,16 @@ async function testAndSyncFromGAS(onStatus) {
   onStatus('ok', `Conectado — ${pCount} prioridades, ${sCount} seguimiento, ${cCount} clientes`);
 }
 
-// ========== IA CON DEEPSEEK ==========
-const DEEPSEEK_API = 'https://api.deepseek.com/chat/completions';
+// ========== IA CON GROQ ==========
+const GROQ_API = 'https://api.groq.com/openai/v1/chat/completions';
 
-function getDeepseekKey() {
-  return lsGet('gonat_deepseek_key', '');
+function getGroqKey() {
+  return lsGet('gonat_groq_key', '') || lsGet('gonat_deepseek_key', '');
 }
 
 async function classifyWithDeepseek(tasks) {
-  const apiKey = getDeepseekKey();
-  if (!apiKey) throw new Error('Falta la API key de Deepseek. Ve a Perfil > IA para añadirla.');
+  const apiKey = getGroqKey();
+  if (!apiKey) throw new Error('Falta la API key de Groq. Ve a Perfil > IA para añadirla.');
 
   const prompt = `Eres asistente de productividad de Nat2Go Studio, una agencia de marketing y comunicacion.
 
@@ -179,14 +179,14 @@ Responde SOLO con un JSON valido, sin markdown, sin texto extra. Formato exacto:
 
 Reglas: cada tarea va en exactamente una categoria. Si hay duda, prioriza dinero > clientes > marca.`;
 
-  const res = await fetch(DEEPSEEK_API, {
+  const res = await fetch(GROQ_API, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
-      model: 'deepseek-chat',
+      model: 'llama-3.3-70b-versatile',
       messages: [{ role: 'user', content: prompt }],
       temperature: 0.1,
       max_tokens: 500,
@@ -200,7 +200,7 @@ Reglas: cada tarea va en exactamente una categoria. Si hay duda, prioriza dinero
 
   const data = await res.json();
   const content = data.choices?.[0]?.message?.content?.trim();
-  if (!content) throw new Error('Respuesta vacia de Deepseek');
+  if (!content) throw new Error('Respuesta vacia de Groq');
 
   const cleaned = content.replace(/```json|```/g, '').trim();
   return JSON.parse(cleaned);
@@ -495,21 +495,21 @@ function initPerfil() {
     });
   }
 
-  // Deepseek API key
+  // Groq API key
   const keyInput = document.getElementById('deepseekKeyInput');
   const saveKeyBtn = document.getElementById('saveDeepseekKeyBtn');
   const keyStatus = document.getElementById('deepseekKeyStatus');
   if (keyInput) {
-    const saved = getDeepseekKey();
-    keyInput.value = saved ? `sk-${'•'.repeat(20)}` : '';
+    const saved = getGroqKey();
+    keyInput.value = saved ? `gsk_${'•'.repeat(20)}` : '';
     if (keyStatus && saved) keyStatus.textContent = 'API key guardada';
     if (saveKeyBtn) {
       saveKeyBtn.addEventListener('click', () => {
         const val = keyInput.value.trim();
-        if (!val || val.startsWith('sk-••')) { if (keyStatus) keyStatus.textContent = 'Sin cambios'; return; }
-        if (!val.startsWith('sk-')) { if (keyStatus) { keyStatus.textContent = 'La key debe empezar con sk-'; keyStatus.style.color = '#ef4444'; } return; }
-        lsSet('gonat_deepseek_key', val);
-        keyInput.value = `sk-${'•'.repeat(20)}`;
+        if (!val || val.includes('•')) { if (keyStatus) keyStatus.textContent = 'Sin cambios'; return; }
+        if (!val.startsWith('gsk_')) { if (keyStatus) { keyStatus.textContent = 'La key de Groq debe empezar con gsk_'; keyStatus.style.color = '#ef4444'; } return; }
+        lsSet('gonat_groq_key', val);
+        keyInput.value = `gsk_${'•'.repeat(20)}`;
         if (keyStatus) { keyStatus.textContent = 'API key guardada correctamente'; keyStatus.style.color = '#16a34a'; }
       });
     }
