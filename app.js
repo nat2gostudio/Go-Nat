@@ -131,12 +131,30 @@ function deleteTaskFromGAS(taskId) {
 // Mantiene compatibilidad para checks/clientes (sin sheet dedicado por ahora)
 function syncToGAS() {}
 
+// Carga desde GAS y convierte el array de filas a {dinero,clientes,marca}
 async function syncFromGAS() {
   if (!GAS_URL) return null;
   try {
-    const res = await fetch(`${GAS_URL}?action=all`);
+    const res = await fetch(`${GAS_URL}?action=read`);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return await res.json();
+    const rows = await res.json();
+    if (!Array.isArray(rows)) return null;
+    const prio = { dinero: [], clientes: [], marca: [] };
+    rows.forEach(r => {
+      const cat = r.subprioridad;
+      if (!prio[cat]) return;
+      prio[cat].push({
+        id:       r.id,
+        text:     r.tarea,
+        done:     r.estado === 'hecha',
+        addedAt:  r.inicio   || '',
+        entrega:  r.entrega  || '',
+        progreso: r.progreso || '',
+        notas:    r.notas    || '',
+        subtasks: []
+      });
+    });
+    return prio;
   } catch (e) {
     console.log('GAS fetch error:', e.message);
     return null;
@@ -145,24 +163,16 @@ async function syncFromGAS() {
 
 async function testAndSyncFromGAS(onStatus) {
   onStatus('loading', 'Conectando con Google Sheets...');
-  const data = await syncFromGAS();
-  if (!data || data.error) {
-    onStatus('error', data && data.error ? data.error : 'No se pudo conectar. Verifica que el script este desplegado con acceso "Cualquier usuario".');
+  const prio = await syncFromGAS();
+  if (!prio) {
+    onStatus('error', 'No se pudo conectar. Verifica que el script este desplegado con acceso "Cualquier usuario".');
     return;
   }
-  const prio = data['gonat_prioridades'] || data['prioridades'];
-  const seg  = data['gonat_seguimiento']  || data['seguimiento'];
-  const cli  = data['gonat_clientes']     || data['clientes'];
-  if (prio) { prioridades = prio; lsSet('gonat_prioridades', prio); }
-  if (seg)  { seguimiento = seg;  lsSet('gonat_seguimiento', seg); }
-  if (cli)  { clientes = cli;     lsSet('gonat_clientes', cli); }
+  prioridades = prio;
+  lsSet('gonat_prioridades', prio);
   renderPrioridades();
-  renderClientes();
-  renderSeguimiento();
-  const pCount = Object.values(prio || {}).flat().length;
-  const sCount = (seg || []).length;
-  const cCount = (cli || []).length;
-  onStatus('ok', `Conectado — ${pCount} prioridades, ${sCount} seguimiento, ${cCount} clientes`);
+  const count = Object.values(prio).flat().length;
+  onStatus('ok', `Conectado — ${count} tareas cargadas desde Sheets`);
 }
 
 // ========== IA CON GROQ ==========
@@ -609,15 +619,12 @@ document.addEventListener('DOMContentLoaded', function() {
   renderStats();
   initPerfil();
 
-  // Sync en segundo plano al cargar
-  syncFromGAS().then(data => {
-    if (!data || data.error) return;
-    const prio = data['gonat_prioridades'] || data['prioridades'];
-    const seg  = data['gonat_seguimiento']  || data['seguimiento'];
-    const cli  = data['gonat_clientes']     || data['clientes'];
-    if (prio) { prioridades = prio; lsSet('gonat_prioridades', prio); renderPrioridades(); }
-    if (seg)  { seguimiento = seg;  lsSet('gonat_seguimiento', seg);  renderSeguimiento(); }
-    if (cli)  { clientes = cli;     lsSet('gonat_clientes', cli);     renderClientes(); }
+  // Al arrancar: carga desde GAS como fuente de verdad (sincroniza móvil ↔ ordenador)
+  syncFromGAS().then(prio => {
+    if (!prio) return;
+    prioridades = prio;
+    lsSet('gonat_prioridades', prio);
+    renderPrioridades();
   });
 });
 
